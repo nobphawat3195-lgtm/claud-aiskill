@@ -18,6 +18,8 @@ indicator("YOUNGYUU SMC Entry PRO", shorttitle = "YY_SMC_PRO", overlay = true,
 // ══════════════════════════════════════
 G_TH    = "🎨 THEME"
 themeIn = input.string("Obsidian Gold", "HUD Theme", options = ["Obsidian Gold", "Neon Cyber", "Light Pro"], group = G_TH)
+lang    = input.string("ไทย", "ภาษา / Language", options = ["ไทย", "English"], group = G_TH, tooltip = "ภาษาของคำแนะนำ 👉 ทำอะไรตอนนี้, ป้าย TP และ Alert แบบข้อความ")
+f_tx(string th, string en) => lang == "ไทย" ? th : en
 isNeon  = themeIn == "Neon Cyber"
 isLight = themeIn == "Light Pro"
 
@@ -159,7 +161,7 @@ showCancelled = input.bool(false, "Show Missed / Expired Setups", group = G_DS)
 extBars       = input.int(10, "Extend Levels (bars)", minval = 1, group = G_DS)
 
 G_AL      = "🔔 ALERTS"
-alertJson = input.bool(true, "JSON Message (Webhook → MT5 EA)", group = G_AL)
+alertJson = input.bool(false, "JSON Message (Webhook → MT5 EA)", group = G_AL, tooltip = "ปิด = ข้อความภาษาคนอ่านง่าย สำหรับมือใหม่ (แนะนำ)\nเปิด = JSON สำหรับส่งเข้า EA อัตโนมัติ")
 
 // ══════════════════════════════════════
 // 🧱 TYPES & STATE
@@ -186,6 +188,12 @@ type Setup
     string       flags
     string       result  = "PENDING"
     string       capNote = ""
+    string       capName = ""
+    float        capPx   = na
+    bool         warned  = false
+    array<float> cutTps
+    line         wallL
+    label        wallLb
     box          bxRisk
     box          bxProf
     line         earlyL
@@ -293,6 +301,8 @@ int htfDir = nz(aD)
 // ══════════════════════════════════════
 // 🎨 SETUP DRAWING
 // ══════════════════════════════════════
+f_pct(Setup s) => math.round(100.0 / s.nTp)
+
 f_extend(Setup s, int x2) =>
     s.bxRisk.set_right(x2)
     s.bxProf.set_right(x2)
@@ -304,14 +314,18 @@ f_extend(Setup s, int x2) =>
     s.earLb.set_x(x2)
     s.limLb.set_x(x2)
     s.slLb.set_x(x2)
+    if not na(s.wallL)
+        s.wallL.set_x2(x2)
 
 f_refresh(Setup s) =>
     for i = 0 to s.nTp - 1
         bool hit = s.tpHit > i
         label lb = s.tpLb.get(i)
-        lb.set_text("TP" + str.tostring(i + 1) + (hit ? " ✓ " : "   ") + f_px(s.tps.get(i)))
-        lb.set_color(hit ? color.new(C_UP, 20) : C_NAVY)
-        lb.set_textcolor(hit ? #04130e : color.white)
+        bool fin = i == s.nTp - 1
+        string act = fin ? f_tx("ปิดหมด", "close all") : f_tx("ปิด ", "close ") + str.tostring(f_pct(s)) + "%"
+        lb.set_text((fin ? "🏁 " : "") + "TP" + str.tostring(i + 1) + (hit ? " ✓" : "") + " · " + act + "  " + f_px(s.tps.get(i)))
+        lb.set_color(hit ? color.new(C_UP, 20) : fin ? C_ACC : C_NAVY)
+        lb.set_textcolor(hit ? #04130e : fin ? C_INK : color.white)
     s.slLb.set_y(s.sl)
     s.slLb.set_text((s.sl == s.slInit ? "SL " : "SL ➜ ") + f_px(s.sl))
     string tag = s.state == 1 ? "⏳ PENDING" : s.state == 2 ? (s.tpHit > 0 ? "▶ TP" + str.tostring(s.tpHit) : "▶ LIVE") : s.result
@@ -329,6 +343,15 @@ f_draw(Setup s) =>
         float y = s.tps.get(k)
         s.tpL.push(line.new(x1, y, x2, y, color = color.new(C_UP, 35), style = line.style_dashed))
         s.tpLb.push(label.new(x2, y, "", color = C_NAVY, textcolor = color.white, style = label.style_label_left, size = size.small))
+    if not na(s.cutTps) and s.cutTps.size() > 0
+        for k = 0 to s.cutTps.size() - 1
+            float y = s.cutTps.get(k)
+            if true
+                s.tpL.push(line.new(x1, y, x2, y, color = color.new(C_MUTE, 75), style = line.style_dotted))
+                s.tpLb.push(label.new(x2, y, "TP" + str.tostring(s.nTp + k + 1) + " ✂ " + f_tx("ข้าม · ติด ", "skip · blocked by ") + s.capName, color = C_NONE, textcolor = color.new(C_MUTE, 35), style = label.style_label_left, size = size.small))
+    if not na(s.capPx)
+        s.wallL  := line.new(x1, s.capPx, x2, s.capPx, color = C_WARN, width = 3)
+        s.wallLb := label.new(x1, s.capPx, "🧱 " + s.capName + f_tx("  — อย่าถือเกินเส้นนี้", "  — don't hold past this"), color = C_NONE, textcolor = C_WARN, style = label.style_label_lower_left, size = size.small)
     s.earlyL := line.new(x1, s.earlyPx, x2, s.earlyPx, color = C_GOLD, style = line.style_dashed, width = 2)
     s.earLb  := label.new(x2, s.earlyPx, "Early " + f_px(s.earlyPx), color = C_NONE, textcolor = C_GOLD, style = label.style_label_left, size = size.small)
     s.limLb  := label.new(x2, s.limitPx, (s.dir == 1 ? "Buy Limit " : "Sell Limit ") + f_px(s.limitPx), color = color.new(C_MUTE, 20), textcolor = #0b0f19, style = label.style_label_left, size = size.small)
@@ -350,6 +373,9 @@ f_delete(Setup s) =>
     s.slLb.delete()
     s.tagLb.delete()
     s.rLb.delete()
+    if not na(s.wallL)
+        s.wallL.delete()
+        s.wallLb.delete()
 
 f_archive(Setup s) =>
     hist.push(s)
@@ -363,13 +389,13 @@ f_tpRaw(int d, float lim, float risk0) =>
         tps.push(lim + d * off)
     tps
 
-f_new(int d, float lim, float slPx, int sc, string flags, array<float> tps, string capNote) =>
+f_new(int d, float lim, float slPx, int sc, string flags, array<float> tps, string capNote, string capName, float capPx, array<float> cutTps) =>
     float risk0 = math.abs(lim - slPx)
     float early = lim + d * earlyR * risk0
     float ent   = fillMode == "Early" ? early : lim
     Setup s = Setup.new(dir = d, state = 1, born = bar_index, limitPx = lim, earlyPx = early, entry = ent,
          slInit = slPx, sl = slPx, risk = math.abs(ent - slPx), nTp = tps.size(), tps = tps, score = sc,
-         grade = f_grade(sc), flags = flags, capNote = capNote, tpL = array.new<line>(), tpLb = array.new<label>())
+         grade = f_grade(sc), flags = flags, capNote = capNote, capName = capName, capPx = capPx, cutTps = cutTps, tpL = array.new<line>(), tpLb = array.new<label>())
     f_draw(s)
     s
 
@@ -832,10 +858,10 @@ if barstate.isconfirmed and not na(cur) and cur.state == 1 and bar_index > cur.b
         cur.state   := 2
         cur.fillBar := bar_index
         tradesToday += 1
-        alert("YOUNGYUU " + syminfo.ticker + (cur.dir == 1 ? " BUY" : " SELL") + " FILLED @ " + f_px(cur.entry), alert.freq_once_per_bar_close)
+        alert(alertJson ? "YOUNGYUU " + syminfo.ticker + (cur.dir == 1 ? " BUY" : " SELL") + " FILLED @ " + f_px(cur.entry) : "✅ " + syminfo.ticker + f_tx(" เข้าไม้แล้ว ", " filled ") + (cur.dir == 1 ? "BUY" : "SELL") + " @ " + f_px(cur.entry) + f_tx(" · ถือไว้ เป้าแรก ", " · hold, first target ") + f_px(cur.tps.get(0)), alert.freq_once_per_bar_close)
         if f_slHit(cur)
             f_close(cur, cur.sl, "SL")
-            alert("YOUNGYUU " + syminfo.ticker + " SL HIT @ " + f_px(cur.sl), alert.freq_once_per_bar_close)
+            alert("🛑 " + syminfo.ticker + f_tx(" โดน SL ", " stopped ") + f_px(cur.sl) + f_tx(" · รอสัญญาณใหม่", " · wait for next setup"), alert.freq_once_per_bar_close)
             cur := na
         else
             f_refresh(cur)
@@ -855,7 +881,7 @@ if barstate.isconfirmed and not na(cur) and cur.state == 2 and bar_index > cur.f
         bool   atBe = math.abs(cur.sl - cur.entry) < syminfo.mintick
         string res  = cur.tpHit > 0 ? "TP" + str.tostring(cur.tpHit) + (atBe ? " → BE" : " → SL") : "SL"
         f_close(cur, cur.sl, res)
-        alert("YOUNGYUU " + syminfo.ticker + " " + res + " @ " + f_px(cur.sl), alert.freq_once_per_bar_close)
+        alert((res == "SL" ? "🛑 " : "✅ ") + syminfo.ticker + " " + res + " @ " + f_px(cur.sl) + f_tx(" · ไม้นี้จบแล้ว รอสัญญาณใหม่", " · trade closed, wait for next"), alert.freq_once_per_bar_close)
         cur := na
     else
         float w = 1.0 / cur.nTp
@@ -864,7 +890,9 @@ if barstate.isconfirmed and not na(cur) and cur.state == 2 and bar_index > cur.f
                 cur.tpHit := k + 1
                 cur.rReal += w * f_rAt(cur, k + 1)
                 cur.remW  -= w
-                alert("YOUNGYUU " + syminfo.ticker + " TP" + str.tostring(k + 1) + " HIT @ " + f_px(cur.tps.get(k)), alert.freq_once_per_bar_close)
+                bool finK = k + 1 >= cur.nTp
+                string nxtTxt = finK ? f_tx("ปิดทั้งหมด ไม้นี้จบ", "close ALL, trade done") : f_tx("ปิด ", "close ") + str.tostring(f_pct(cur)) + "%" + (beAfter > 0 and k + 1 >= beAfter ? f_tx(" + เลื่อน SL ไปที่ทุน", " + move SL to entry") : "") + f_tx(" · เป้าถัดไป ", " · next ") + f_px(cur.tps.get(k + 1))
+                alert((finK ? "🏁 " : "💰 ") + syminfo.ticker + " TP" + str.tostring(k + 1) + f_tx(" ถึงแล้ว: ", " hit: ") + nxtTxt, alert.freq_once_per_bar_close)
             else
                 break
         if cur.tpHit > 0 and cur.tpHit < cur.nTp
@@ -875,6 +903,9 @@ if barstate.isconfirmed and not na(cur) and cur.state == 2 and bar_index > cur.f
                 newSl := cur.tps.get(cur.tpHit - 2)
             if not na(newSl) and (newSl - cur.sl) * cur.dir > 0
                 cur.sl := newSl
+        if cur.tpHit < cur.nTp and cur.capName != "" and not cur.warned and (cur.tps.get(cur.nTp - 1) - close) * cur.dir <= 0.5 * atr
+            cur.warned := true
+            alert("⚠ " + syminfo.ticker + f_tx(" ใกล้เป้าสุดท้าย 🏁 ", " near final target 🏁 ") + f_px(cur.tps.get(cur.nTp - 1)) + f_tx(" (ข้างบนติด ", " (blocked by ") + cur.capName + f_tx(") เตรียมปิด", ") — get ready to close"), alert.freq_once_per_bar_close)
         if cur.tpHit >= cur.nTp
             f_close(cur, cur.tps.get(cur.nTp - 1), "TP" + str.tostring(cur.nTp))
             cur := na
@@ -977,11 +1008,16 @@ if barstate.isconfirmed and (bullTrig or bearTrig) and (na(cur) or cur.state == 
     float finRR  = tpUse.size() > 0 ? (tpUse.last() - lim) * d / rk : 0.0
     bool  rrOk   = minRR == 0 or finRR >= minRR
     string capNote = capped ? "✂ " + obN + " @ " + f_px(obP) : ""
+    array<float> cutList = array.new<float>()
+    if capped
+        for t in rawTp
+            if (t - (obP - d * capBuf * atr)) * d > 0
+                cutList.push(t)
     bool  pass   = okRisk and okSide and (not reqSweep or hasSw) and (not useHtf or htfOk) and (not useKz or inKz) and f_gv(f_grade(sc)) >= f_gv(minGrade) and (maxTradesDay == 0 or tradesToday < maxTradesDay) and not (noRoom and skipNoRoom) and rrOk
     if pass
         if not na(cur)
             f_cancel(cur, "REPLACED")
-        cur := f_new(d, lim, slPx, sc, flags, tpUse, capNote)
+        cur := f_new(d, lim, slPx, sc, flags, tpUse, capNote, capped ? obN : "", capped ? obP : na, cutList)
         string tpList = ""
         for k = 0 to cur.nTp - 1
             tpList += (k > 0 ? "," : "") + f_px(cur.tps.get(k))
@@ -989,7 +1025,7 @@ if barstate.isconfirmed and (bullTrig or bearTrig) and (na(cur) or cur.state == 
              '{"action":"' + (d == 1 ? "BUY_LIMIT" : "SELL_LIMIT") + '","symbol":"' + syminfo.ticker + '","tf":"' + timeframe.period +
              '","price":' + f_px(cur.entry) + ',"limit":' + f_px(lim) + ',"early":' + f_px(cur.earlyPx) + ',"sl":' + f_px(slPx) +
              ',"tp":[' + tpList + '],"expiry_bars":' + str.tostring(expiryBars) + ',"grade":"' + cur.grade + '","score":' + str.tostring(sc) + '}' :
-             "YOUNGYUU " + (d == 1 ? "BUY LIMIT " : "SELL LIMIT ") + syminfo.ticker + " @ " + f_px(cur.entry) + " | SL " + f_px(slPx) + " | TP " + tpList + " | " + cur.grade
+             (d == 1 ? "🟢 BUY LIMIT " : "🔴 SELL LIMIT ") + syminfo.ticker + " " + f_px(cur.entry) + " · SL " + f_px(slPx) + " · " + f_tx("เป้า ", "targets ") + tpList + " 🏁" + (capped ? f_tx(" (ติด ", " (blocked by ") + obN + f_tx(" ไม่ถือเกินนี้)", " — don't hold past)") : "") + " · " + f_tx("เกรด ", "grade ") + cur.grade
         alert(msg, alert.freq_once_per_bar_close)
 
 // keep live setup levels extended
@@ -1124,6 +1160,34 @@ if barstate.islast
     color dCol = has ? (s.dir == 1 ? C_UP : C_DN) : C_MUTE
     float liveR = run ? ((s.dir == 1 ? close : close + spread) - s.entry) * s.dir / s.risk : na
 
+    // 👉 WHAT TO DO NOW — one plain-language instruction for beginners
+    float finTp   = has ? s.tps.get(s.nTp - 1) : na
+    bool  nearFin = run and s.capName != "" and (finTp - close) * s.dir <= 0.5 * atr
+    float prog    = run ? math.max(0.0, math.min(1.0, (close - s.entry) / (finTp - s.entry))) : na
+    string nowTxt = ""
+    color  nowCol = C_MUTE
+    if not has
+        nowTxt := f_tx("⏳ รอสัญญาณ · ยังไม่ต้องทำอะไร", "⏳ Waiting for setup · no action needed")
+    else if s.state == 1
+        nowTxt := f_tx("🎯 ตั้ง ", "🎯 Place ") + (s.dir == 1 ? "BUY" : "SELL") + " LIMIT " + f_px(s.entry) + " · SL " + f_px(s.sl)
+        nowCol := C_BLUE
+    else if s.state == 2
+        if nearFin
+            nowTxt := f_tx("⚠ ใกล้เป้าสุดท้าย 🏁 เตรียมปิดทั้งหมด", "⚠ Near final target 🏁 get ready to close")
+            nowCol := C_WARN
+        else if s.tpHit == 0
+            nowTxt := f_tx("✋ ถือไว้ · เป้าแรก ", "✋ Hold · first target ") + f_px(s.tps.get(0)) + f_tx(" (อีก $", " ($") + str.tostring(math.max(0, (s.tps.get(0) - close) * s.dir), "#.##") + f_tx(")", " to go)")
+            nowCol := C_TXT
+        else
+            nowTxt := "💰 " + f_tx("เก็บแล้ว ", "Banked ") + str.tostring(math.min(100, f_pct(s) * s.tpHit)) + "%" + (s.sl != s.slInit ? f_tx(" · SL บังทุนแล้ว", " · SL protected") : "") + f_tx(" · ถือต่อ TP", " · hold for TP") + str.tostring(s.tpHit + 1)
+            nowCol := C_UP
+    else if s.state == 3
+        nowTxt := s.tpHit >= s.nTp ? "🏁 " + f_tx("ครบเป้า ", "Target done ") + f_r(s.rFinal) + f_tx(" · รอสัญญาณใหม่", " · wait for next") : s.tpHit > 0 ? "✅ " + f_tx("ออกพร้อมกำไร ", "Exited in profit ") + f_r(s.rFinal) + f_tx(" · รอสัญญาณใหม่", " · wait for next") : "🛑 " + f_tx("โดน SL ", "Stopped ") + f_r(s.rFinal) + f_tx(" · อย่ารีบเอาคืน รอสัญญาณใหม่", " · no revenge, wait for next")
+        nowCol := s.rFinal >= 0 ? C_UP : C_DN
+    else
+        nowTxt := "❌ " + f_tx("ยกเลิก (", "Cancelled (") + s.result + f_tx(") · รอสัญญาณใหม่", ") · wait for next")
+    string planTxt = has ? f_tx("แผน: ", "Plan: ") + str.tostring(s.nTp) + f_tx(" เป้า · ปิดเป้าละ ", " targets · close ") + str.tostring(f_pct(s)) + "%" + (s.capName != "" ? f_tx(" · 🏁 สุดที่ TP", " · 🏁 final TP") + str.tostring(s.nTp) + f_tx(" (ติด ", " (") + s.capName + ")" : "") : ""
+
     // performance (selected period)
     int pStart = statPeriod == "Today" ? tD : statPeriod == "This Week" ? tW : statPeriod == "This Month" ? tM : 0
     int   n    = 0
@@ -1182,6 +1246,8 @@ if barstate.islast
         f_put(0, 3, r, "⬡ YOUNGYUU SMC", C_INK, C_ACC, szT, AL, false)
         f_put(4, 5, r, liveDot, C_UP, f_soft(C_UP), szT, AC, false)
         r += 1
+        f_put(0, 5, r, "👉 " + nowTxt, nowCol, f_soft(nowCol), szT, AL, false)
+        r += 1
         f_put(0, 1, r, biasTxt, biasCol, f_soft(biasCol), szT, AC, false)
         f_put(2, 5, r, f_tfName(tfA) + f_dirTxt(nz(aD)) + " " + f_tfName(tfB) + f_dirTxt(nz(bD)) + " " + f_tfName(tfC) + f_dirTxt(nz(cD)) + "  " + str.tostring(conf) + "%", C_TXT, C_SEC, szT, AC, true)
         r += 1
@@ -1197,7 +1263,7 @@ if barstate.islast
             for k = 0 to s.nTp - 1
                 dots += s.tpHit > k ? "●" : (s.state == 2 and s.tpHit == k) ? "◉" : "○"
         string nxt = has and s.tpHit < s.nTp ? "  next " + f_px(s.tps.get(s.tpHit)) : ""
-        f_put(0, 5, r, has ? "TP " + dots + nxt : "TP —", C_UP, na, szT, AL, true)
+        f_put(0, 5, r, has ? "TP " + dots + " 🏁" + nxt : "TP —", C_UP, na, szT, AL, true)
         r += 1
         f_put(0, 2, r, run ? f_r(liveR) : has and s.state == 3 ? f_r(s.rFinal) : "—", run ? (liveR >= 0 ? C_UP : C_DN) : C_MUTE, C_SEC, szS, AL, true)
         f_put(3, 5, r, "WR " + str.tostring(wr, "#.#") + "% · " + f_r(sumR), C_GOLD, C_SEC, szT, AR, true)
@@ -1210,6 +1276,9 @@ if barstate.islast
         r += 1
         f_put(0, 2, r, syminfo.ticker + " · " + f_tfName(timeframe.period), C_MUTE, na, szT, AL, true)
         f_put(3, 5, r, "NON-REPAINT · BAR CLOSE", C_MUTE, na, szT, AR, false)
+        r += 1
+        f_put(0, 0, r, f_tx("👉 ตอนนี้", "👉 NOW"), C_INK, nowCol == C_MUTE ? C_OFF : nowCol, szT, AC, false)
+        f_put(1, 5, r, nowTxt, nowCol == C_MUTE ? C_TXT : nowCol, f_soft(nowCol), szS, AL, false)
         r += 1
 
         if secBias
@@ -1266,6 +1335,11 @@ if barstate.islast
             r += 1
             string flg = has ? str.replace_all(str.replace_all(s.flags, "✓", " ✓"), "✗", " ✕") : "waiting for Sweep → CHoCH → OB"
             f_put(0, 5, r, flg, C_TXT, na, szT, AC, false)
+            r += 1
+            f_put(0, 5, r, planTxt == "" ? "—" : planTxt, has and s.capName != "" ? C_WARN : C_MUTE, na, szT, AC, false)
+            r += 1
+            f_put(0, 1, r, f_tx("ถึงเป้า 🏁", "TO 🏁"), C_MUTE, na, szT, AL, false)
+            f_put(2, 5, r, run ? f_bar(math.round(prog * 10), 10, "▰", "▱") + "  " + str.tostring(math.round(prog * 100)) + "%" : "—", C_UP, na, szT, AL, true)
             r += 1
             f_put(0, 1, r, "ENTRY", C_MUTE, f_soft(C_BLUE), szT, AC, false)
             f_put(2, 3, r, "EARLY", C_MUTE, f_soft(C_GOLD), szT, AC, false)
