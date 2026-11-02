@@ -44,6 +44,7 @@ WARMUP    = 120
 // INPUTS
 // ══════════════════════════════════════
 // ── EMA Cross
+signalModeInput = input.string("Filtered", "Signal Mode", options = ["Filtered", "ADX Only", "Pure EMA Cross"], group = GRP_EMA, tooltip = "Filtered: EMA cross + ADX + all v4 confirmations you enabled.\nADX Only: EMA cross + ADX ≥ threshold (other filters ignored).\nPure EMA Cross: every EMA cross is a BUY / SELL (no filters, no max-SL skip, no scalp mode).")
 emaFastInput  = input.int(9, "EMA Fast", minval = 2, maxval = 100, group = GRP_EMA)
 emaSlowInput  = input.int(21, "EMA Slow", minval = 3, maxval = 300, group = GRP_EMA)
 showEmaInput  = input.bool(true, "Show EMA Lines", group = GRP_EMA)
@@ -497,7 +498,25 @@ bool mtfAllBear  = mtfAllValid and mtfSum == -3
 inSession(string sess) =>
     not na(time(timeframe.period, sess, "UTC"))
 
-bool  sessOK   = not useSessInput or inSession(londonInput) or inSession(nyInput)
+// ── Signal Mode → effective filter switches
+bool modeFilt = signalModeInput == "Filtered"
+bool modeAdx  = signalModeInput == "ADX Only"
+bool modePure = signalModeInput == "Pure EMA Cross"
+bool eADX    = modeFilt ? useADXInput : modeAdx
+bool eDI     = modeFilt and useDIInput
+bool eRising = modeFilt and useRisingInput
+bool eStrong = modeFilt and strongOnlyInput
+bool eST     = modeFilt and useSTInput
+bool eRSI    = modeFilt and useRSIInput
+bool eBody   = modeFilt and useBodyInput
+bool eMom    = modeFilt and useMomInput
+bool eHTF    = modeFilt and useHTFInput
+bool eSess   = modeFilt and useSessInput
+bool eScalp  = modeFilt and useScalpInput
+bool eMaxSL  = not modePure and maxSlAtrInput > 0
+string modeTag = modeFilt ? "" : modeAdx ? " · ADX ONLY" : " · PURE"
+
+bool  sessOK   = not eSess or inSession(londonInput) or inSession(nyInput)
 float bodyRat  = atrBase > 0 ? math.abs(close - open) / atrBase : 0.0
 float bodyMin  = tfMin <= 5 ? 0.05 : tfMin <= 15 ? 0.08 : 0.12
 bool  momBuy   = tfMin <= 5 ? close > close[1] : close > close[1] and close[1] > close[2]
@@ -511,26 +530,26 @@ bool  scalpSellZone = close > rangeMid + rangeSz * 0.15
 fstate(bool enabled, bool ok) =>
     enabled ? (ok ? 1 : 0) : -1
 
-int fAdxB  = fstate(useADXInput, adxOk)
-int fDiB   = fstate(useDIInput, diPlus > diMinus)
-int fRisB  = fstate(useRisingInput, adx > nz(adx[1], adx))
-int fStrB  = fstate(strongOnlyInput, strongTrend)
-int fStB   = fstate(useSTInput, stDir == 1)
-int fRsiB  = fstate(useRSIInput, rsi < rsiOBInput)
-int fBodyB = fstate(useBodyInput, bodyRat >= bodyMin)
-int fMomB  = fstate(useMomInput, momBuy)
-int fHtfB  = fstate(useHTFInput, mtf1State == 1)
-int fSesB  = fstate(useSessInput, sessOK)
+int fAdxB  = fstate(eADX, adxOk)
+int fDiB   = fstate(eDI, diPlus > diMinus)
+int fRisB  = fstate(eRising, adx > nz(adx[1], adx))
+int fStrB  = fstate(eStrong, strongTrend)
+int fStB   = fstate(eST, stDir == 1)
+int fRsiB  = fstate(eRSI, rsi < rsiOBInput)
+int fBodyB = fstate(eBody, bodyRat >= bodyMin)
+int fMomB  = fstate(eMom, momBuy)
+int fHtfB  = fstate(eHTF, mtf1State == 1)
+int fSesB  = fstate(eSess, sessOK)
 
 int fAdxS  = fAdxB
-int fDiS   = fstate(useDIInput, diMinus > diPlus)
+int fDiS   = fstate(eDI, diMinus > diPlus)
 int fRisS  = fRisB
 int fStrS  = fStrB
-int fStS   = fstate(useSTInput, stDir == -1)
-int fRsiS  = fstate(useRSIInput, rsi > rsiOSInput)
+int fStS   = fstate(eST, stDir == -1)
+int fRsiS  = fstate(eRSI, rsi > rsiOSInput)
 int fBodyS = fBodyB
-int fMomS  = fstate(useMomInput, momSell)
-int fHtfS  = fstate(useHTFInput, mtf1State == -1)
+int fMomS  = fstate(eMom, momSell)
+int fHtfS  = fstate(eHTF, mtf1State == -1)
 int fSesS  = fSesB
 
 countPass(int a, int b, int c, int d, int e, int g, int h, int i, int j, int k) =>
@@ -558,8 +577,8 @@ bool allSell = passS == totalS
 
 bool trendBuy  = crossUp and allBuy
 bool trendSell = crossDown and allSell
-bool scalpBuy  = useScalpInput and sideways and crossUp and scalpBuyZone and fStB != 0 and fRsiB != 0
-bool scalpSell = useScalpInput and sideways and crossDown and scalpSellZone and fStS != 0 and fRsiS != 0
+bool scalpBuy  = eScalp and sideways and crossUp and scalpBuyZone and fStB != 0 and fRsiB != 0
+bool scalpSell = eScalp and sideways and crossDown and scalpSellZone and fStS != 0 and fRsiS != 0
 
 // SL / TP pre-check (skip signals whose stop is too wide)
 calcSL(bool isLong, float entry, bool scalp) =>
@@ -579,8 +598,8 @@ bool isScalpS = scalpSell and not trendSell
 
 float slBuyChk  = calcSL(true, close, isScalpB)
 float slSellChk = calcSL(false, close, isScalpS)
-bool  wideBuy   = maxSlAtrInput > 0 and atrBase > 0 and math.abs(close - slBuyChk) / atrBase > maxSlAtrInput
-bool  wideSell  = maxSlAtrInput > 0 and atrBase > 0 and math.abs(slSellChk - close) / atrBase > maxSlAtrInput
+bool  wideBuy   = eMaxSL and atrBase > 0 and math.abs(close - slBuyChk) / atrBase > maxSlAtrInput
+bool  wideSell  = eMaxSL and atrBase > 0 and math.abs(slSellChk - close) / atrBase > maxSlAtrInput
 
 bool confirmedBuy  = buyRaw and not wideBuy
 bool confirmedSell = sellRaw and not wideSell and not confirmedBuy
@@ -1044,7 +1063,7 @@ if showDashInput and barstate.islast
         msgBg := P_BULL_DK
         msgTx := P_BULL
     else
-        msg := not adxOk and useADXInput ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอ EMA " + str.tostring(emaFastInput) + "/" + str.tostring(emaSlowInput) + " ตัด"
+        msg := not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอ EMA " + str.tostring(emaFastInput) + "/" + str.tostring(emaSlowInput) + " ตัด"
         msgTx := P_MUTED
 
     // ── kill zones
@@ -1077,7 +1096,7 @@ if showDashInput and barstate.islast
     int r = 0
 
     // header
-    table.cell(dashTable, 0, r, "◆ YOUNGYUU EMA·ADX", text_color = P_GOLD_TX, bgcolor = P_GOLD_BG, text_size = fsz, text_halign = text.align_left)
+    table.cell(dashTable, 0, r, "◆ YOUNGYUU EMA·ADX" + modeTag, text_color = P_GOLD_TX, bgcolor = P_GOLD_BG, text_size = fsz, text_halign = text.align_left)
     table.merge_cells(dashTable, 0, r, 1, r)
     table.cell(dashTable, 2, r, barstate.isrealtime ? "● LIVE" : "◌ HIST", text_color = barstate.isrealtime ? P_LIVE_TX : P_HIST_TX, bgcolor = barstate.isrealtime ? P_LIVE_BG : P_HIST_BG, text_size = fsz)
     r += 1
