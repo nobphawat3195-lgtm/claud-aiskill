@@ -53,6 +53,16 @@ showFvg    = input.bool(true, "Show FVG", inline = "fvg", group = G_ST)
 fvgMinAtr  = input.float(0.15, "min ATR×", step = 0.05, inline = "fvg", group = G_ST)
 fvgMax     = input.int(8, "Max FVG Boxes", minval = 1, group = G_ST)
 
+G_Z        = "🧱 SUPPLY / DEMAND ZONES"
+showZones  = input.bool(true, "Show Zones", group = G_Z, tooltip = "ความแข็งแรง ★1-5:\n★ ฐาน (ทุกโซน)\n★ วิ่งออกแรง ≥ Strong Departure × ATR\n★ ทิ้ง FVG/Imbalance ตอนวิ่งออก\n★ Fresh ยังไม่เคยถูกทดสอบ\n★ ทิศตรงกับ HTF Bias (Matrix TF 1)")
+zMinDep    = input.float(1.5, "Min Departure (ATR ×)", step = 0.1, group = G_Z)
+zStrongDep = input.float(3.0, "Strong Departure ★ (ATR ×)", step = 0.1, group = G_Z)
+zMaxAtr    = input.float(1.0, "Max Zone Height (ATR ×)", step = 0.1, group = G_Z)
+zMax       = input.int(4, "Max Zones per Side", minval = 1, maxval = 15, group = G_Z)
+zBreak     = input.string("Close", "Invalidate on", options = ["Close", "Wick"], group = G_Z)
+zMaxTest   = input.int(3, "Remove after N Tests (0 = never)", minval = 0, group = G_Z)
+zMinStars  = input.int(1, "Show Zones with ≥ ★", minval = 1, maxval = 5, group = G_Z)
+
 G_EN       = "🎯 ENTRY"
 entryLvl   = input.string("OB Body", "Limit Level", options = ["OB Body", "OB Wick", "OB 50%"], group = G_EN)
 fillMode   = input.string("Limit", "Fill At", options = ["Limit", "Early"], group = G_EN, tooltip = "Early = ไม้ล่วงหน้าก่อนถึง Limit เพิ่มโอกาส fill แต่ R ต่อไม้ลดลง")
@@ -145,6 +155,7 @@ var array<Setup>  hist        = array.new<Setup>()
 var array<int>    stT         = array.new<int>()
 var array<float>  stR         = array.new<float>()
 var array<int>    stW         = array.new<int>()
+var array<int>    stG         = array.new<int>()      // confluence score per closed trade
 var int           tradesToday = 0
 
 float        atr   = ta.atr(14)
@@ -323,10 +334,12 @@ f_close(Setup s, float px, string res) =>
     stT.push(time)
     stR.push(R)
     stW.push(s.tpHit > 0 ? 1 : 0)
+    stG.push(s.score)
     if stT.size() > 5000
         stT.shift()
         stR.shift()
         stW.shift()
+        stG.shift()
     f_extend(s, bar_index)
     f_refresh(s)
     f_archive(s)
@@ -499,6 +512,123 @@ if barstate.isconfirmed and showFvg
         fvgDr.shift()
 
 // ══════════════════════════════════════
+// 🧱 SUPPLY / DEMAND ZONES  · strength ★1-5
+// ★ base · ★ strong departure · ★ FVG in departure · ★ fresh · ★ HTF aligned
+// ══════════════════════════════════════
+type Zone
+    box   bx
+    float top
+    float bot
+    int   dir              // -1 supply · 1 demand
+    int   tests  = 0
+    bool  fvg    = false
+    bool  strong = false
+
+var array<Zone> zones = array.new<Zone>()
+
+f_zStars(Zone z)  => 1 + (z.strong ? 1 : 0) + (z.fvg ? 1 : 0) + (z.tests == 0 ? 1 : 0) + (htfDir == z.dir ? 1 : 0)
+f_starTxt(int n)  => str.repeat("★", n) + str.repeat("☆", 5 - n)
+
+f_zPaint(Zone z) =>
+    int   st   = f_zStars(z)
+    bool  vis  = showZones and st >= zMinStars
+    color base = z.dir == 1 ? C_UP : C_DN
+    z.bx.set_bgcolor(vis ? color.new(base, 94 - st * 5) : C_NONE)
+    z.bx.set_border_color(vis ? color.new(base, 70 - st * 8) : C_NONE)
+    z.bx.set_text(vis ? (z.dir == 1 ? "DEMAND  " : "SUPPLY  ") + f_starTxt(st) + (z.tests > 0 ? "  · T" + str.tostring(z.tests) : "  · FRESH") : "")
+    z.bx.set_text_color(vis ? color.new(base, 5) : C_NONE)
+
+f_zOverlap(float top, float bot, int dir) =>
+    bool hit = false
+    for z in zones
+        if z.dir == dir and top >= z.bot and bot <= z.top
+            hit := true
+            break
+    hit
+
+f_zTrim(int dir) =>
+    int cnt = 0
+    for z in zones
+        if z.dir == dir
+            cnt += 1
+    if cnt > zMax
+        for i = 0 to zones.size() - 1
+            Zone z = zones.get(i)
+            if z.dir == dir
+                z.bx.delete()
+                zones.remove(i)
+                break
+
+f_zNear(int dir) =>
+    Zone best = na
+    for z in zones
+        if z.dir == dir and (dir == -1 ? z.top >= close : z.bot <= close)
+            if na(best) or (dir == -1 ? z.bot < best.bot : z.top > best.top)
+                best := z
+    best
+
+float zLowAfter  = ta.lowest(low, swLen)
+float zHighAfter = ta.highest(high, swLen)
+float zAtrPiv    = atr[swLen]
+
+// 1) update: invalidate / count tests / repaint stars
+if barstate.isconfirmed and zones.size() > 0
+    for i = zones.size() - 1 to 0
+        Zone z = zones.get(i)
+        bool broken = z.dir == -1 ? (zBreak == "Close" ? close : high) > z.top : (zBreak == "Close" ? close : low) < z.bot
+        if broken
+            z.bx.delete()
+            zones.remove(i)
+        else
+            bool touch = z.dir == -1 ? high >= z.bot and high[1] < z.bot : low <= z.top and low[1] > z.top
+            if touch
+                z.tests += 1
+            if zMaxTest > 0 and z.tests > zMaxTest
+                z.bx.delete()
+                zones.remove(i)
+            else
+                f_zPaint(z)
+
+// 2) create: supply from pivot high, demand from pivot low
+if barstate.isconfirmed and not na(ph) and not na(zAtrPiv)
+    float top = ph
+    float bot = math.max(open[swLen], close[swLen])
+    if top - bot > zMaxAtr * zAtrPiv
+        bot := top - zMaxAtr * zAtrPiv
+    if top - bot < 0.15 * zAtrPiv
+        bot := top - 0.15 * zAtrPiv
+    float dep = ph - zLowAfter
+    if dep >= zMinDep * zAtrPiv and not f_zOverlap(top, bot, -1)
+        bool fv = false
+        for i = 0 to swLen - 1
+            if high[i] < low[i + 2]
+                fv := true
+                break
+        Zone z = Zone.new(box.new(bar_index - swLen, top, bar_index, bot, extend = extend.right, text_size = size.small, text_halign = text.align_right, text_valign = text.align_center), top, bot, -1, 0, fv, dep >= zStrongDep * zAtrPiv)
+        zones.push(z)
+        f_zPaint(z)
+        f_zTrim(-1)
+
+if barstate.isconfirmed and not na(pl) and not na(zAtrPiv)
+    float bot = pl
+    float top = math.min(open[swLen], close[swLen])
+    if top - bot > zMaxAtr * zAtrPiv
+        top := bot + zMaxAtr * zAtrPiv
+    if top - bot < 0.15 * zAtrPiv
+        top := bot + 0.15 * zAtrPiv
+    float dep = zHighAfter - pl
+    if dep >= zMinDep * zAtrPiv and not f_zOverlap(top, bot, 1)
+        bool fv = false
+        for i = 0 to swLen - 1
+            if low[i] > high[i + 2]
+                fv := true
+                break
+        Zone z = Zone.new(box.new(bar_index - swLen, top, bar_index, bot, extend = extend.right, text_size = size.small, text_halign = text.align_right, text_valign = text.align_center), top, bot, 1, 0, fv, dep >= zStrongDep * zAtrPiv)
+        zones.push(z)
+        f_zPaint(z)
+        f_zTrim(1)
+
+// ══════════════════════════════════════
 // 📒 ORDER LIFECYCLE
 // ══════════════════════════════════════
 // 1) PENDING → FILLED / MISSED / EXPIRED / INVALID
@@ -619,7 +749,7 @@ szL = switch dashSzIn
     "Normal" => size.large
     => size.normal
 
-var table tb = table.new(tblPos, 6, 30, bgcolor = C_BG, frame_color = C_GRID, frame_width = 1, border_color = C_BG, border_width = 2)
+var table tb = table.new(tblPos, 6, 36, bgcolor = C_BG, frame_color = C_GRID, frame_width = 1, border_color = C_BG, border_width = 2)
 
 AL = text.align_left
 AC = text.align_center
@@ -716,6 +846,20 @@ if barstate.islast
     f_put(0, 5, r, alTxt, upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN, f_soft(upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN), size.tiny, AC, false)
     r += 1
 
+    // ── SUPPLY / DEMAND (nearest zone each side + strength)
+    Zone zs = f_zNear(-1)
+    Zone zd = f_zNear(1)
+    bool inS = not na(zs) and close >= zs.bot
+    bool inD = not na(zd) and close <= zd.top
+    f_put(0, 0, r, "SUPPLY", C_DN, f_soft(C_DN), size.tiny, AC, false)
+    f_put(1, 3, r, na(zs) ? "—" : f_px(zs.bot) + "–" + f_px(zs.top) + (inS ? "  ⚠ IN" : "  ↑" + str.tostring(zs.bot - close, "#.##")), inS ? C_WARN : C_TXT, na, size.tiny, AL, true)
+    f_put(4, 5, r, na(zs) ? "" : f_starTxt(f_zStars(zs)), C_GOLD, na, szS, AC, false)
+    r += 1
+    f_put(0, 0, r, "DEMAND", C_UP, f_soft(C_UP), size.tiny, AC, false)
+    f_put(1, 3, r, na(zd) ? "—" : f_px(zd.bot) + "–" + f_px(zd.top) + (inD ? "  ⚠ IN" : "  ↓" + str.tostring(close - zd.top, "#.##")), inD ? C_WARN : C_TXT, na, size.tiny, AL, true)
+    f_put(4, 5, r, na(zd) ? "" : f_starTxt(f_zStars(zd)), C_GOLD, na, szS, AC, false)
+    r += 1
+
     // ── TRADE CARD (live setup, else last one) ────────
     Setup s = na
     if not na(cur)
@@ -782,14 +926,20 @@ if barstate.islast
         float mdd       = 0.0
         array<int>   form  = array.new<int>()
         array<float> curve = array.new<float>()
+        array<int>   gN    = array.new<int>(4, 0)      // A+, A, B, C trade counts
+        array<int>   gWn   = array.new<int>(4, 0)      // A+, A, B, C wins
         if stT.size() > 0
             for i = 0 to stT.size() - 1
                 if stT.get(i) >= pStart
                     float R = stR.get(i)
+                    int   sc = stG.get(i)
+                    int   gi = sc >= 5 ? 0 : sc == 4 ? 1 : sc == 3 ? 2 : 3
                     n    += 1
                     sumR += R
+                    gN.set(gi, gN.get(gi) + 1)
                     if stW.get(i) == 1
                         wN += 1
+                        gWn.set(gi, gWn.get(gi) + 1)
                     else
                         lN += 1
                     if R > 0
@@ -838,6 +988,14 @@ if barstate.islast
         r += 1
         f_put(0, 1, r, str.tostring(wN) + "W / " + str.tostring(lN) + "L", C_MUTE, na, size.tiny, AL, true)
         f_put(2, 5, r, f_bar(math.round(wr / 5), 20, "█", "░"), C_GOLD, na, size.tiny, AL, false)
+        r += 1
+        string gTxt = ""
+        array<string> gName = array.from("A+", "A", "B", "C")
+        for g = 0 to 3
+            if gN.get(g) > 0
+                gTxt += (gTxt == "" ? "" : "  ·  ") + gName.get(g) + " " + str.tostring(100.0 * gWn.get(g) / gN.get(g), "#") + "% (" + str.tostring(gN.get(g)) + ")"
+        f_put(0, 1, r, "WR BY GRADE", C_MUTE, na, size.tiny, AL, false)
+        f_put(2, 5, r, gTxt == "" ? "—" : gTxt, C_GOLD, f_soft(C_GOLD), size.tiny, AL, true)
         r += 1
         f_put(0, 1, r, "LAST 10", C_MUTE, na, size.tiny, AL, false)
         f_put(2, 5, r, formTxt == "" ? "—" : formTxt, C_TXT, na, size.tiny, AL, false)
