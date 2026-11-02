@@ -14,19 +14,29 @@ indicator("YOUNGYUU SMC Entry PRO", shorttitle = "YY_SMC_PRO", overlay = true,
      max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500, max_bars_back = 500)
 
 // ══════════════════════════════════════
-// 🎨 PALETTE
+// 🎨 THEME  (Obsidian Gold · Neon Cyber · Light Pro)
 // ══════════════════════════════════════
-C_UP   = #00c896
-C_DN   = #ff3b5c
-C_GOLD = #FFD700
-C_TXT  = #e6e9f0
-C_MUTE = #8b93a7
-C_WARN = #ffb020
-C_BLUE = #3d8bfd
-C_NAVY = #1b2a4a
-C_BG   = color.new(#0b0f19, 5)
-C_SEC  = #1a2132
-C_GRID = #232b3d
+G_TH    = "🎨 THEME"
+themeIn = input.string("Obsidian Gold", "HUD Theme", options = ["Obsidian Gold", "Neon Cyber", "Light Pro"], group = G_TH)
+hudMode = input.string("Full", "HUD Mode", options = ["Full", "Compact"], group = G_TH, tooltip = "Compact = ซ่อนส่วน Performance เหมาะกับจอเล็ก / มือถือ")
+isNeon  = themeIn == "Neon Cyber"
+isLight = themeIn == "Light Pro"
+
+C_UP   = isLight ? #08795a : isNeon ? #00f0b5 : #19d3a2
+C_DN   = isLight ? #c4213f : isNeon ? #ff3d81 : #ff5c7a
+C_ACC  = isLight ? #f0b90b : isNeon ? #a48bff : #f5c542      // fills / header
+C_GOLD = isLight ? #8a6400 : isNeon ? #ffd66b : #f5c542      // highlighted text
+C_INK  = isLight ? #1a1405 : isNeon ? #0b0820 : #1a1405      // text on accent
+C_ONUP = isLight ? #ffffff : isNeon ? #00140f : #04130e      // text on up fill
+C_TXT  = isLight ? #111827 : isNeon ? #eef1ff : #e8ecf4
+C_MUTE = isLight ? #566072 : isNeon ? #9aa0d0 : #8a94ab
+C_WARN = isLight ? #b45309 : #ffb020
+C_BLUE = isLight ? #1f5fd1 : isNeon ? #2ee6ff : #5b9cff
+C_NAVY = isNeon ? #1d2350 : #1b2a4a
+C_BG   = isLight ? #f6f7fb : isNeon ? #05060d : #0a0e17
+C_SEC  = isLight ? #ffffff : isNeon ? #0c0f1f : #111726
+C_GRID = isLight ? #e2e6ef : isNeon ? #262d5c : #1f2a40
+C_OFF  = isLight ? #e3e7ef : isNeon ? #1d2350 : #273149
 C_NONE = color.new(color.black, 100)
 
 // ══════════════════════════════════════
@@ -243,7 +253,7 @@ f_refresh(Setup s) =>
         label lb = s.tpLb.get(i)
         lb.set_text("TP" + str.tostring(i + 1) + (hit ? " ✓ " : "   ") + f_px(s.tps.get(i)))
         lb.set_color(hit ? color.new(C_UP, 20) : C_NAVY)
-        lb.set_textcolor(hit ? #0b0f19 : C_TXT)
+        lb.set_textcolor(hit ? #04130e : color.white)
     s.slLb.set_y(s.sl)
     s.slLb.set_text((s.sl == s.slInit ? "SL " : "SL ➜ ") + f_px(s.sl))
     string tag = s.state == 1 ? "⏳ PENDING" : s.state == 2 ? (s.tpHit > 0 ? "▶ TP" + str.tostring(s.tpHit) : "▶ LIVE") : s.result
@@ -260,7 +270,7 @@ f_draw(Setup s) =>
     for k = 0 to s.nTp - 1
         float y = s.tps.get(k)
         s.tpL.push(line.new(x1, y, x2, y, color = color.new(C_UP, 35), style = line.style_dashed))
-        s.tpLb.push(label.new(x2, y, "", color = C_NAVY, textcolor = C_TXT, style = label.style_label_left, size = size.small))
+        s.tpLb.push(label.new(x2, y, "", color = C_NAVY, textcolor = color.white, style = label.style_label_left, size = size.small))
     s.earlyL := line.new(x1, s.earlyPx, x2, s.earlyPx, color = C_GOLD, style = line.style_dashed, width = 2)
     s.earLb  := label.new(x2, s.earlyPx, "Early " + f_px(s.earlyPx), color = C_NONE, textcolor = C_GOLD, style = label.style_label_left, size = size.small)
     s.limLb  := label.new(x2, s.limitPx, (s.dir == 1 ? "Buy Limit " : "Sell Limit ") + f_px(s.limitPx), color = color.new(C_MUTE, 20), textcolor = #0b0f19, style = label.style_label_left, size = size.small)
@@ -590,58 +600,109 @@ if barstate.isconfirmed and (bullTrig or bearTrig) and (na(cur) or cur.state == 
 if barstate.isconfirmed and not na(cur)
     f_extend(cur, bar_index + extBars)
 
-// ══════════════════════════════════════
-// 📊 DASHBOARD
-// ══════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════
+// 📊 OBSIDIAN HUD  (6-col tile layout · static rows → no layout jump)
+// ══════════════════════════════════════════════════════════════════
 tblPos = switch dashPos
     "Top Left"     => position.top_left
     "Bottom Right" => position.bottom_right
     "Bottom Left"  => position.bottom_left
     "Middle Right" => position.middle_right
     => position.top_right
-dashSize = switch dashSzIn
+szS = switch dashSzIn
     "Tiny"   => size.tiny
     "Normal" => size.normal
     => size.small
+szL = switch dashSzIn
+    "Tiny"   => size.small
+    "Normal" => size.large
+    => size.normal
 
-var table tb = table.new(tblPos, 6, 32, bgcolor = C_BG, frame_color = color.new(C_GOLD, 50), frame_width = 1, border_color = C_GRID, border_width = 1)
+var table tb = table.new(tblPos, 6, 30, bgcolor = C_BG, frame_color = C_GRID, frame_width = 1, border_color = C_BG, border_width = 2)
 
-f_cell(int c, int r, string t, color tc, color bg) =>
-    table.cell(tb, c, r, t, text_color = tc, bgcolor = bg, text_size = dashSize, text_halign = text.align_center)
+AL = text.align_left
+AC = text.align_center
+AR = text.align_right
 
-f_kv(int r, string k, string v, color vc) =>
-    table.cell(tb, 0, r, k, text_color = C_MUTE, text_size = dashSize, text_halign = text.align_left)
-    table.cell(tb, 1, r, v, text_color = vc, text_size = dashSize, text_halign = text.align_center)
-    table.merge_cells(tb, 1, r, 5, r)
+// put text into cells c0..c1 of row r (merged when c1 > c0)
+f_put(int c0, int c1, int r, string t, color tc, color bg, string sz, string ha, bool mono) =>
+    table.cell(tb, c0, r, t, text_color = tc, bgcolor = bg, text_size = sz, text_halign = ha,
+         text_font_family = mono ? font.family_monospace : font.family_default)
+    if c1 > c0
+        table.merge_cells(tb, c0, r, c1, r)
 
-f_head(int r, string t) =>
-    table.cell(tb, 0, r, t, text_color = C_GOLD, bgcolor = C_SEC, text_size = dashSize, text_halign = text.align_center)
-    table.merge_cells(tb, 0, r, 5, r)
+f_soft(color c)  => color.new(c, isLight ? 88 : 82)
+f_dirBg(int d)   => d > 0 ? f_soft(C_UP) : d < 0 ? f_soft(C_DN) : C_OFF
+f_bar(int on, int n, string a, string b) => str.repeat(a, math.max(0, math.min(on, n))) + str.repeat(b, math.max(0, n - math.min(on, n)))
+f_hms(int ms) =>
+    int s0 = math.max(0, math.floor(ms / 1000))
+    str.format("{0,number,00}:{1,number,00}:{2,number,00}", math.floor(s0 / 3600), math.floor((s0 % 3600) / 60), s0 % 60)
+
+// killzone window (UTC "HHMM-HHMM") → [start, end] timestamps for today/tomorrow
+f_kz(string sess) =>
+    int sH = int(str.tonumber(str.substring(sess, 0, 2)))
+    int sM = int(str.tonumber(str.substring(sess, 2, 4)))
+    int eH = int(str.tonumber(str.substring(sess, 5, 7)))
+    int eM = int(str.tonumber(str.substring(sess, 7, 9)))
+    int y  = year(timenow, "UTC")
+    int mo = month(timenow, "UTC")
+    int d  = dayofmonth(timenow, "UTC")
+    int st = timestamp("UTC", y, mo, d, sH, sM)
+    int en = timestamp("UTC", y, mo, d, eH, eM)
+    if timenow >= en
+        st += 86400000
+        en += 86400000
+    [st, en]
 
 f_tfRow(int r, string tf, int b, int c, int s, int f, int d) =>
     int sum = b + c + s + f + d
+    bool strong = math.abs(sum) >= 3
     string bias = sum >= 3 ? "▲▲" : sum > 0 ? "▲" : sum <= -3 ? "▼▼" : sum < 0 ? "▼" : "•"
-    f_cell(0, r, f_tfName(tf), C_TXT, na)
-    f_cell(1, r, f_dirTxt(b), f_dirCol(b), na)
-    f_cell(2, r, f_dirTxt(c), f_dirCol(c), na)
-    f_cell(3, r, f_dirTxt(s), f_dirCol(s), na)
-    f_cell(4, r, f_dirTxt(f), f_dirCol(f), na)
-    f_cell(5, r, bias, f_dirCol(sum), color.new(f_dirCol(sum), 82))
+    f_put(0, 0, r, f_tfName(tf), C_TXT, na, szS, AL, true)
+    f_put(1, 1, r, f_dirTxt(b), f_dirCol(b), f_dirBg(b), szS, AC, false)
+    f_put(2, 2, r, f_dirTxt(c), f_dirCol(c), f_dirBg(c), szS, AC, false)
+    f_put(3, 3, r, f_dirTxt(s), f_dirCol(s), f_dirBg(s), szS, AC, false)
+    f_put(4, 4, r, f_dirTxt(f), f_dirCol(f), f_dirBg(f), szS, AC, false)
+    color bBg = sum > 0 ? (strong ? C_UP : f_soft(C_UP)) : sum < 0 ? (strong ? C_DN : f_soft(C_DN)) : C_OFF
+    color bFg = sum > 0 ? (strong ? C_ONUP : C_UP) : sum < 0 ? (strong ? color.white : C_DN) : C_MUTE
+    f_put(5, 5, r, bias, bFg, bBg, szS, AC, false)
+    sum
+
+var array<string> SPK = array.from("▁", "▂", "▃", "▄", "▅", "▆", "▇", "█")
 
 if barstate.islast
     int r = 0
-    f_head(r, "◆ YOUNGYUU SMC ENTRY PRO  ·  " + syminfo.ticker)
-    table.cell_set_bgcolor(tb, 0, r, C_GOLD)
-    table.cell_set_text_color(tb, 0, r, #0b0f19)
+
+    // ── HEADER ────────────────────────────────────────
+    string liveDot = second(timenow) % 2 == 0 ? "● LIVE" : "○ LIVE"
+    f_put(0, 3, r, "⬡ YOUNGYUU  SMC ENTRY PRO", C_INK, C_ACC, szS, AL, false)
+    f_put(4, 5, r, liveDot, C_UP, f_soft(C_UP), szS, AC, false)
+    r += 1
+    f_put(0, 2, r, syminfo.ticker + " · " + f_tfName(timeframe.period), C_MUTE, na, size.tiny, AL, true)
+    f_put(3, 5, r, "NON-REPAINT · BAR CLOSE", C_MUTE, na, size.tiny, AR, false)
     r += 1
 
-    // ── MTF MATRIX
-    f_cell(0, r, "TF", C_MUTE, C_SEC)
-    f_cell(1, r, "BOS", C_MUTE, C_SEC)
-    f_cell(2, r, "CHoCH", C_MUTE, C_SEC)
-    f_cell(3, r, "Sweep", C_MUTE, C_SEC)
-    f_cell(4, r, "FVG", C_MUTE, C_SEC)
-    f_cell(5, r, "Bias", C_MUTE, C_SEC)
+    // ── MARKET BIAS ───────────────────────────────────
+    int sA = nz(aB) + nz(aC) + nz(aS) + nz(aF) + nz(aD)
+    int sB = nz(bB) + nz(bC) + nz(bS) + nz(bF) + nz(bD)
+    int sC = nz(cB) + nz(cC) + nz(cS) + nz(cF) + nz(cD)
+    int sumAll = sA + sB + sC
+    int conf   = math.round(math.abs(sumAll) / 15.0 * 100)
+    string biasTxt = sumAll >= 3 ? "BULLISH" : sumAll <= -3 ? "BEARISH" : "NEUTRAL"
+    color  biasCol = sumAll >= 3 ? C_UP : sumAll <= -3 ? C_DN : C_WARN
+    f_put(0, 1, r, "MARKET\nBIAS", C_MUTE, C_SEC, size.tiny, AL, false)
+    f_put(2, 3, r, biasTxt, biasCol, C_SEC, szL, AC, false)
+    f_put(4, 5, r, str.tostring(conf) + "%\n" + f_bar(math.round(conf / 10), 10, "▰", "▱"), biasCol, C_SEC, szS, AR, true)
+    r += 1
+
+    // ── MTF SMC MATRIX ────────────────────────────────
+    f_put(0, 0, r, "TF", C_MUTE, na, size.tiny, AL, false)
+    f_put(1, 1, r, "BOS", C_MUTE, na, size.tiny, AC, false)
+    f_put(2, 2, r, "CHOCH", C_MUTE, na, size.tiny, AC, false)
+    f_put(3, 3, r, "SWEEP", C_MUTE, na, size.tiny, AC, false)
+    f_put(4, 4, r, "FVG", C_MUTE, na, size.tiny, AC, false)
+    f_put(5, 5, r, "BIAS", C_MUTE, na, size.tiny, AC, false)
     r += 1
     f_tfRow(r, tfA, nz(aB), nz(aC), nz(aS), nz(aF), nz(aD))
     r += 1
@@ -651,127 +712,148 @@ if barstate.islast
     r += 1
     int upN = (nz(aD) == 1 ? 1 : 0) + (nz(bD) == 1 ? 1 : 0) + (nz(cD) == 1 ? 1 : 0)
     int dnN = (nz(aD) == -1 ? 1 : 0) + (nz(bD) == -1 ? 1 : 0) + (nz(cD) == -1 ? 1 : 0)
-    string alTxt = upN == 3 ? "BULL 3/3 ✓ ALIGNED" : dnN == 3 ? "BEAR 3/3 ✓ ALIGNED" : upN == 2 ? "BULL 2/3" : dnN == 2 ? "BEAR 2/3" : "MIXED — stand aside"
-    f_kv(r, "Align", alTxt, upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN)
+    string alTxt = upN == 3 ? "✓ STRUCTURE ALIGNED · BULL 3/3" : dnN == 3 ? "✓ STRUCTURE ALIGNED · BEAR 3/3" : upN == 2 ? "BULL 2/3 · HTF " + (nz(aD) == 1 ? "✓" : "✕") : dnN == 2 ? "BEAR 2/3 · HTF " + (nz(aD) == -1 ? "✓" : "✕") : "MIXED · STAND ASIDE"
+    f_put(0, 5, r, alTxt, upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN, f_soft(upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN), size.tiny, AC, false)
     r += 1
 
-    // ── TRADE (live setup, else last one)
+    // ── TRADE CARD (live setup, else last one) ────────
     Setup s = na
     if not na(cur)
         s := cur
     else if hist.size() > 0
         s := hist.last()
-    f_head(r, not na(cur) ? "TRADE · LIVE" : "TRADE · LAST")
-    r += 1
-    bool has = not na(s)
+    bool  has  = not na(s)
+    bool  run  = has and s.state == 2
     color dCol = has ? (s.dir == 1 ? C_UP : C_DN) : C_MUTE
-    f_kv(r, "Entry", has ? (s.dir == 1 ? "🟢 BUY @ " : "🔴 SELL @ ") + f_px(s.entry) + (fillMode == "Early" ? " (early)" : "") : "Waiting for setup…", dCol)
+    string pill = not has ? "WAITING" : (s.dir == 1 ? "BUY" : "SELL") + (s.state == 1 ? " LIMIT" : s.state == 2 ? " · LIVE" : " · LAST")
+    f_put(0, 1, r, pill, has ? (s.dir == 1 ? C_ONUP : color.white) : C_MUTE, has ? dCol : C_OFF, szS, AC, false)
+    f_put(2, 3, r, has ? s.grade + "  " + f_bar(s.score, 5, "▰", "▱") : "—", has ? C_GOLD : C_MUTE, C_SEC, szS, AC, false)
+    f_put(4, 5, r, has ? "R:R 1 : " + str.tostring(f_rAt(s, s.nTp), "#.#") : "R:R —", C_BLUE, C_SEC, szS, AC, true)
     r += 1
-    f_kv(r, "Grade", has ? s.grade + "  " + str.repeat("★", s.score) + str.repeat("☆", 5 - s.score) : "—", has ? (s.score >= 4 ? C_GOLD : s.score == 3 ? C_WARN : C_MUTE) : C_MUTE)
+    string flg = has ? str.replace_all(str.replace_all(s.flags, "✓", " ✓"), "✗", " ✕") : "waiting for Sweep → CHoCH → OB"
+    f_put(0, 5, r, flg, C_TXT, na, size.tiny, AC, false)
     r += 1
-    f_kv(r, "Confluence", has ? s.flags : "—", C_TXT)
+    f_put(0, 1, r, "ENTRY", C_MUTE, f_soft(C_BLUE), size.tiny, AC, false)
+    f_put(2, 3, r, "EARLY", C_MUTE, f_soft(C_GOLD), size.tiny, AC, false)
+    f_put(4, 5, r, has and s.sl != s.slInit ? "STOP · TRAILED" : "STOP", C_MUTE, f_soft(C_DN), size.tiny, AC, false)
     r += 1
-    f_kv(r, "Early", has ? f_px(s.earlyPx) : "—", C_GOLD)
+    f_put(0, 1, r, has ? f_px(s.entry) : "—", C_BLUE, f_soft(C_BLUE), szS, AC, true)
+    f_put(2, 3, r, has ? f_px(s.earlyPx) : "—", C_GOLD, f_soft(C_GOLD), szS, AC, true)
+    f_put(4, 5, r, has ? f_px(s.sl) : "—", C_DN, f_soft(C_DN), szS, AC, true)
     r += 1
-    f_kv(r, "SL", has ? f_px(s.sl) + (s.sl != s.slInit ? "  🔒 moved" : "  (1R $" + str.tostring(math.abs(s.limitPx - s.slInit), "#.##") + ")") : "—", C_DN)
-    r += 1
-    for k = 0 to tpCount - 1
-        bool  hit = has and s.tpHit > k
-        string tv = has and k < s.nTp ? (hit ? "✓ " : "") + f_px(s.tps.get(k)) + "   " + f_r(f_rAt(s, k + 1)) : "—"
-        f_kv(r, "TP" + str.tostring(k + 1), tv, hit ? C_UP : C_TXT)
+
+    // TP ladder (always 5 rows → static layout)
+    for k = 0 to 4
+        bool ex   = has and k < s.nTp
+        bool hit  = ex and s.tpHit > k
+        bool nxt  = ex and not hit and s.state <= 2 and s.tpHit == k
+        string dot = hit ? "●" : nxt ? "◉" : "○"
+        color  dc  = hit ? C_UP : nxt ? C_BLUE : C_OFF
+        f_put(0, 0, r, dot, dc, na, szS, AC, false)
+        f_put(1, 1, r, "TP" + str.tostring(k + 1), hit ? C_UP : nxt ? C_BLUE : C_MUTE, na, szS, AL, false)
+        f_put(2, 3, r, ex ? f_px(s.tps.get(k)) : "—", hit ? C_TXT : C_MUTE, na, szS, AL, true)
+        f_put(4, 4, r, ex ? "+" + str.tostring(f_rAt(s, k + 1), "#.#") + "R" : "", C_MUTE, na, size.tiny, AR, true)
+        f_put(5, 5, r, hit ? "HIT" : nxt ? "NEXT" : "", hit ? C_UP : C_BLUE, hit ? f_soft(C_UP) : nxt ? f_soft(C_BLUE) : na, size.tiny, AC, false)
         r += 1
-    f_kv(r, "R:R", has ? "1 : " + str.tostring(f_rAt(s, s.nTp), "#.#") : "—", C_BLUE)
+
+    // Live P/L
+    float liveR  = run ? ((s.dir == 1 ? close : close + spread) - s.entry) * s.dir / s.risk : na
+    string stTxt = not has ? "NO ACTIVE SETUP" : s.state == 1 ? "⏳ PENDING · " + str.tostring(expiryBars - (bar_index - s.born)) + " bars left" : s.state == 2 ? "LIVE P/L · RUNNING TP" + str.tostring(math.min(s.tpHit + 1, s.nTp)) : s.state == 3 ? "CLOSED · " + s.result : "CANCELLED · " + s.result
+    color  stCol = not has ? C_MUTE : s.state == 1 or s.state == 4 ? C_WARN : s.state == 2 ? C_MUTE : s.tpHit > 0 ? C_UP : C_DN
+    f_put(0, 2, r, stTxt, stCol, C_SEC, size.tiny, AL, false)
+    f_put(3, 5, r, run ? f_r(liveR) : has and s.state == 3 ? f_r(s.rFinal) : "—", run ? (liveR >= 0 ? C_UP : C_DN) : has and s.state == 3 ? (s.rFinal >= 0 ? C_UP : C_DN) : C_MUTE, C_SEC, szL, AR, true)
     r += 1
-    string stTxt = not has ? "—" : s.state == 1 ? "⏳ PENDING · expires in " + str.tostring(expiryBars - (bar_index - s.born)) + " bars" : s.state == 2 ? (s.tpHit > 0 ? "▶ Running TP" + str.tostring(s.tpHit + 1) : "▶ Running") : s.result
-    color stCol = not has ? C_MUTE : s.state == 1 or s.state == 4 ? C_WARN : s.state == 2 ? C_BLUE : s.tpHit > 0 ? C_UP : C_DN
-    f_kv(r, "Status", stTxt, stCol)
-    r += 1
-    float liveR = has and s.state == 2 ? ((s.dir == 1 ? close : close + spread) - s.entry) * s.dir / s.risk : na
-    f_kv(r, "Live P/L", na(liveR) ? "—" : f_r(liveR) + "  ($" + str.tostring(liveR * s.risk, "#.##") + "/oz)", na(liveR) ? C_MUTE : liveR >= 0 ? C_UP : C_DN)
+    f_put(0, 2, r, run ? "$" + str.tostring(liveR * s.risk, "#.##") + " / oz" : "", C_TXT, C_SEC, size.tiny, AL, true)
+    f_put(3, 5, r, run ? "Banked " + f_r(s.rReal) + " · " + str.tostring(bar_index - s.fillBar) + " bars" : "", C_MUTE, C_SEC, size.tiny, AR, true)
     r += 1
 
-    // ── STATS
-    int pStart = statPeriod == "Today" ? tD : statPeriod == "This Week" ? tW : statPeriod == "This Month" ? tM : 0
-    string pName = statPeriod == "This Month" ? str.upper(str.format_time(time, "MMMM yyyy", syminfo.timezone)) : str.upper(statPeriod)
-    int   n         = 0
-    int   wN        = 0
-    int   lN        = 0
-    float sumR      = 0.0
-    float gW        = 0.0
-    float gL        = 0.0
-    float cum       = 0.0
-    float peak      = 0.0
-    float mdd       = 0.0
-    float best      = 0.0
-    int   streak    = 0
-    int   maxStreak = 0
-    int   todN      = 0
-    float todR = 0.0
-    array<int> form = array.new<int>()
-    if stT.size() > 0
-        for i = 0 to stT.size() - 1
-            int   t  = stT.get(i)
-            float R  = stR.get(i)
-            int   wv = stW.get(i)
-            if t >= tD
-                todN += 1
-                todR += R
-            if t >= pStart
-                n    += 1
-                sumR += R
-                if wv == 1
-                    wN += 1
-                    streak := 0
-                else
-                    lN += 1
-                    streak += 1
-                    maxStreak := math.max(maxStreak, streak)
-                if R > 0
-                    gW += R
-                else
-                    gL -= R
-                best := math.max(best, R)
-                cum  += R
-                peak := math.max(peak, cum)
-                mdd  := math.max(mdd, peak - cum)
-                form.push(wv)
-                if form.size() > 10
-                    form.shift()
-    float wr = n > 0 ? 100.0 * wN / n : 0.0
-    int   bk = math.round(wr / 10)
-    string formTxt = ""
-    for v in form
-        formTxt += v == 1 ? "🟩" : "🟥"
+    // ── PERFORMANCE ───────────────────────────────────
+    if hudMode == "Full"
+        int pStart = statPeriod == "Today" ? tD : statPeriod == "This Week" ? tW : statPeriod == "This Month" ? tM : 0
+        string pName = statPeriod == "This Month" ? str.upper(str.format_time(time, "MMM yyyy", syminfo.timezone)) : str.upper(statPeriod)
+        int   n         = 0
+        int   wN        = 0
+        int   lN        = 0
+        float sumR      = 0.0
+        float gW        = 0.0
+        float gL        = 0.0
+        float cum       = 0.0
+        float peak      = 0.0
+        float mdd       = 0.0
+        array<int>   form  = array.new<int>()
+        array<float> curve = array.new<float>()
+        if stT.size() > 0
+            for i = 0 to stT.size() - 1
+                if stT.get(i) >= pStart
+                    float R = stR.get(i)
+                    n    += 1
+                    sumR += R
+                    if stW.get(i) == 1
+                        wN += 1
+                    else
+                        lN += 1
+                    if R > 0
+                        gW += R
+                    else
+                        gL -= R
+                    cum  += R
+                    peak := math.max(peak, cum)
+                    mdd  := math.max(mdd, peak - cum)
+                    form.push(stW.get(i))
+                    if form.size() > 10
+                        form.shift()
+                    curve.push(cum)
+                    if curve.size() > 24
+                        curve.shift()
+        float wr = n > 0 ? 100.0 * wN / n : 0.0
+        string formTxt = ""
+        for v in form
+            formTxt += v == 1 ? "🟩" : "🟥"
+        string spark = ""
+        if curve.size() > 1
+            float mn = curve.min()
+            float mx = curve.max()
+            for v in curve
+                int idx = mx > mn ? math.round((v - mn) / (mx - mn) * 7) : 3
+                spark += SPK.get(idx)
 
-    f_head(r, "STATS · " + pName)
-    r += 1
-    f_cell(0, r, "Trades", C_MUTE, na)
-    f_cell(1, r, str.tostring(n), C_TXT, na)
-    f_cell(2, r, "Wins", C_MUTE, na)
-    f_cell(3, r, str.tostring(wN), C_UP, na)
-    f_cell(4, r, "Loss", C_MUTE, na)
-    f_cell(5, r, str.tostring(lN), C_DN, na)
-    r += 1
-    f_kv(r, "Win Rate", str.repeat("█", bk) + str.repeat("░", 10 - bk) + "  " + str.tostring(wr, "#.#") + "%", wr >= 55 ? C_UP : wr >= 45 ? C_WARN : C_DN)
-    r += 1
-    f_kv(r, "Form (10)", formTxt == "" ? "—" : formTxt, C_TXT)
-    r += 1
-    f_cell(0, r, "Total", C_MUTE, na)
-    f_cell(1, r, f_r(sumR), sumR >= 0 ? C_UP : C_DN, na)
-    f_cell(2, r, "Avg", C_MUTE, na)
-    f_cell(3, r, n > 0 ? f_r(sumR / n) : "—", sumR >= 0 ? C_UP : C_DN, na)
-    f_cell(4, r, "PF", C_MUTE, na)
-    f_cell(5, r, gL > 0 ? str.tostring(gW / gL, "#.##") : "—", C_GOLD, na)
-    r += 1
-    f_cell(0, r, "Max DD", C_MUTE, na)
-    f_cell(1, r, "-" + str.tostring(mdd, "#.#") + "R", C_DN, na)
-    f_cell(2, r, "L-Streak", C_MUTE, na)
-    f_cell(3, r, str.tostring(maxStreak), maxStreak >= 4 ? C_DN : C_TXT, na)
-    f_cell(4, r, "Best", C_MUTE, na)
-    f_cell(5, r, f_r(best), C_UP, na)
-    r += 1
-    f_kv(r, "Today", str.tostring(tradesToday) + (maxTradesDay > 0 ? " / " + str.tostring(maxTradesDay) : "") + " filled · " + f_r(todR), todR >= 0 ? C_UP : C_DN)
+        f_put(0, 3, r, "PERFORMANCE · " + pName, C_MUTE, na, size.tiny, AL, false)
+        f_put(4, 5, r, statPeriod == "Today" ? "D" : statPeriod == "This Week" ? "W" : statPeriod == "This Month" ? "M" : "ALL", C_INK, C_ACC, size.tiny, AC, false)
+        r += 1
+        f_put(0, 1, r, "TRADES", C_MUTE, C_SEC, size.tiny, AL, false)
+        f_put(2, 3, r, "WIN RATE", C_MUTE, C_SEC, size.tiny, AL, false)
+        f_put(4, 5, r, "NET", C_MUTE, C_SEC, size.tiny, AL, false)
+        r += 1
+        f_put(0, 1, r, str.tostring(n), C_TXT, C_SEC, szL, AL, true)
+        f_put(2, 3, r, str.tostring(wr, "#.#") + "%", C_GOLD, C_SEC, szL, AL, true)
+        f_put(4, 5, r, f_r(sumR), sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
+        r += 1
+        f_put(0, 1, r, "PROFIT F.", C_MUTE, C_SEC, size.tiny, AL, false)
+        f_put(2, 3, r, "MAX DD", C_MUTE, C_SEC, size.tiny, AL, false)
+        f_put(4, 5, r, "AVG / TRADE", C_MUTE, C_SEC, size.tiny, AL, false)
+        r += 1
+        f_put(0, 1, r, gL > 0 ? str.tostring(gW / gL, "#.##") : "—", C_TXT, C_SEC, szL, AL, true)
+        f_put(2, 3, r, "-" + str.tostring(mdd, "#.#") + "R", C_DN, C_SEC, szL, AL, true)
+        f_put(4, 5, r, n > 0 ? f_r(sumR / n) : "—", sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
+        r += 1
+        f_put(0, 1, r, str.tostring(wN) + "W / " + str.tostring(lN) + "L", C_MUTE, na, size.tiny, AL, true)
+        f_put(2, 5, r, f_bar(math.round(wr / 5), 20, "█", "░"), C_GOLD, na, size.tiny, AL, false)
+        r += 1
+        f_put(0, 1, r, "LAST 10", C_MUTE, na, size.tiny, AL, false)
+        f_put(2, 5, r, formTxt == "" ? "—" : formTxt, C_TXT, na, size.tiny, AL, false)
+        r += 1
+        f_put(0, 1, r, "EQUITY (R)", C_MUTE, na, size.tiny, AL, false)
+        f_put(2, 5, r, spark == "" ? "—" : spark, C_UP, f_soft(C_UP), szS, AL, false)
+        r += 1
+
+    // ── SESSION / CLOCK ───────────────────────────────
+    [lSt, lEn] = f_kz(kzLon)
+    [nSt, nEn] = f_kz(kzNy)
+    bool lOn = timenow >= lSt and timenow < lEn
+    bool nOn = timenow >= nSt and timenow < nEn
+    string kzTxt = lOn ? "◷ LONDON KZ · ends " + f_hms(lEn - timenow) : nOn ? "◷ NEW YORK KZ · ends " + f_hms(nEn - timenow) : lSt - timenow < nSt - timenow ? "◷ LONDON KZ in " + f_hms(lSt - timenow) : "◷ NEW YORK KZ in " + f_hms(nSt - timenow)
+    f_put(0, 3, r, kzTxt, lOn or nOn ? C_GOLD : C_MUTE, C_SEC, size.tiny, AL, false)
+    f_put(4, 5, r, "bar " + f_hms(math.max(0, nz(time_close - timenow))), C_TXT, C_SEC, size.tiny, AR, true)
     r += 1
     string mdl = rModel == "Partial (equal split)" ? "Partial-R" : rModel == "Max TP reached" ? "Max-TP-R" : "Final-R"
-    table.cell(tb, 0, r, "Spread $" + str.tostring(spread, "#.##") + " · " + mdl + " · No-repaint", text_color = color.new(C_MUTE, 30), text_size = size.tiny, text_halign = text.align_center)
-    table.merge_cells(tb, 0, r, 5, r)
+    f_put(0, 5, r, "spread $" + str.tostring(spread, "#.##") + " · " + mdl + " · today " + str.tostring(tradesToday) + (maxTradesDay > 0 ? "/" + str.tostring(maxTradesDay) : "") + " filled", C_MUTE, na, size.tiny, AC, false)
