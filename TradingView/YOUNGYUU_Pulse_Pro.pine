@@ -1,24 +1,15 @@
 //@version=6
 // ══════════════════════════════════════════════════════════════
-// YOUNGYUU EMA·ADX PRO — Gold Edition · v1.0
-// ──────────────────────────────────────────────────────────────
-// Trigger : EMA 9 / EMA 21 cross (closed bar, non-repainting)
-// Filter  : ADX ≥ threshold (Auto by timeframe, YOUNGYUU v4 table)
-//           + DI direction, Supertrend direction, RSI OB/OS,
-//           candle body, momentum, optional HTF / session
-// Regime  : YOUNGYUU v4 — ADX + BBW + Trend Strength (TSF)
-//           STRONG / WEAK / SIDEWAYS (+ optional sideways scalp)
-// SL / TP : YOUNGYUU v4 — Swing / ATR / Fixed SL, TP in ATR with
-//           R:R floor and TP1 < TP2 < TP3 ladder, min / max SL
-// Extras  : SMC Supply/Demand zones (1-5 ★), Money Simulator,
-//           YY_SMC_PRO panel (PC / iPad / Mobile), TP/SL record cleanup
+// YOUNGYUU PULSE PRO — Gold Edition · v1.1
+// © YOUNGYUU Systems — publish as Protected / Invite-only to keep
+// the source private.
 // ══════════════════════════════════════════════════════════════
-indicator(title = "YOUNGYUU EMA·ADX Pro", shorttitle = "YY_EMA_ADX", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 200, max_bars_back = 5000)
+indicator(title = "YOUNGYUU Pulse Pro", shorttitle = "YY_PULSE", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 200, max_bars_back = 5000)
 
 // ══════════════════════════════════════
 // CONSTANTS
 // ══════════════════════════════════════
-GRP_EMA   = "📈 EMA Cross"
+GRP_Pulse   = "📈 Pulse Engine"
 GRP_ADX   = "💪 ADX Filter"
 GRP_FILT  = "✅ Confirmations (v4)"
 GRP_SCALP = "📊 Sideways Scalp (v4)"
@@ -43,11 +34,11 @@ WARMUP    = 120
 // ══════════════════════════════════════
 // INPUTS
 // ══════════════════════════════════════
-// ── EMA Cross
-signalModeInput = input.string("Filtered", "Signal Mode", options = ["Filtered", "ADX Only", "Pure EMA Cross"], group = GRP_EMA, tooltip = "Filtered: EMA cross + ADX + all v4 confirmations you enabled.\nADX Only: EMA cross + ADX ≥ threshold (other filters ignored).\nPure EMA Cross: every EMA cross is a BUY / SELL (no filters, no max-SL skip, no scalp mode).")
-emaFastInput  = input.int(9, "EMA Fast", minval = 2, maxval = 100, group = GRP_EMA)
-emaSlowInput  = input.int(21, "EMA Slow", minval = 3, maxval = 300, group = GRP_EMA)
-showEmaInput  = input.bool(true, "Show EMA Lines", group = GRP_EMA)
+// ── Pulse Cross
+signalModeInput = input.string("Filtered", "Signal Mode", options = ["Filtered", "ADX Only", "Pure Cross"], group = GRP_Pulse, tooltip = "Filtered: Pulse signal + ADX + all confirmations you enabled.\nADX Only: Pulse signal + ADX ≥ threshold (other filters ignored).\nPure Cross: every Pulse signal is a BUY / SELL (no filters, no max-SL skip, no scalp mode).")
+emaFastInput  = input.int(9, "Fast Length", minval = 2, maxval = 100, group = GRP_Pulse)
+emaSlowInput  = input.int(21, "Slow Length", minval = 3, maxval = 300, group = GRP_Pulse)
+showEmaInput  = input.bool(false, "Show Pulse Lines", group = GRP_Pulse)
 
 // ── ADX Filter
 useADXInput     = input.bool(true, "ADX Filter", group = GRP_ADX, tooltip = "Cross is valid only when ADX ≥ threshold.")
@@ -78,7 +69,7 @@ londonInput   = input.session("0700-1600", "London", group = GRP_FILT)
 nyInput       = input.session("1200-2000", "New York", group = GRP_FILT)
 
 // ── Sideways Scalp (v4)
-useScalpInput   = input.bool(false, "Sideways Scalp Mode", group = GRP_SCALP, tooltip = "In SIDEWAYS regime, take EMA crosses only from the edge of the range (mean reversion). ADX filter is bypassed for these.")
+useScalpInput   = input.bool(false, "Sideways Scalp Mode", group = GRP_SCALP, tooltip = "In SIDEWAYS regime, take Pulse signals only from the edge of the range (mean reversion). ADX filter is bypassed for these.")
 scalpRangeInput = input.int(20, "Scalp Range Bars", minval = 5, maxval = 100, group = GRP_SCALP)
 scalpSLInput    = input.float(1.0, "Scalp SL (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_SCALP)
 scalpTPInput    = input.float(1.0, "Scalp TP1 (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_SCALP, tooltip = "TP2 = 1.5x, TP3 = 2x of this.")
@@ -87,7 +78,7 @@ scalpTPInput    = input.float(1.0, "Scalp TP1 (x ATR)", minval = 0.3, maxval = 5
 ignoreActiveInput = input.bool(true, "Ignore Signals While Trade Active", group = GRP_SIG)
 showSignalsInput  = input.bool(true, "Show Signal Labels", group = GRP_SIG)
 showScoreInput    = input.bool(true, "Show Score on Labels", group = GRP_SIG)
-showBlockedInput  = input.bool(true, "Show Blocked Crosses (✕)", group = GRP_SIG, tooltip = "Grey ✕ where EMAs crossed but a filter failed. Hover to see why.")
+showBlockedInput  = input.bool(true, "Show Blocked Crosses (✕)", group = GRP_SIG, tooltip = "Grey ✕ where a Pulse signal formed but a filter failed. Hover to see why.")
 signalSizeInput   = input.string("Small", "Signal Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_SIG)
 
 // ── SL / TP (v4)
@@ -115,7 +106,7 @@ impMultInput    = input.float(1.5, "Impulse Body (x ATR)", minval = 0.8, maxval 
 baseBodyInput   = input.float(0.6, "Base Candle Max Body (x ATR)", minval = 0.2, maxval = 1.5, step = 0.1, group = GRP_ZONE)
 baseMaxInput    = input.int(3, "Max Base Candles", minval = 1, maxval = 6, group = GRP_ZONE)
 maxZonesInput   = input.int(4, "Max Zones per Side", minval = 1, maxval = 10, group = GRP_ZONE)
-showStarsInput  = input.bool(true, "Show Star Rating", group = GRP_ZONE, tooltip = "★ base · ★ strong departure (≥2 ATR) · ★ tight base (≤2 candles) · ★ with EMA trend · ★ volume spike (or thin zone when no volume).\nA touched zone loses one star.")
+showStarsInput  = input.bool(true, "Show Star Rating", group = GRP_ZONE, tooltip = "★ base · ★ strong departure (≥2 ATR) · ★ tight base (≤2 candles) · ★ with Pulse trend · ★ volume spike (or thin zone when no volume).\nA touched zone loses one star.")
 
 // ── MTF
 mtfTF1Input = input.timeframe("15", "TF 1", group = GRP_MTF)
@@ -150,8 +141,8 @@ spreadPxInput   = input.float(0.20, "Spread (ราคา $)", minval = 0.0, ste
 // ── Colors
 bullColorInput   = input.color(#00E676, "Bull", inline = "c1", group = GRP_COL)
 bearColorInput   = input.color(#FF5252, "Bear", inline = "c1", group = GRP_COL)
-emaFastColor     = input.color(#FFC940, "EMA Fast", inline = "c2", group = GRP_COL)
-emaSlowColor     = input.color(#5C8AFF, "EMA Slow", inline = "c2", group = GRP_COL)
+emaFastColor     = input.color(#FFC940, "Pulse Fast", inline = "c2", group = GRP_COL)
+emaSlowColor     = input.color(#5C8AFF, "Pulse Slow", inline = "c2", group = GRP_COL)
 demandColorInput = input.color(#26A69A, "Demand", inline = "c3", group = GRP_COL)
 supplyColorInput = input.color(#EF5350, "Supply", inline = "c3", group = GRP_COL)
 
@@ -468,7 +459,7 @@ bool trendBear = emaFast < emaSlow and stDir == -1
 string trendState = trendBull ? "Bullish" : trendBear ? "Bearish" : "Neutral"
 
 // ══════════════════════════════════════
-// MTF — EMA state on higher timeframes (closed HTF bars)
+// MTF — Pulse state on higher timeframes (closed HTF bars)
 // ══════════════════════════════════════
 mtfCalcState() =>
     float f = ta.ema(close, emaFastInput)
@@ -501,7 +492,7 @@ inSession(string sess) =>
 // ── Signal Mode → effective filter switches
 bool modeFilt = signalModeInput == "Filtered"
 bool modeAdx  = signalModeInput == "ADX Only"
-bool modePure = signalModeInput == "Pure EMA Cross"
+bool modePure = signalModeInput == "Pure Cross"
 bool eADX    = modeFilt ? useADXInput : modeAdx
 bool eDI     = modeFilt and useDIInput
 bool eRising = modeFilt and useRisingInput
@@ -730,17 +721,17 @@ if confirmedSell
 // ══════════════════════════════════════
 // PLOTS & SIGNAL LABELS
 // ══════════════════════════════════════
-plot(showEmaInput ? emaFast : na, "EMA Fast", color = emaFastColor, linewidth = 1)
-plot(showEmaInput ? emaSlow : na, "EMA Slow", color = emaSlowColor, linewidth = 2)
+plot(showEmaInput ? emaFast : na, "Pulse Fast", color = emaFastColor, linewidth = 1)
+plot(showEmaInput ? emaSlow : na, "Pulse Slow", color = emaSlowColor, linewidth = 2)
 
 string moneyTip = moneyOnInput and (evBuyEntry or evSellEntry) ? "\nLot " + str.tostring(T.lot, "0.00") + " · Risk " + fmtUsd(T.risk * contractInput * T.lot) : ""
 
 if confirmedBuy and showSignalsInput
     string txtB = (isScalpB ? "SCALP ▲" : "LONG") + (showScoreInput ? " " + str.tostring(passB) + "/" + str.tostring(totalB) : "")
-    label.new(bar_index, low - labelOffset, txtB, color = bullColorInput, textcolor = LABEL_TEXT, style = label.style_label_up, size = signalSize, tooltip = "EMA " + str.tostring(emaFastInput) + "/" + str.tostring(emaSlowInput) + " cross ▲ | " + buyGrade + "\nADX " + str.tostring(adx, "0.0") + " (thr " + str.tostring(adxThr, "0") + ") · DI+ " + str.tostring(diPlus, "0.0") + " / DI- " + str.tostring(diMinus, "0.0") + "\nRSI " + str.tostring(rsi, "0.0") + " · Regime " + regimeStr + (evBuyEntry ? moneyTip : ""))
+    label.new(bar_index, low - labelOffset, txtB, color = bullColorInput, textcolor = LABEL_TEXT, style = label.style_label_up, size = signalSize, tooltip = "Pulse ▲ | " + buyGrade + "\nADX " + str.tostring(adx, "0.0") + " (thr " + str.tostring(adxThr, "0") + ") · DI+ " + str.tostring(diPlus, "0.0") + " / DI- " + str.tostring(diMinus, "0.0") + "\nRSI " + str.tostring(rsi, "0.0") + " · Regime " + regimeStr + (evBuyEntry ? moneyTip : ""))
 if confirmedSell and showSignalsInput
     string txtS = (isScalpS ? "SCALP ▼" : "SHORT") + (showScoreInput ? " " + str.tostring(passS) + "/" + str.tostring(totalS) : "")
-    label.new(bar_index, high + labelOffset, txtS, color = bearColorInput, textcolor = LABEL_TEXT, style = label.style_label_down, size = signalSize, tooltip = "EMA " + str.tostring(emaFastInput) + "/" + str.tostring(emaSlowInput) + " cross ▼ | " + sellGrade + "\nADX " + str.tostring(adx, "0.0") + " (thr " + str.tostring(adxThr, "0") + ") · DI+ " + str.tostring(diPlus, "0.0") + " / DI- " + str.tostring(diMinus, "0.0") + "\nRSI " + str.tostring(rsi, "0.0") + " · Regime " + regimeStr + (evSellEntry ? moneyTip : ""))
+    label.new(bar_index, high + labelOffset, txtS, color = bearColorInput, textcolor = LABEL_TEXT, style = label.style_label_down, size = signalSize, tooltip = "Pulse ▼ | " + sellGrade + "\nADX " + str.tostring(adx, "0.0") + " (thr " + str.tostring(adxThr, "0") + ") · DI+ " + str.tostring(diPlus, "0.0") + " / DI- " + str.tostring(diMinus, "0.0") + "\nRSI " + str.tostring(rsi, "0.0") + " · Regime " + regimeStr + (evSellEntry ? moneyTip : ""))
 
 if crossBlockedUp and showBlockedInput
     label.new(bar_index, low - labelOffset, "✕", style = label.style_none, textcolor = BLOCK_COLOR, size = size.small, tooltip = "Blocked BUY cross: " + reasonUp)
@@ -1063,7 +1054,7 @@ if showDashInput and barstate.islast
         msgBg := P_BULL_DK
         msgTx := P_BULL
     else
-        msg := not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอ EMA " + str.tostring(emaFastInput) + "/" + str.tostring(emaSlowInput) + " ตัด"
+        msg := not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอสัญญาณ Pulse"
         msgTx := P_MUTED
 
     // ── kill zones
@@ -1096,7 +1087,7 @@ if showDashInput and barstate.islast
     int r = 0
 
     // header
-    table.cell(dashTable, 0, r, "◆ YOUNGYUU EMA·ADX" + modeTag, text_color = P_GOLD_TX, bgcolor = P_GOLD_BG, text_size = fsz, text_halign = text.align_left)
+    table.cell(dashTable, 0, r, "◆ YOUNGYUU PULSE" + modeTag, text_color = P_GOLD_TX, bgcolor = P_GOLD_BG, text_size = fsz, text_halign = text.align_left)
     table.merge_cells(dashTable, 0, r, 1, r)
     table.cell(dashTable, 2, r, barstate.isrealtime ? "● LIVE" : "◌ HIST", text_color = barstate.isrealtime ? P_LIVE_TX : P_HIST_TX, bgcolor = barstate.isrealtime ? P_LIVE_BG : P_HIST_BG, text_size = fsz)
     r += 1
