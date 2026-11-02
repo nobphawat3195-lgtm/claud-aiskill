@@ -11,7 +11,7 @@
 // SL / TP : YOUNGYUU v4 — Swing / ATR / Fixed SL, TP in ATR with
 //           R:R floor and TP1 < TP2 < TP3 ladder, min / max SL
 // Extras  : SMC Supply/Demand zones (1-5 ★), Money Simulator,
-//           PC / iPad / Mobile dashboard, TP/SL record cleanup
+//           YY_SMC_PRO panel (PC / iPad / Mobile), TP/SL record cleanup
 // ══════════════════════════════════════════════════════════════
 indicator(title = "YOUNGYUU EMA·ADX Pro", shorttitle = "YY_EMA_ADX", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 200, max_bars_back = 5000)
 
@@ -123,14 +123,14 @@ mtfTF3Input = input.timeframe("240", "TF 3", group = GRP_MTF)
 
 // ── Dashboard
 showDashInput   = input.bool(true, "Show Dashboard", group = GRP_DASH)
-deviceInput     = input.string("PC", "Layout", options = ["PC", "iPad", "Mobile"], group = GRP_DASH, tooltip = "PC: full panel · iPad: condensed · Mobile: 6-8 rows, tiny font.")
+deviceInput     = input.string("PC", "Layout", options = ["PC", "iPad", "Mobile"], group = GRP_DASH, tooltip = "YY_SMC_PRO panel.\nPC: + ADX / Block / money detail rows · iPad: small font · Mobile: tiny font, core rows.")
 dashPosStr      = input.string("Top Right", "Position", options = ["Top Left", "Top Right", "Bottom Left", "Bottom Right", "Middle Right"], group = GRP_DASH)
 dashFontInput   = input.string("Small", "PC Font Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_DASH)
-secMarketInput  = input.bool(true, "  ├ Market", group = GRP_DASH)
-secMTFInput     = input.bool(true, "  ├ MTF", group = GRP_DASH)
-secZoneInput    = input.bool(true, "  ├ Zones", group = GRP_DASH)
-secTradeInput   = input.bool(true, "  ├ Trade", group = GRP_DASH)
-secStatsInput   = input.bool(true, "  └ Stats", group = GRP_DASH)
+showKzInput     = input.bool(true, "Kill Zone Countdown", group = GRP_DASH)
+kzTzInput       = input.string("America/New_York", "Kill Zone Timezone", group = GRP_DASH, tooltip = "IANA timezone, DST handled automatically.")
+asiaKzInput     = input.session("2000-0000", "Asia KZ", group = GRP_DASH)
+londonKzInput   = input.session("0200-0500", "London KZ", group = GRP_DASH)
+nyKzInput       = input.session("0700-1000", "New York KZ", group = GRP_DASH)
 themeInput      = input.string("Auto", "Theme", options = ["Auto", "Dark", "Light"], group = GRP_DASH)
 
 // ── Money Simulator
@@ -611,6 +611,11 @@ tpDistances(bool scalp, float slDist) =>
 
 float labelOffset = atrBase * 0.5
 
+// Grade A / B / C (YY_SMC_PRO style): A = STRONG regime + ≥2 HTF agree · B = one of them · C = neither
+gradeFor(int d) =>
+    int al = d == 1 ? mtfSum : -mtfSum
+    strongTrend and al >= 2 ? "A" : strongTrend or al >= 2 ? "B" : "C"
+
 // ══════════════════════════════════════
 // TRADE ENGINE
 // ══════════════════════════════════════
@@ -644,7 +649,7 @@ if (confirmedBuy or confirmedSell) and showTPSLInput and canOpen
     [d1, d2, d3] = tpDistances(scl, rd)
     float eqB  = compoundInput ? M.equity : capitalInput
     float lot0 = M.bust ? 0.0 : calcLot(rd, eqB)
-    openTrade(T, nd, close, sl0, rd, close + nd * d1, close + nd * d2, close + nd * d3, lot0, scl ? "SCALP" : "EMA×" + (nd == 1 ? buyGrade : sellGrade))
+    openTrade(T, nd, close, sl0, rd, close + nd * d1, close + nd * d2, close + nd * d3, lot0, scl ? "S" : gradeFor(nd))
     if nd == 1
         evBuyEntry := true
     else
@@ -901,41 +906,65 @@ if array.size(label.all) > 450
 
 
 // ══════════════════════════════════════
-// DASHBOARD (PC / iPad / Mobile)
+// DASHBOARD — YY_SMC_PRO panel (PC / iPad / Mobile)
 // ══════════════════════════════════════
-var string[] dK  = array.new_string()
-var string[] dV  = array.new_string()
-var color[]  dKC = array.new_color()
-var color[]  dVC = array.new_color()
-var int[]    dT  = array.new_int()    // 0 key/value · 1 section · 2 full text · 3 header
+// Panel palette (always dark, like the original YY_SMC_PRO panel)
+P_BG       = #12141C
+P_CELL     = #1A1D29
+P_BORDER   = #2A2E3D
+P_GOLD_BG  = #E8C25A
+P_GOLD_TX  = #1A1A1A
+P_LIVE_BG  = #0E3B2E
+P_LIVE_TX  = #2EE59D
+P_HIST_BG  = #2A2E3D
+P_HIST_TX  = #8A93B2
+P_TEXT     = #E6E9F2
+P_MUTED    = #8A93B2
+P_BULL     = #2EE59D
+P_BEAR     = #FF6B81
+P_BULL_BG  = #1FBF7A
+P_BEAR_BG  = #F2546B
+P_BULL_DK  = #0F2E24
+P_BEAR_DK  = #3A1A24
+P_INFO_DK  = #16223A
+P_E_TX     = #7FB2FF
+P_YELLOW   = #FFC940
 
-rowKV(string k, string v, color kc, color vc) =>
-    array.push(dK, k)
-    array.push(dV, v)
-    array.push(dKC, kc)
-    array.push(dVC, vc)
-    array.push(dT, 0)
+fmtDur(float ms) =>
+    int tot = math.max(0, int(math.floor(ms / 1000.0)))
+    int h = int(math.floor(tot / 3600.0))
+    int m = int(math.floor((tot - h * 3600) / 60.0))
+    int s = tot - h * 3600 - m * 60
+    str.tostring(h, "00") + ":" + str.tostring(m, "00") + ":" + str.tostring(s, "00")
 
-rowSec(string t) =>
-    array.push(dK, t)
-    array.push(dV, "")
-    array.push(dKC, TEXT_MUTED)
-    array.push(dVC, TEXT_MUTED)
-    array.push(dT, 1)
+hhmm(string sess, int pos) =>
+    int h = int(nz(str.tonumber(str.substring(sess, pos, pos + 2)), 0))
+    int m = int(nz(str.tonumber(str.substring(sess, pos + 2, pos + 4)), 0))
+    [h, m]
 
-rowFull(string t, color c) =>
-    array.push(dK, t)
-    array.push(dV, "")
-    array.push(dKC, c)
-    array.push(dVC, c)
-    array.push(dT, 2)
+// returns [state, ms]: state 1 = inside kill zone (ms to end), 0 = upcoming (ms to start)
+kzInfo(string sess) =>
+    [sh, sm] = hhmm(sess, 0)
+    [eh, em] = hhmm(sess, 5)
+    int y  = year(timenow, kzTzInput)
+    int mo = month(timenow, kzTzInput)
+    int d  = dayofmonth(timenow, kzTzInput)
+    int st = timestamp(kzTzInput, y, mo, d, sh, sm)
+    int en = timestamp(kzTzInput, y, mo, d, eh, em)
+    if en <= st
+        en += 86400000
+    int state = 0
+    float ms = 0.0
+    if timenow >= st and timenow < en
+        state := 1
+        ms := en - timenow
+    else if timenow < st
+        ms := st - timenow
+    else
+        ms := st + 86400000 - timenow
+    [state, ms]
 
-rowHead(string t, color bg) =>
-    array.push(dK, t)
-    array.push(dV, "")
-    array.push(dKC, bg)
-    array.push(dVC, HEADER_TEXT)
-    array.push(dT, 3)
+var table dashTable = na
 
 dashPos = switch dashPosStr
     "Top Left"     => position.top_left
@@ -945,52 +974,19 @@ dashPos = switch dashPosStr
     "Middle Right" => position.middle_right
     =>                position.top_right
 
-var table dashTable = na
-
 if showDashInput and barstate.islast
-    array.clear(dK)
-    array.clear(dV)
-    array.clear(dKC)
-    array.clear(dVC)
-    array.clear(dT)
-
     bool isPC  = deviceInput == "PC"
-    bool isPad = deviceInput == "iPad"
     bool isMob = deviceInput == "Mobile"
+    fsz = isPC ? sizeFromString(dashFontInput) : isMob ? size.tiny : size.small
 
-    // ── shared values
-    color  headerBg  = trendState == "Bullish" ? HEADER_BULL : trendState == "Bearish" ? HEADER_BEAR : HEADER_NEU
-    color  trendCol  = trendState == "Bullish" ? BULL_TEXT : trendState == "Bearish" ? BEAR_TEXT : NEU_TEXT
-    string trendArw  = trendState == "Bullish" ? "▲" : trendState == "Bearish" ? "▼" : "•"
-    string liveTxt   = barstate.isrealtime ? "● LIVE" : "◌ HIST"
-    float  dispScore = math.max(bullScore, bearScore)
-    color  scoreCol  = dispScore >= 70 ? BULL_TEXT : dispScore >= 40 ? NEU_TEXT : TEXT_MUTED
-    string emaStr    = "EMA" + str.tostring(emaFastInput) + (emaFast > emaSlow ? " > " : " < ") + "EMA" + str.tostring(emaSlowInput)
-    color  emaCol    = emaFast > emaSlow ? BULL_TEXT : BEAR_TEXT
-    string adxStr    = str.tostring(adx, "0.0") + " / " + str.tostring(adxThr, "0") + (adxOk ? " ✓" : " ✕")
-    color  adxCol    = adxOk ? BULL_TEXT : BEAR_TEXT
-    string diStr     = "DI+ " + str.tostring(diPlus, "0.0") + " · DI- " + str.tostring(diMinus, "0.0")
-    color  diCol     = diPlus > diMinus ? BULL_TEXT : BEAR_TEXT
-    string stStr     = stDir == 1 ? "▲ Up" : "▼ Down"
-    color  stCol     = stDir == 1 ? BULL_TEXT : BEAR_TEXT
-    color  rsiCol    = rsi > rsiOBInput ? BEAR_TEXT : rsi < rsiOSInput ? BULL_TEXT : TEXT_COLOR
-    string sigAgo    = lastSignal == "None" ? "—" : lastSignal + " (" + str.tostring(bar_index - lastSignalBar) + ")"
-    color  sigCol    = lastSignal == "Long" ? BULL_TEXT : lastSignal == "None" ? TEXT_MUTED : BEAR_TEXT
-    string mtfLine   = tfName(mtfTF1Input) + " " + stateArrow(mtf1State, mtf1Valid) + "  " + tfName(mtfTF2Input) + " " + stateArrow(mtf2State, mtf2Valid) + "  " + tfName(mtfTF3Input) + " " + stateArrow(mtf3State, mtf3Valid)
-    string alignStr  = not mtfAllValid ? "Invalid TF" : mtfAllBull ? "ALL BULL ✓" : mtfAllBear ? "ALL BEAR ✓" : "Mixed"
-    color  alignCol  = not mtfAllValid ? NEU_TEXT : mtfAllBull ? BULL_TEXT : mtfAllBear ? BEAR_TEXT : NEU_TEXT
+    // ── bias + MTF
+    int    bias    = trendBull ? 1 : trendBear ? -1 : 0
+    string biasTx  = bias == 1 ? "BULLISH" : bias == -1 ? "BEARISH" : "NEUTRAL"
+    color  biasCol = bias == 1 ? P_BULL : bias == -1 ? P_BEAR : P_YELLOW
+    int    sc      = bias == -1 ? math.round(bearScore) : math.round(bullScore)
+    string mtfTx   = tfName(mtfTF3Input) + stateArrow(mtf3State, mtf3Valid) + " " + tfName(mtfTF2Input) + stateArrow(mtf2State, mtf2Valid) + " " + tfName(mtfTF1Input) + stateArrow(mtf1State, mtf1Valid) + "   " + str.tostring(sc) + "%"
 
-    // status line (Thai)
-    string status = ""
-    color  statusCol = TEXT_MUTED
-    if T.dir != 0
-        status := (T.dir == 1 ? "🟢 ถือ LONG" : "🔴 ถือ SHORT") + " · " + T.src + (T.tp1Hit ? " · TP1 ✓" : "") + (T.tp2Hit ? " TP2 ✓" : "") + (T.be ? " · SL→BE" : "")
-        statusCol := T.dir == 1 ? BULL_TEXT : BEAR_TEXT
-    else
-        status := S.lastExit == "SL" ? "⛔ โดน SL " + fmtR(S.lastR) + " · รอสัญญาณใหม่" : S.lastExit == "BE" ? "🛡️ ออกที่ BE " + fmtR(S.lastR) + " · รอสัญญาณใหม่" : S.lastExit == "TP3" ? "🏆 ถึง TP3 ครบ " + fmtR(S.lastR) + " · รอสัญญาณใหม่" : S.lastExit == "REPL" ? "🔁 ถูกแทนด้วยสัญญาณใหม่" : "⏳ รอสัญญาณ"
-        statusCol := S.lastExit == "SL" ? BEAR_TEXT : S.lastExit == "TP3" ? BULL_TEXT : S.lastExit == "BE" ? BE_COLOR : TEXT_MUTED
-
-    // nearest zones
+    // ── nearest zones
     float nDT = na
     float nDB = na
     int   nDS = 0
@@ -1011,162 +1007,146 @@ if showDashInput and barstate.islast
                     nST := zt
                     nSB := zb
                     nSS := array.get(zStar, i)
-    string demStr = na(nDT) ? "—" : fmtPrice(nDB) + "–" + fmtPrice(nDT) + " " + str.repeat("★", nDS) + (close <= nDT ? " · IN" : "")
-    string supStr = na(nSB) ? "—" : fmtPrice(nSB) + "–" + fmtPrice(nST) + " " + str.repeat("★", nSS) + (close >= nSB ? " · IN" : "")
+    string supTx = na(nSB) ? "S —" : "S " + str.repeat("★", nSS) + str.repeat("☆", 5 - nSS) + (close >= nSB ? " IN" : " ↑" + str.tostring(nSB - close, "0.0"))
+    string demTx = na(nDT) ? "D —" : "D " + str.repeat("★", nDS) + str.repeat("☆", 5 - nDS) + (close <= nDT ? " IN" : " ↓" + str.tostring(close - nDT, "0.0"))
 
-    // trade values
-    float  floatPnl = T.dir != 0 ? T.realized + T.rem * (close - T.entry) * T.dir * contractInput * T.lot - tradeCost(T.lot) : 0.0
-    float  liveR    = T.dir != 0 and T.risk > 0 ? T.rAcc + T.rem * (close - T.entry) * T.dir / T.risk : 0.0
-    float  riskUsd  = T.dir != 0 ? T.risk * contractInput * T.lot + tradeCost(T.lot) : 0.0
-    float  fullUsd  = T.dir != 0 ? ((T.tp1 - T.entry) + (T.tp2 - T.entry) + (T.tp3 - T.entry)) * T.dir / 3.0 * contractInput * T.lot - tradeCost(T.lot) : 0.0
-    string slTxt    = (T.be ? "BE @ " : "") + fmtPrice(T.sl)
-    color  slCol    = T.be ? BE_COLOR : SL_COLOR
-    string tp1Txt   = (T.tp1Hit ? "✓ " : "") + fmtPrice(T.tp1)
-    string tp2Txt   = (T.tp2Hit ? "✓ " : "") + fmtPrice(T.tp2)
-    string tp3Txt   = fmtPrice(T.tp3)
-    float  slDist   = T.dir != 0 and T.entry != 0 ? math.abs(T.entry - T.sl) / T.entry * 100.0 : 0.0
-
-    // stats
+    // ── trade
+    bool   inTrade = T.dir != 0
+    string sideTx  = inTrade ? (T.dir == 1 ? "BUY " : "SELL ") + T.src : "FLAT"
+    color  sideBg  = inTrade ? (T.dir == 1 ? P_BULL_BG : P_BEAR_BG) : P_CELL
+    color  sideTxC = inTrade ? #FFFFFF : P_MUTED
+    string tpDots  = (T.tp1Hit ? "●" : "○") + (T.tp2Hit ? "●" : "○") + "🏁"
+    float  nextTP  = not inTrade ? na : not T.tp1Hit ? T.tp1 : not T.tp2Hit ? T.tp2 : T.tp3
+    float  liveR   = inTrade and T.risk > 0 ? T.rAcc + T.rem * (close - T.entry) * T.dir / T.risk : S.lastR
+    float  floatP  = inTrade ? T.realized + T.rem * (close - T.entry) * T.dir * contractInput * T.lot - tradeCost(T.lot) : 0.0
     float  tp1Rate = S.closed > 0 ? 100.0 * S.tp1Cnt / S.closed : 0.0
-    float  slRate  = S.closed > 0 ? 100.0 * S.slCnt / S.closed : 0.0
     float  avgR    = S.closed > 0 ? S.rSum / S.closed : 0.0
-    color  tp1Col  = S.closed == 0 ? TEXT_MUTED : tp1Rate >= 55.0 ? BULL_TEXT : tp1Rate >= 45.0 ? NEU_TEXT : BEAR_TEXT
-    color  slCol2  = S.closed == 0 ? TEXT_MUTED : slRate <= 40.0 ? BULL_TEXT : slRate <= 60.0 ? NEU_TEXT : BEAR_TEXT
-    color  avgRCol = S.closed == 0 ? TEXT_MUTED : avgR > 0 ? BULL_TEXT : avgR < 0 ? BEAR_TEXT : NEU_TEXT
+    string sigAgo  = lastSignal == "None" ? "—" : lastSignal + " (" + str.tostring(bar_index - lastSignalBar) + ")"
 
-    // money
-    float  eqNow   = M.equity + floatPnl
-    float  netAll  = M.equity - capitalInput
-    float  netPct  = capitalInput > 0 ? netAll / capitalInput * 100.0 : 0.0
-    int    mTotal  = M.wins + M.losses
-    float  mWR     = mTotal > 0 ? 100.0 * M.wins / mTotal : 0.0
-    color  netCol  = netAll >= 0 ? BULL_TEXT : BEAR_TEXT
-    string sizeTxt = sizeModeInput == "Fixed Lot" ? str.tostring(fixLotInput, "0.00") + " lot" : str.tostring(riskPctInput, "0.0") + "% risk" + (compoundInput ? " ทบต้น" : "")
-
-    // ── header + status (all layouts)
-    rowHead("◆ YOUNGYUU EMA·ADX · " + trendArw + " " + trendState + "   " + liveTxt, headerBg)
-    rowFull(status, statusCol)
-
-    if isPC
-        if secMarketInput
-            rowSec("— ตลาด —")
-            rowKV("Trend", trendArw + " " + trendState, TEXT_MUTED, trendCol)
-            rowKV("EMA", emaStr, TEXT_MUTED, emaCol)
-            rowKV("ADX", adxStr, TEXT_MUTED, adxCol)
-            rowKV("DI", diStr, TEXT_MUTED, diCol)
-            rowKV("Regime", regimeStr + " · TSF " + str.tostring(tsf, "0.00") + "x", TEXT_MUTED, regimeCol)
-            rowKV("Supertrend · RSI", stStr + " · " + str.tostring(rsi, "0.0"), TEXT_MUTED, stCol)
-            rowKV("Filters ▲ / ▼", str.tostring(passB) + "/" + str.tostring(totalB) + "  ·  " + str.tostring(passS) + "/" + str.tostring(totalS), TEXT_MUTED, scoreCol)
-            rowKV("Last signal", sigAgo, TEXT_MUTED, sigCol)
-            rowKV("Last block", lastBlock == "" ? "—" : lastBlock, TEXT_MUTED, TEXT_MUTED)
-        if secMTFInput
-            rowSec("— MTF —")
-            rowKV(tfName(mtfTF1Input), stateArrow(mtf1State, mtf1Valid) + (mtf1State == 1 ? " Bull" : mtf1State == -1 ? " Bear" : " Neutral"), TEXT_MUTED, stateColor(mtf1State, mtf1Valid))
-            rowKV(tfName(mtfTF2Input), stateArrow(mtf2State, mtf2Valid) + (mtf2State == 1 ? " Bull" : mtf2State == -1 ? " Bear" : " Neutral"), TEXT_MUTED, stateColor(mtf2State, mtf2Valid))
-            rowKV(tfName(mtfTF3Input), stateArrow(mtf3State, mtf3Valid) + (mtf3State == 1 ? " Bull" : mtf3State == -1 ? " Bear" : " Neutral"), TEXT_MUTED, stateColor(mtf3State, mtf3Valid))
-            rowKV("Align", alignStr, TEXT_MUTED, alignCol)
-        if secZoneInput and showZonesInput
-            rowSec("— โซน S/D —")
-            rowKV("Supply", supStr, TEXT_MUTED, supplyColorInput)
-            rowKV("Demand", demStr, TEXT_MUTED, demandColorInput)
-        if secTradeInput and showTPSLInput
-            rowSec("— ไม้ปัจจุบัน —")
-            if T.dir != 0
-                rowKV("Side", (T.dir == 1 ? "LONG" : "SHORT") + " · " + T.src, TEXT_MUTED, T.dir == 1 ? BULL_TEXT : BEAR_TEXT)
-                rowKV("Entry", fmtPrice(T.entry), TEXT_MUTED, ENTRY_COLOR)
-                rowKV("SL", slTxt, TEXT_MUTED, slCol)
-                rowKV("TP1", tp1Txt, TEXT_MUTED, T.tp1Hit ? TP_HIT_COLOR : TP_LBL_COLOR)
-                rowKV("TP2", tp2Txt, TEXT_MUTED, T.tp2Hit ? TP_HIT_COLOR : TP_LBL_COLOR)
-                rowKV("TP3", tp3Txt, TEXT_MUTED, TP_LBL_COLOR)
-                rowKV("Live R · SL %", fmtR(liveR) + " · " + str.tostring(slDist, "0.00") + "%", TEXT_MUTED, liveR >= 0 ? BULL_TEXT : BEAR_TEXT)
-                if moneyOnInput
-                    rowKV("Lot · ลอย", str.tostring(T.lot, "0.00") + " · " + fmtUsdS(floatPnl), TEXT_MUTED, floatPnl >= 0 ? BULL_TEXT : BEAR_TEXT)
-                    rowKV("โดน SL / ถึง TP3", "-" + fmtUsd(riskUsd) + " / " + fmtUsdS(fullUsd), TEXT_MUTED, TEXT_COLOR)
-            else
-                rowFull("Flat · รอสัญญาณ", TEXT_MUTED)
-        if secStatsInput and showTPSLInput
-            rowSec("— สถิติ —")
-            rowKV("Closed", str.tostring(S.closed) + (S.replaced > 0 ? " (" + str.tostring(S.replaced) + " repl)" : ""), TEXT_MUTED, TEXT_COLOR)
-            rowKV("TP1 rate", S.closed > 0 ? str.tostring(math.round(tp1Rate)) + "%  " + buildGauge(tp1Rate, 100, 8) : "—", TEXT_MUTED, tp1Col)
-            rowKV("TP2 / TP3", S.closed > 0 ? str.tostring(math.round(100.0 * S.tp2Cnt / S.closed)) + "% / " + str.tostring(math.round(100.0 * S.tp3Cnt / S.closed)) + "%" : "—", TEXT_MUTED, TEXT_COLOR)
-            rowKV("SL rate", S.closed > 0 ? str.tostring(math.round(slRate)) + "%" : "—", TEXT_MUTED, slCol2)
-            rowKV("Avg R", S.closed > 0 ? fmtR(avgR) : "—", TEXT_MUTED, avgRCol)
-            rowKV("Form", S.form == "" ? "—" : S.form, TEXT_MUTED, FORM_COLOR)
-        if moneyOnInput and showTPSLInput
-            rowSec("— 💰 จำลองเงินทุน —")
-            rowKV("ขนาดไม้", sizeTxt, TEXT_MUTED, TEXT_COLOR)
-            rowKV("ทุน → ยอด", fmtUsd(capitalInput) + " → " + fmtUsd(M.equity), TEXT_MUTED, netCol)
-            rowKV("กำไรสุทธิ", fmtUsdS(netAll) + " (" + fmtPctS(netPct) + ")", TEXT_MUTED, netCol)
-            rowKV("ชนะ / แพ้", str.tostring(M.wins) + " / " + str.tostring(M.losses) + (mTotal > 0 ? " (" + str.tostring(math.round(mWR)) + "%)" : ""), TEXT_MUTED, TEXT_COLOR)
-            rowKV("Max DD", "-" + str.tostring(M.maxDD, "0.0") + "%", TEXT_MUTED, M.maxDD >= 20 ? BEAR_TEXT : M.maxDD >= 10 ? NEU_TEXT : BULL_TEXT)
-            rowKV("ไม้ล่าสุด", mTotal > 0 ? fmtUsdS(M.lastPnl) : "—", TEXT_MUTED, M.lastPnl >= 0 ? BULL_TEXT : BEAR_TEXT)
-            rowKV("ดีสุด / แย่สุด", fmtUsdS(M.best) + " / " + fmtUsdS(M.worst), TEXT_MUTED, TEXT_COLOR)
-            if T.dir != 0
-                rowKV("ยอดรวมไม้ลอย", fmtUsd(eqNow), TEXT_MUTED, eqNow >= capitalInput ? BULL_TEXT : BEAR_TEXT)
-            if M.bust
-                rowFull("💥 พอร์ตแตก — หยุดจำลอง", BEAR_TEXT)
-            rowFull("⚠ จำลองจากประวัติกราฟ · ไม่ใช่ผลจริง", TEXT_MUTED)
-        rowFull("YOUNGYUU EMA·ADX Pro · " + VERSION, TEXT_MUTED)
-
-    else if isPad
-        if secMarketInput
-            rowKV("Trend", trendArw + " " + trendState + " · " + regimeStr, TEXT_MUTED, trendCol)
-            rowKV("ADX · RSI", adxStr + " · " + str.tostring(rsi, "0"), TEXT_MUTED, adxCol)
-            rowKV("Last block", lastBlock == "" ? "—" : lastBlock, TEXT_MUTED, TEXT_MUTED)
-        if secMTFInput
-            rowKV("MTF", mtfLine, TEXT_MUTED, alignCol)
-        if secZoneInput and showZonesInput
-            rowKV("Supply", supStr, TEXT_MUTED, supplyColorInput)
-            rowKV("Demand", demStr, TEXT_MUTED, demandColorInput)
-        if secTradeInput and showTPSLInput and T.dir != 0
-            rowKV((T.dir == 1 ? "LONG" : "SHORT") + " · " + T.src, fmtPrice(T.entry) + " · SL " + slTxt, TEXT_MUTED, T.dir == 1 ? BULL_TEXT : BEAR_TEXT)
-            rowKV("TP", tp1Txt + " · " + tp2Txt + " · " + tp3Txt, TEXT_MUTED, TP_LBL_COLOR)
-            rowKV("Live R", fmtR(liveR) + (moneyOnInput ? " · " + fmtUsdS(floatPnl) : ""), TEXT_MUTED, liveR >= 0 ? BULL_TEXT : BEAR_TEXT)
-        if secStatsInput and showTPSLInput
-            rowKV("TP1 · SL · AvgR", S.closed > 0 ? str.tostring(math.round(tp1Rate)) + "% · " + str.tostring(math.round(slRate)) + "% · " + fmtR(avgR) : "—", TEXT_MUTED, avgRCol)
-            rowKV("Form", S.form == "" ? "—" : S.form, TEXT_MUTED, FORM_COLOR)
-        if moneyOnInput and showTPSLInput
-            rowKV("💰 ทุน → ยอด", fmtUsd(capitalInput) + " → " + fmtUsd(M.equity) + " (" + fmtPctS(netPct) + ")", TEXT_MUTED, netCol)
-            rowKV("W/L · Max DD", str.tostring(M.wins) + "/" + str.tostring(M.losses) + " · -" + str.tostring(M.maxDD, "0.0") + "%", TEXT_MUTED, TEXT_COLOR)
-        rowFull("YY EMA·ADX " + VERSION + (moneyOnInput ? " · ⚠ จำลอง" : ""), TEXT_MUTED)
-
+    // ── status message (Thai, YY_SMC_PRO style)
+    string msg = ""
+    color  msgBg = P_CELL
+    color  msgTx = P_MUTED
+    if inTrade
+        msg := (T.dir == 1 ? "🟢 ถือ BUY" : "🔴 ถือ SELL") + (T.tp2Hit ? " · TP2 ✓ ปล่อยวิ่งหา TP3" : T.tp1Hit ? " · TP1 ✓" + (T.be ? " SL→BE ไม่ต้องกังวล" : "") : " · รอ TP1 " + fmtPrice(T.tp1))
+        msgBg := T.dir == 1 ? P_BULL_DK : P_BEAR_DK
+        msgTx := T.dir == 1 ? P_BULL : P_BEAR
+    else if S.lastExit == "SL"
+        msg := "👉 โดน SL " + fmtR(S.lastR) + " · อย่ารีบเอาคืน รอสัญญาณใหม่"
+        msgBg := P_BEAR_DK
+        msgTx := P_BEAR
+    else if S.lastExit == "BE"
+        msg := "🛡️ ออกที่ BE " + fmtR(S.lastR) + " · ทุนปลอดภัย รอสัญญาณใหม่"
+        msgBg := P_INFO_DK
+        msgTx := P_E_TX
+    else if S.lastExit == "TP3"
+        msg := "🏆 ปิดครบ TP3 " + fmtR(S.lastR) + " · เยี่ยม! พักก่อนได้"
+        msgBg := P_BULL_DK
+        msgTx := P_BULL
     else
-        rowKV(trendArw + " ADX " + str.tostring(adx, "0"), mtfLine, trendCol, alignCol)
-        if showTPSLInput and T.dir != 0
-            rowKV(T.dir == 1 ? "LONG" : "SHORT", fmtPrice(T.entry) + " · SL " + fmtPrice(T.sl), T.dir == 1 ? BULL_TEXT : BEAR_TEXT, slCol)
-            rowKV("TP", tp1Txt + " / " + tp2Txt + " / " + tp3Txt, TEXT_MUTED, TP_LBL_COLOR)
-        if showZonesInput and secZoneInput
-            rowKV("S/D", (na(nSB) ? "—" : fmtPrice(nSB)) + " / " + (na(nDT) ? "—" : fmtPrice(nDT)), TEXT_MUTED, TEXT_COLOR)
-        if showTPSLInput
-            rowKV("WR · R", S.closed > 0 ? str.tostring(math.round(tp1Rate)) + "% · " + fmtR(avgR) : "—", TEXT_MUTED, avgRCol)
-        if moneyOnInput and showTPSLInput
-            rowKV("💰", fmtUsd(capitalInput) + " → " + fmtUsd(M.equity) + " (" + fmtPctS(netPct) + ")", TEXT_MUTED, netCol)
+        msg := not adxOk and useADXInput ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอ EMA " + str.tostring(emaFastInput) + "/" + str.tostring(emaSlowInput) + " ตัด"
+        msgTx := P_MUTED
 
-    // ── render
-    string fszStr = isPC ? dashFontInput : isPad ? "Small" : "Tiny"
-    fsz    = sizeFromString(fszStr)
-    fszSub = sizeDown(fszStr)
-    int nRows = array.size(dK)
+    // ── kill zones
+    [aSt, aMs] = kzInfo(asiaKzInput)
+    [lSt, lMs] = kzInfo(londonKzInput)
+    [nSt, nMs] = kzInfo(nyKzInput)
+    string kzTx = ""
+    if aSt == 1
+        kzTx := "◷ IN ASIA KZ · ends " + fmtDur(aMs)
+    else if lSt == 1
+        kzTx := "◷ IN LONDON KZ · ends " + fmtDur(lMs)
+    else if nSt == 1
+        kzTx := "◷ IN NEW YORK KZ · ends " + fmtDur(nMs)
+    else
+        float best = math.min(aMs, math.min(lMs, nMs))
+        string nm = best == aMs ? "ASIA" : best == lMs ? "LONDON" : "NEW YORK"
+        kzTx := "◷ " + nm + " KZ in " + fmtDur(best)
+    string barTx = barstate.isrealtime ? " · bar " + fmtDur(time_close - timenow) : ""
+    bool   inKz  = aSt == 1 or lSt == 1 or nSt == 1
+
+    // ── row count
+    int rows = 8
+    rows += isPC ? 2 : 0
+    rows += moneyOnInput ? (isPC ? 2 : 1) : 0
+    rows += showKzInput ? 1 : 0
+
     if not na(dashTable)
         table.delete(dashTable)
-    dashTable := table.new(dashPos, 2, nRows, bgcolor = TABLE_BG, border_color = TABLE_BORDER, border_width = 1, frame_color = TABLE_BORDER, frame_width = 1)
-    bool zeb = false
-    for i = 0 to nRows - 1
-        int tp = array.get(dT, i)
-        if tp == 3
-            table.cell(dashTable, 0, i, array.get(dK, i), text_color = array.get(dVC, i), bgcolor = array.get(dKC, i), text_size = fsz, text_halign = text.align_center)
-            table.merge_cells(dashTable, 0, i, 1, i)
-        else if tp == 1
-            table.cell(dashTable, 0, i, array.get(dK, i), text_color = TEXT_MUTED, bgcolor = ROW_ALT, text_size = fszSub, text_halign = text.align_center)
-            table.merge_cells(dashTable, 0, i, 1, i)
-        else if tp == 2
-            table.cell(dashTable, 0, i, array.get(dK, i), text_color = array.get(dKC, i), bgcolor = TABLE_BG, text_size = i == nRows - 1 ? fszSub : fsz, text_halign = text.align_center)
-            table.merge_cells(dashTable, 0, i, 1, i)
-        else
-            color rb = zeb ? ROW_ALT : TABLE_BG
-            table.cell(dashTable, 0, i, array.get(dK, i), text_color = array.get(dKC, i), bgcolor = rb, text_size = fsz, text_halign = text.align_left)
-            table.cell(dashTable, 1, i, array.get(dV, i), text_color = array.get(dVC, i), bgcolor = rb, text_size = fsz, text_halign = text.align_right)
-            zeb := not zeb
+    dashTable := table.new(dashPos, 3, rows, bgcolor = P_BG, border_color = P_BORDER, border_width = 1, frame_color = P_BORDER, frame_width = 1)
+    int r = 0
+
+    // header
+    table.cell(dashTable, 0, r, "◆ YOUNGYUU EMA·ADX", text_color = P_GOLD_TX, bgcolor = P_GOLD_BG, text_size = fsz, text_halign = text.align_left)
+    table.merge_cells(dashTable, 0, r, 1, r)
+    table.cell(dashTable, 2, r, barstate.isrealtime ? "● LIVE" : "◌ HIST", text_color = barstate.isrealtime ? P_LIVE_TX : P_HIST_TX, bgcolor = barstate.isrealtime ? P_LIVE_BG : P_HIST_BG, text_size = fsz)
+    r += 1
+    // status
+    table.cell(dashTable, 0, r, msg, text_color = msgTx, bgcolor = msgBg, text_size = fsz, text_halign = text.align_left)
+    table.merge_cells(dashTable, 0, r, 2, r)
+    r += 1
+    // bias + MTF
+    table.cell(dashTable, 0, r, biasTx, text_color = biasCol, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+    table.cell(dashTable, 1, r, mtfTx, text_color = P_TEXT, bgcolor = P_BG, text_size = fsz)
+    table.merge_cells(dashTable, 1, r, 2, r)
+    r += 1
+    // zones
+    table.cell(dashTable, 0, r, supTx, text_color = supplyColorInput, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+    table.cell(dashTable, 1, r, demTx, text_color = demandColorInput, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
+    table.merge_cells(dashTable, 1, r, 2, r)
+    r += 1
+    // side / entry / SL
+    table.cell(dashTable, 0, r, sideTx, text_color = sideTxC, bgcolor = sideBg, text_size = fsz)
+    if inTrade
+        table.cell(dashTable, 1, r, "E " + fmtPrice(T.entry), text_color = P_E_TX, bgcolor = P_INFO_DK, text_size = fsz)
+        table.cell(dashTable, 2, r, (T.be ? "BE " : "SL ") + fmtPrice(T.sl), text_color = T.be ? BE_COLOR : P_BEAR, bgcolor = P_BEAR_DK, text_size = fsz)
+    else
+        table.cell(dashTable, 1, r, "last " + sigAgo, text_color = P_MUTED, bgcolor = P_BG, text_size = fsz)
+        table.merge_cells(dashTable, 1, r, 2, r)
+    r += 1
+    // TP progress
+    table.cell(dashTable, 0, r, "TP " + (inTrade ? tpDots : "—"), text_color = TP_LBL_COLOR, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+    table.cell(dashTable, 1, r, inTrade ? "next " + fmtPrice(nextTP) + (moneyOnInput ? "  " + fmtUsdS(floatP) : "") : "—", text_color = P_TEXT, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
+    table.merge_cells(dashTable, 1, r, 2, r)
+    r += 1
+    // R + WR
+    table.cell(dashTable, 0, r, fmtR(liveR), text_color = liveR >= 0 ? P_BULL : P_BEAR, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+    table.cell(dashTable, 1, r, "WR " + str.tostring(math.round(tp1Rate)) + "% · " + fmtR(avgR) + " · n" + str.tostring(S.closed), text_color = P_YELLOW, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
+    table.merge_cells(dashTable, 1, r, 2, r)
+    r += 1
+    // form strip
+    table.cell(dashTable, 0, r, "Form", text_color = P_MUTED, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+    table.cell(dashTable, 1, r, S.form == "" ? "—" : S.form, text_color = FORM_COLOR, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
+    table.merge_cells(dashTable, 1, r, 2, r)
+    r += 1
+    // PC extras: ADX/regime + last block
+    if isPC
+        table.cell(dashTable, 0, r, "ADX " + str.tostring(adx, "0.0"), text_color = adxOk ? P_BULL : P_BEAR, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+        table.cell(dashTable, 1, r, "thr " + str.tostring(adxThr, "0") + " · DI+ " + str.tostring(diPlus, "0") + "/" + str.tostring(diMinus, "0") + " · " + regimeStr, text_color = regimeCol, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
+        table.merge_cells(dashTable, 1, r, 2, r)
+        r += 1
+        table.cell(dashTable, 0, r, "Block", text_color = P_MUTED, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+        table.cell(dashTable, 1, r, lastBlock == "" ? "—" : lastBlock, text_color = P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
+        table.merge_cells(dashTable, 1, r, 2, r)
+        r += 1
+    // money
+    if moneyOnInput
+        float netAll = M.equity - capitalInput
+        float netPct = capitalInput > 0 ? netAll / capitalInput * 100.0 : 0.0
+        table.cell(dashTable, 0, r, "💰 " + fmtUsd(capitalInput), text_color = P_YELLOW, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+        table.cell(dashTable, 1, r, "→ " + fmtUsd(M.equity) + " (" + fmtPctS(netPct) + ")" + (M.bust ? " 💥" : ""), text_color = netAll >= 0 ? P_BULL : P_BEAR, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
+        table.merge_cells(dashTable, 1, r, 2, r)
+        r += 1
+        if isPC
+            int mTot = M.wins + M.losses
+            table.cell(dashTable, 0, r, "W/L " + str.tostring(M.wins) + "/" + str.tostring(M.losses), text_color = P_TEXT, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+            table.cell(dashTable, 1, r, "DD -" + str.tostring(M.maxDD, "0.0") + "% · last " + (mTot > 0 ? fmtUsdS(M.lastPnl) : "—") + " · ⚠ จำลอง", text_color = P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
+            table.merge_cells(dashTable, 1, r, 2, r)
+            r += 1
+    // kill zone countdown
+    if showKzInput
+        table.cell(dashTable, 0, r, kzTx + barTx, text_color = inKz ? P_YELLOW : P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
+        table.merge_cells(dashTable, 0, r, 2, r)
 else if not showDashInput and barstate.islast and not na(dashTable)
     table.delete(dashTable)
     dashTable := na
