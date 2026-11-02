@@ -101,7 +101,10 @@ maxRiskAtr = input.float(3.0, "Max Risk (ATR ×) — skip wider", step = 0.1, gr
 spread     = input.float(0.20, "Spread ($) for fills", step = 0.01, group = G_RK, tooltip = "กราฟเป็น Bid: Buy fill/Sell exit ใช้ Ask = Bid + Spread")
 
 G_TP      = "💰 TAKE PROFIT"
-tpMode    = input.string("R Multiple", "TP Mode", options = ["R Multiple", "Fixed $ Step"], group = G_TP)
+tpMode    = input.string("Fixed Points", "TP Mode", options = ["Fixed Points", "R Multiple", "Fixed $ Step"], group = G_TP,
+     tooltip = "Fixed Points = TP1 ห่างจาก Entry ตามจำนวนจุดที่ตั้ง, TP2 = 2 เท่า, TP3 = 3 เท่า ...")
+tpPts     = input.int(500, "TP Step (points)", minval = 1, group = G_TP, tooltip = "500 จุด × 0.01 = $5.00 ต่อ TP")
+pointSize = input.float(0.01, "1 Point = $", step = 0.001, group = G_TP, tooltip = "ทองคำแบบ MT5 2 ทศนิยม: 1 จุด = 0.01\nถ้าโบรกเกอร์ 3 ทศนิยม (1 จุด = 0.001) ให้ตั้ง 0.001")
 tpCount   = input.int(5, "TP Levels", minval = 1, maxval = 5, group = G_TP)
 r1        = input.float(1.0, "TP1 R", step = 0.1, inline = "r", group = G_TP)
 r2        = input.float(2.0, "TP2", step = 0.1, inline = "r", group = G_TP)
@@ -348,7 +351,7 @@ f_new(int d, float lim, float slPx, int sc, string flags) =>
     float ent   = fillMode == "Early" ? early : lim
     array<float> tps = array.new<float>()
     for k = 1 to tpCount
-        float off = tpMode == "R Multiple" ? rArr.get(k - 1) * risk0 : k * fixedStep
+        float off = tpMode == "R Multiple" ? rArr.get(k - 1) * risk0 : tpMode == "Fixed $ Step" ? k * fixedStep : k * tpPts * pointSize
         tps.push(lim + d * off)
     Setup s = Setup.new(dir = d, state = 1, born = bar_index, limitPx = lim, earlyPx = early, entry = ent,
          slInit = slPx, sl = slPx, risk = math.abs(ent - slPx), nTp = tpCount, tps = tps, score = sc,
