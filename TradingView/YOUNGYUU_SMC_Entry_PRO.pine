@@ -198,6 +198,7 @@ type Setup
     float        capPx   = na
     bool         warned  = false
     int          fillT   = na
+    int          bornT   = na
     array<float> cutTps
     line         wallL
     label        wallLb
@@ -396,8 +397,8 @@ f_mark(Setup s) =>
     if showMarks and s.state == 3
         bool win = s.tpHit > 0
         string tip = (s.dir == 1 ? "BUY" : "SELL") + " · " + s.grade + "\nEntry " + f_px(s.entry) + "  SL " + f_px(s.slInit) + "\n" + s.result + "\n" + str.format_time(nz(s.fillT, time), "dd MMM yyyy HH:mm", syminfo.timezone)
-        marks.push(label.new(s.born, s.limitPx, (win ? "✅ " : "🛑 ") + str.replace_all(s.result, "  ", " "), color = color.new(win ? C_UP : C_DN, 75), textcolor = win ? C_UP : C_DN,
-             style = s.dir == 1 ? label.style_label_up : label.style_label_down, size = size.tiny, tooltip = tip))
+        marks.push(label.new(nz(s.bornT, time), s.limitPx, (win ? "✅ " : "🛑 ") + str.replace_all(s.result, "  ", " "), color = color.new(win ? C_UP : C_DN, 75), textcolor = win ? C_UP : C_DN,
+             xloc = xloc.bar_time, style = s.dir == 1 ? label.style_label_up : label.style_label_down, size = size.tiny, tooltip = tip))
         if marks.size() > 200
             label.delete(marks.shift())
 
@@ -419,7 +420,7 @@ f_new(int d, float lim, float slPx, int sc, string flags, array<float> tps, stri
     float risk0 = math.abs(lim - slPx)
     float early = lim + d * earlyR * risk0
     float ent   = fillMode == "Early" ? early : lim
-    Setup s = Setup.new(dir = d, state = 1, born = bar_index, limitPx = lim, earlyPx = early, entry = ent,
+    Setup s = Setup.new(dir = d, state = 1, born = bar_index, bornT = time, limitPx = lim, earlyPx = early, entry = ent,
          slInit = slPx, sl = slPx, risk = math.abs(ent - slPx), nTp = tps.size(), tps = tps, score = sc,
          grade = f_grade(sc), flags = flags, capNote = capNote, capName = capName, capPx = capPx, cutTps = cutTps, tpL = array.new<line>(), tpLb = array.new<label>())
     f_draw(s)
@@ -570,7 +571,7 @@ if barstate.isconfirmed
         if showStruct and not na(shLn)
             shLn.set_color(C_UP)
             shLn.set_style(isCh ? line.style_solid : line.style_dotted)
-            f_keepLbl(label.new(math.round((shBar + bar_index) / 2), shP, isCh ? "CHoCH" : "BOS", color = C_NONE, textcolor = C_UP, style = label.style_label_down, size = size.tiny))
+            f_keepLbl(label.new(math.max(math.round((shBar + bar_index) / 2), bar_index - 450), shP, isCh ? "CHoCH" : "BOS", color = C_NONE, textcolor = C_UP, style = label.style_label_down, size = size.tiny))
     else if not shBroken and not shSwept and not na(shP) and high > shP and close < shP
         shSwept   := true
         bearSwBar := bar_index
@@ -587,7 +588,7 @@ if barstate.isconfirmed
         if showStruct and not na(slLn)
             slLn.set_color(C_DN)
             slLn.set_style(isCh ? line.style_solid : line.style_dotted)
-            f_keepLbl(label.new(math.round((slBar + bar_index) / 2), slP, isCh ? "CHoCH" : "BOS", color = C_NONE, textcolor = C_DN, style = label.style_label_up, size = size.tiny))
+            f_keepLbl(label.new(math.max(math.round((slBar + bar_index) / 2), bar_index - 450), slP, isCh ? "CHoCH" : "BOS", color = C_NONE, textcolor = C_DN, style = label.style_label_up, size = size.tiny))
     else if not slBroken and not slSwept and not na(slP) and low < slP and close > slP
         slSwept   := true
         bullSwBar := bar_index
