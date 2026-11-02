@@ -18,7 +18,6 @@ indicator("YOUNGYUU SMC Entry PRO", shorttitle = "YY_SMC_PRO", overlay = true,
 // ══════════════════════════════════════
 G_TH    = "🎨 THEME"
 themeIn = input.string("Obsidian Gold", "HUD Theme", options = ["Obsidian Gold", "Neon Cyber", "Light Pro"], group = G_TH)
-hudMode = input.string("Full", "HUD Mode", options = ["Full", "Compact"], group = G_TH, tooltip = "Compact = ซ่อนส่วน Performance เหมาะกับจอเล็ก / มือถือ")
 isNeon  = themeIn == "Neon Cyber"
 isLight = themeIn == "Light Pro"
 
@@ -47,11 +46,34 @@ swLen      = input.int(5, "Swing Length", minval = 2, group = G_ST)
 trigMode   = input.string("CHoCH", "Setup Trigger", options = ["CHoCH", "CHoCH + BOS"], group = G_ST)
 reqSweep   = input.bool(true, "Require Liquidity Sweep before Trigger", group = G_ST)
 sweepLook  = input.int(40, "Sweep Lookback (bars)", minval = 1, group = G_ST)
-showStruct = input.bool(true, "Show BOS / CHoCH", group = G_ST)
-showLiq    = input.bool(true, "Show Liquidity / Sweep", group = G_ST)
-showFvg    = input.bool(true, "Show FVG", inline = "fvg", group = G_ST)
+showStructIn = input.bool(true, "Show BOS / CHoCH  (Custom)", group = G_ST)
+showLiqIn    = input.bool(true, "Show Liquidity / Sweep  (Custom)", group = G_ST)
+showFvgIn    = input.bool(false, "Show FVG  (Custom)", inline = "fvg", group = G_ST)
 fvgMinAtr  = input.float(0.15, "min ATR×", step = 0.05, inline = "fvg", group = G_ST)
 fvgMax     = input.int(8, "Max FVG Boxes", minval = 1, group = G_ST)
+
+G_CH        = "🖼️ CHART DETAIL"
+chartDetail = input.string("Standard", "Chart Detail", options = ["Clean", "Standard", "Full", "Custom"], group = G_CH,
+     tooltip = "Clean = เฉพาะไม้ + โซน ≥3★ + Key Levels (สะอาดสุด)\nStandard = + BOS/CHoCH + Liquidity/Sweep\nFull = ทุกอย่างรวม FVG M5\nCustom = ใช้สวิตช์ (Custom) แต่ละตัว")
+bool isCustomCh = chartDetail == "Custom"
+showStruct = isCustomCh ? showStructIn : chartDetail != "Clean"
+showLiq    = isCustomCh ? showLiqIn : chartDetail != "Clean"
+showFvg    = isCustomCh ? showFvgIn : chartDetail == "Full"
+
+G_KL     = "📍 KEY LEVELS"
+showKL   = input.bool(true, "Show Key Levels", group = G_KL, tooltip = "ระดับที่ห่างกันน้อยกว่า Merge จะถูกรวมเป็นเส้นเดียว เช่น \"PDH · R4675\" เพื่อไม่ให้ป้ายทับกัน")
+klPD     = input.bool(true, "Previous Day High / Low", group = G_KL)
+klPW     = input.bool(false, "Previous Week High / Low", group = G_KL)
+klAsia   = input.bool(true, "Asia Range (UTC)", inline = "as", group = G_KL)
+asiaSess = input.session("0000-0600", "", inline = "as", group = G_KL)
+klRound  = input.bool(true, "Round Numbers  Step $", inline = "rn", group = G_KL)
+rnStep   = input.float(25.0, "", minval = 1, inline = "rn", group = G_KL)
+klPoi    = input.bool(true, "HTF POI (FVG)", inline = "hp", group = G_KL)
+poiTf    = input.timeframe("60", "", inline = "hp", group = G_KL)
+klRange  = input.float(8.0, "Show within ± ATR ×", minval = 1, group = G_KL)
+klMerge  = input.float(0.35, "Merge closer than ATR ×", step = 0.05, group = G_KL)
+klLblPos = input.string("Left", "Label Position", options = ["Left", "Right"], group = G_KL, tooltip = "Left = ป้ายอยู่ต้นเส้นเหนือเส้น (ไม่ชนแดชบอร์ด/ป้าย TP)\nRight = ป้ายอยู่ปลายเส้นขวาสุด")
+klOffset = input.int(18, "Right Label Offset (bars)", minval = 0, group = G_KL)
 
 G_Z        = "🧱 SUPPLY / DEMAND ZONES"
 showZones  = input.bool(true, "Show Zones", group = G_Z, tooltip = "ความแข็งแรง ★1-5:\n★ ฐาน (ทุกโซน)\n★ วิ่งออกแรง ≥ Strong Departure × ATR\n★ ทิ้ง FVG/Imbalance ตอนวิ่งออก\n★ Fresh ยังไม่เคยถูกทดสอบ\n★ ทิศตรงกับ HTF Bias (Matrix TF 1)")
@@ -105,8 +127,19 @@ tfB  = input.timeframe("15", "TF 2", group = G_MT)
 tfC  = input.timeframe("5", "TF 3", group = G_MT)
 
 G_DS          = "📊 DASHBOARD"
-dashPos       = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left", "Middle Right"], group = G_DS)
+dashLayout    = input.string("Full", "Layout", options = ["Full", "Compact", "Mobile", "Custom"], group = G_DS,
+     tooltip = "Full = ครบทุกส่วน\nCompact = ตัด MTF Matrix + Performance\nMobile = 7 แถว ตัวเล็ก สำหรับมือถือจอเล็ก\nCustom = เลือกส่วนที่จะโชว์ด้วยสวิตช์ ▸ ด้านล่าง")
+dashPos       = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Top Center", "Bottom Right", "Bottom Left", "Bottom Center", "Middle Right"], group = G_DS)
 dashSzIn      = input.string("Small", "Text Size", options = ["Tiny", "Small", "Normal"], group = G_DS)
+secBiasIn     = input.bool(true, "▸ Market Bias", inline = "s1", group = G_DS)
+secMtxIn      = input.bool(true, "▸ MTF Matrix", inline = "s1", group = G_DS)
+secZoneIn     = input.bool(true, "▸ S/D Zones", inline = "s2", group = G_DS)
+secKLIn       = input.bool(true, "▸ Key Levels", inline = "s2", group = G_DS)
+secTrdIn      = input.bool(true, "▸ Trade", inline = "s3", group = G_DS)
+secTpIn       = input.bool(true, "▸ TP Ladder", inline = "s3", group = G_DS)
+secPnlIn      = input.bool(true, "▸ Live P/L", inline = "s4", group = G_DS)
+secPerfIn     = input.bool(true, "▸ Performance", inline = "s4", group = G_DS)
+secClkIn      = input.bool(true, "▸ Session Clock", inline = "s5", group = G_DS)
 statPeriod    = input.string("This Month", "Stats Period", options = ["Today", "This Week", "This Month", "All Time"], group = G_DS)
 keepHist      = input.int(8, "Keep Past Trades on Chart", minval = 0, maxval = 25, group = G_DS)
 showCancelled = input.bool(false, "Show Missed / Expired Setups", group = G_DS)
@@ -173,7 +206,7 @@ int          tM    = time("M")
 // ══════════════════════════════════════
 f_px(float x)   => na(x) ? "—" : str.tostring(x, format.mintick)
 f_r(float x)    => na(x) ? "—" : (x >= 0 ? "+" : "") + str.tostring(x, "#.##") + "R"
-f_grade(int s)  => s >= 5 ? "A+" : s == 4 ? "A" : s == 3 ? "B" : "C"
+f_grade(int s)  => s >= 6 ? "A+" : s == 5 ? "A" : s == 4 ? "B" : "C"      // score out of 7
 f_gv(string g)  => g == "A+" ? 3 : g == "A" ? 2 : g == "B" ? 1 : 0
 f_dirTxt(int d) => d > 0 ? "▲" : d < 0 ? "▼" : "·"
 f_dirCol(int d) => d > 0 ? C_UP : d < 0 ? C_DN : C_MUTE
@@ -531,11 +564,12 @@ f_starTxt(int n)  => str.repeat("★", n) + str.repeat("☆", 5 - n)
 
 f_zPaint(Zone z) =>
     int   st   = f_zStars(z)
-    bool  vis  = showZones and st >= zMinStars
+    bool  vis  = showZones and st >= (chartDetail == "Clean" ? math.max(zMinStars, 3) : zMinStars)
     color base = z.dir == 1 ? C_UP : C_DN
     z.bx.set_bgcolor(vis ? color.new(base, 94 - st * 5) : C_NONE)
     z.bx.set_border_color(vis ? color.new(base, 70 - st * 8) : C_NONE)
-    z.bx.set_text(vis ? (z.dir == 1 ? "DEMAND  " : "SUPPLY  ") + f_starTxt(st) + (z.tests > 0 ? "  · T" + str.tostring(z.tests) : "  · FRESH") : "")
+    bool  busy = not na(cur) and z.top >= math.min(cur.sl, cur.limitPx) and z.bot <= math.max(cur.sl, cur.limitPx)
+    z.bx.set_text(vis and not busy ? (z.dir == 1 ? "DEMAND  " : "SUPPLY  ") + f_starTxt(st) + (z.tests > 0 ? "  · T" + str.tostring(z.tests) : "  · FRESH") : "")
     z.bx.set_text_color(vis ? color.new(base, 5) : C_NONE)
 
 f_zOverlap(float top, float bot, int dir) =>
@@ -604,7 +638,7 @@ if barstate.isconfirmed and not na(ph) and not na(zAtrPiv)
             if high[i] < low[i + 2]
                 fv := true
                 break
-        Zone z = Zone.new(box.new(bar_index - swLen, top, bar_index, bot, extend = extend.right, text_size = size.small, text_halign = text.align_right, text_valign = text.align_center), top, bot, -1, 0, fv, dep >= zStrongDep * zAtrPiv)
+        Zone z = Zone.new(box.new(bar_index - swLen, top, bar_index, bot, extend = extend.right, text_size = size.small, text_halign = text.align_left, text_valign = text.align_center), top, bot, -1, 0, fv, dep >= zStrongDep * zAtrPiv)
         zones.push(z)
         f_zPaint(z)
         f_zTrim(-1)
@@ -623,10 +657,154 @@ if barstate.isconfirmed and not na(pl) and not na(zAtrPiv)
             if low[i] > high[i + 2]
                 fv := true
                 break
-        Zone z = Zone.new(box.new(bar_index - swLen, top, bar_index, bot, extend = extend.right, text_size = size.small, text_halign = text.align_right, text_valign = text.align_center), top, bot, 1, 0, fv, dep >= zStrongDep * zAtrPiv)
+        Zone z = Zone.new(box.new(bar_index - swLen, top, bar_index, bot, extend = extend.right, text_size = size.small, text_halign = text.align_left, text_valign = text.align_center), top, bot, 1, 0, fv, dep >= zStrongDep * zAtrPiv)
         zones.push(z)
         f_zPaint(z)
         f_zTrim(1)
+
+// ══════════════════════════════════════
+// 📍 KEY LEVELS  (PDH/PDL · PWH/PWL · Asia range · Round numbers · HTF POI FVG)
+// all values are from CLOSED periods → non-repaint
+// ══════════════════════════════════════
+[pdh, pdl] = request.security(syminfo.tickerid, "D", [high[1], low[1]], lookahead = barmerge.lookahead_on)
+[pwh, pwl] = request.security(syminfo.tickerid, "W", [high[1], low[1]], lookahead = barmerge.lookahead_on)
+
+// Asia range — last COMPLETED session
+bool inAsia = not na(time(timeframe.period, asiaSess, "UTC"))
+var float asRunHi = na
+var float asRunLo = na
+var float asHi    = na
+var float asLo    = na
+if inAsia and not inAsia[1]
+    asRunHi := high
+    asRunLo := low
+else if inAsia
+    asRunHi := math.max(nz(asRunHi, high), high)
+    asRunLo := math.min(nz(asRunLo, low), low)
+if not inAsia and inAsia[1]
+    asHi := asRunHi
+    asLo := asRunLo
+
+// HTF POI: latest un-mitigated bullish / bearish FVG on poiTf
+f_poi() =>
+    var float bT = na
+    var float bB = na
+    var float sT = na
+    var float sB = na
+    if low > high[2]
+        bT := low
+        bB := high[2]
+    if high < low[2]
+        sT := low[2]
+        sB := high
+    if not na(bB) and low < bB
+        bT := na
+        bB := na
+    if not na(sT) and high > sT
+        sT := na
+        sB := na
+    [bT[1], bB[1], sT[1], sB[1]]
+
+[poiBT, poiBB, poiST, poiSB] = request.security(syminfo.tickerid, poiTf, f_poi(), lookahead = barmerge.lookahead_on)
+
+float rnNear = math.round(close / rnStep) * rnStep
+
+// sweep of a key level: extreme pierced the level by ≤ 1 ATR
+f_keySwept(float ext, int d) =>
+    array<float> ks = array.new<float>()
+    if klPD
+        ks.push(d == 1 ? pdl : pdh)
+    if klPW
+        ks.push(d == 1 ? pwl : pwh)
+    if klAsia
+        ks.push(d == 1 ? asLo : asHi)
+    if klRound
+        ks.push(math.round(ext / rnStep) * rnStep)
+    bool hit = false
+    for k in ks
+        if not na(k)
+            if d == 1 ? (ext <= k + 0.1 * atr and ext >= k - atr) : (ext >= k - 0.1 * atr and ext <= k + atr)
+                hit := true
+                break
+    hit
+
+f_inPoi(float px, int d) =>
+    d == 1 ? (not na(poiBB) and px >= poiBB - 0.2 * atr and px <= poiBT + 0.2 * atr) : (not na(poiSB) and px >= poiSB - 0.2 * atr and px <= poiST + 0.2 * atr)
+
+// merged, sorted level list (price · name · color · priority) for drawing + HUD
+type KLv
+    float  p
+    string n
+    color  c
+    int    pr
+
+f_klList() =>
+    array<KLv> raw = array.new<KLv>()
+    if klPD
+        raw.push(KLv.new(pdh, "PDH", C_BLUE, 1))
+        raw.push(KLv.new(pdl, "PDL", C_BLUE, 1))
+    if klPW
+        raw.push(KLv.new(pwh, "PWH", C_ACC, 0))
+        raw.push(KLv.new(pwl, "PWL", C_ACC, 0))
+    if klAsia
+        raw.push(KLv.new(asHi, "Asia H", C_GOLD, 2))
+        raw.push(KLv.new(asLo, "Asia L", C_GOLD, 2))
+    if klRound
+        float base = math.floor(close / rnStep) * rnStep
+        for k = -2 to 3
+            float rp = base + k * rnStep
+            raw.push(KLv.new(rp, "R" + str.tostring(rp, "#"), C_MUTE, 3))
+    array<float> ps = array.new<float>()
+    array<KLv>   ok = array.new<KLv>()
+    for v in raw
+        if not na(v.p) and math.abs(v.p - close) <= klRange * atr
+            ok.push(v)
+            ps.push(v.p)
+    array<KLv> out = array.new<KLv>()
+    if ok.size() > 0
+        array<int> idx = array.sort_indices(ps, order.ascending)
+        for i in idx
+            KLv v = ok.get(i)
+            if out.size() > 0 and math.abs(v.p - out.last().p) <= klMerge * atr
+                KLv m = out.last()
+                m.n := m.n + " · " + v.n
+                if v.pr < m.pr
+                    m.c  := v.c
+                    m.pr := v.pr
+                    m.p  := v.p
+            else
+                out.push(KLv.new(v.p, v.n, v.c, v.pr))
+    out
+
+var array<line>  klLines = array.new<line>()
+var array<label> klLbls  = array.new<label>()
+var array<box>   poiBxs  = array.new<box>()
+
+if barstate.islast
+    for l in klLines
+        l.delete()
+    for lb in klLbls
+        lb.delete()
+    for b in poiBxs
+        b.delete()
+    klLines.clear()
+    klLbls.clear()
+    poiBxs.clear()
+    int xL = bar_index - 60
+    int xR = bar_index + extBars + klOffset
+    if showKL
+        for v in f_klList()
+            bool isRn = v.pr == 3 and not str.contains(v.n, "·")
+            klLines.push(line.new(xL, v.p, xR, v.p, color = color.new(v.c, isRn ? 70 : 35), style = isRn ? line.style_dotted : line.style_dashed, width = 1))
+            bool lft = klLblPos == "Left"
+            klLbls.push(label.new(lft ? xL : xR, v.p, v.n + "  " + f_px(v.p), color = C_NONE, textcolor = color.new(v.c, isRn ? 30 : 0), style = lft ? label.style_label_lower_left : label.style_label_left, size = size.small))
+    if klPoi and showKL
+        if not na(poiBT) and math.abs(poiBT - close) <= klRange * atr
+            poiBxs.push(box.new(bar_index - 60, poiBT, xR, poiBB, border_color = color.new(C_UP, 55), border_style = line.style_dashed, bgcolor = color.new(C_UP, 93),
+                 text = f_tfName(poiTf) + " FVG", text_color = color.new(C_UP, 30), text_size = size.tiny, text_halign = text.align_left, text_valign = text.align_top))
+        if not na(poiST) and math.abs(poiSB - close) <= klRange * atr
+            poiBxs.push(box.new(bar_index - 60, poiST, xR, poiSB, border_color = color.new(C_DN, 55), border_style = line.style_dashed, bgcolor = color.new(C_DN, 93),
+                 text = f_tfName(poiTf) + " FVG", text_color = color.new(C_DN, 30), text_size = size.tiny, text_halign = text.align_left, text_valign = text.align_bottom))
 
 // ══════════════════════════════════════
 // 📒 ORDER LIFECYCLE
@@ -709,8 +887,10 @@ if barstate.isconfirmed and (bullTrig or bearTrig) and (na(cur) or cur.state == 
     bool  hasSw  = not na(swB) and bar_index - swB <= sweepLook
     bool  htfOk  = htfDir == d
     bool  disc   = d == 1 ? lim < eqLvl : lim > eqLvl
-    int   sc     = (hasSw ? 1 : 0) + (htfOk ? 1 : 0) + (fvgIn ? 1 : 0) + (inKz ? 1 : 0) + (disc ? 1 : 0)
-    string flags = (hasSw ? "✓" : "✗") + "Sweep " + (htfOk ? "✓" : "✗") + "HTF " + (fvgIn ? "✓" : "✗") + "FVG " + (inKz ? "✓" : "✗") + "KZ " + (disc ? "✓" : "✗") + (d == 1 ? "Disc" : "Prem")
+    bool  keyOk  = f_keySwept(ext, d)
+    bool  poiOk  = f_inPoi(lim, d)
+    int   sc     = (hasSw ? 1 : 0) + (htfOk ? 1 : 0) + (fvgIn ? 1 : 0) + (inKz ? 1 : 0) + (disc ? 1 : 0) + (keyOk ? 1 : 0) + (poiOk ? 1 : 0)
+    string flags = (hasSw ? "✓" : "✗") + "Swp " + (keyOk ? "✓" : "✗") + "Key " + (htfOk ? "✓" : "✗") + "HTF " + (poiOk ? "✓" : "✗") + "POI " + (fvgIn ? "✓" : "✗") + "FVG " + (inKz ? "✓" : "✗") + "KZ " + (disc ? "✓" : "✗") + (d == 1 ? "Disc" : "Prem")
     bool  pass   = okRisk and okSide and (not reqSweep or hasSw) and (not useHtf or htfOk) and (not useKz or inKz) and f_gv(f_grade(sc)) >= f_gv(minGrade) and (maxTradesDay == 0 or tradesToday < maxTradesDay)
     if pass
         if not na(cur)
@@ -732,30 +912,49 @@ if barstate.isconfirmed and not na(cur)
 
 
 // ══════════════════════════════════════════════════════════════════
-// 📊 OBSIDIAN HUD  (6-col tile layout · static rows → no layout jump)
+// 📊 OBSIDIAN HUD
+// Layout: Full · Compact · Mobile · Custom (per-section toggles)
+// rows depend only on inputs → table never "jumps" between ticks
 // ══════════════════════════════════════════════════════════════════
 tblPos = switch dashPos
-    "Top Left"     => position.top_left
-    "Bottom Right" => position.bottom_right
-    "Bottom Left"  => position.bottom_left
-    "Middle Right" => position.middle_right
+    "Top Left"      => position.top_left
+    "Top Center"    => position.top_center
+    "Bottom Right"  => position.bottom_right
+    "Bottom Left"   => position.bottom_left
+    "Bottom Center" => position.bottom_center
+    "Middle Right"  => position.middle_right
     => position.top_right
-szS = switch dashSzIn
+bool isMobile = dashLayout == "Mobile"
+szBase = switch dashSzIn
     "Tiny"   => size.tiny
     "Normal" => size.normal
     => size.small
-szL = switch dashSzIn
+szBig = switch dashSzIn
     "Tiny"   => size.small
     "Normal" => size.large
     => size.normal
+szS = isMobile ? size.tiny : szBase
+szL = isMobile ? size.small : szBig
+szT = size.tiny
 
-var table tb = table.new(tblPos, 6, 36, bgcolor = C_BG, frame_color = C_GRID, frame_width = 1, border_color = C_BG, border_width = 2)
+bool lCus    = dashLayout == "Custom"
+bool lFull   = dashLayout == "Full"
+bool secBias = lCus ? secBiasIn : true
+bool secMtx  = lCus ? secMtxIn : lFull
+bool secZone = lCus ? secZoneIn : true
+bool secKL   = lCus ? secKLIn : true
+bool secTrd  = lCus ? secTrdIn : true
+bool secTp   = lCus ? secTpIn : true
+bool secPnl  = lCus ? secPnlIn : true
+bool secPerf = lCus ? secPerfIn : lFull
+bool secClk  = lCus ? secClkIn : true
+
+var table tb = table.new(tblPos, 6, 40, bgcolor = C_BG, frame_color = C_GRID, frame_width = 1, border_color = C_BG, border_width = 2)
 
 AL = text.align_left
 AC = text.align_center
 AR = text.align_right
 
-// put text into cells c0..c1 of row r (merged when c1 > c0)
 f_put(int c0, int c1, int r, string t, color tc, color bg, string sz, string ha, bool mono) =>
     table.cell(tb, c0, r, t, text_color = tc, bgcolor = bg, text_size = sz, text_halign = ha,
          text_font_family = mono ? font.family_monospace : font.family_default)
@@ -769,7 +968,6 @@ f_hms(int ms) =>
     int s0 = math.max(0, math.floor(ms / 1000))
     str.format("{0,number,00}:{1,number,00}:{2,number,00}", math.floor(s0 / 3600), math.floor((s0 % 3600) / 60), s0 % 60)
 
-// killzone window (UTC "HHMM-HHMM") → [start, end] timestamps for today/tomorrow
 f_kz(string sess) =>
     int sH = int(str.tonumber(str.substring(sess, 0, 2)))
     int sM = int(str.tonumber(str.substring(sess, 2, 4)))
@@ -802,18 +1000,7 @@ f_tfRow(int r, string tf, int b, int c, int s, int f, int d) =>
 var array<string> SPK = array.from("▁", "▂", "▃", "▄", "▅", "▆", "▇", "█")
 
 if barstate.islast
-    int r = 0
-
-    // ── HEADER ────────────────────────────────────────
-    string liveDot = second(timenow) % 2 == 0 ? "● LIVE" : "○ LIVE"
-    f_put(0, 3, r, "⬡ YOUNGYUU  SMC ENTRY PRO", C_INK, C_ACC, szS, AL, false)
-    f_put(4, 5, r, liveDot, C_UP, f_soft(C_UP), szS, AC, false)
-    r += 1
-    f_put(0, 2, r, syminfo.ticker + " · " + f_tfName(timeframe.period), C_MUTE, na, size.tiny, AL, true)
-    f_put(3, 5, r, "NON-REPAINT · BAR CLOSE", C_MUTE, na, size.tiny, AR, false)
-    r += 1
-
-    // ── MARKET BIAS ───────────────────────────────────
+    // ── shared values ────────────────────────────────
     int sA = nz(aB) + nz(aC) + nz(aS) + nz(aF) + nz(aD)
     int sB = nz(bB) + nz(bC) + nz(bS) + nz(bF) + nz(bD)
     int sC = nz(cB) + nz(cC) + nz(cS) + nz(cF) + nz(cD)
@@ -821,46 +1008,26 @@ if barstate.islast
     int conf   = math.round(math.abs(sumAll) / 15.0 * 100)
     string biasTxt = sumAll >= 3 ? "BULLISH" : sumAll <= -3 ? "BEARISH" : "NEUTRAL"
     color  biasCol = sumAll >= 3 ? C_UP : sumAll <= -3 ? C_DN : C_WARN
-    f_put(0, 1, r, "MARKET\nBIAS", C_MUTE, C_SEC, size.tiny, AL, false)
-    f_put(2, 3, r, biasTxt, biasCol, C_SEC, szL, AC, false)
-    f_put(4, 5, r, str.tostring(conf) + "%\n" + f_bar(math.round(conf / 10), 10, "▰", "▱"), biasCol, C_SEC, szS, AR, true)
-    r += 1
-
-    // ── MTF SMC MATRIX ────────────────────────────────
-    f_put(0, 0, r, "TF", C_MUTE, na, size.tiny, AL, false)
-    f_put(1, 1, r, "BOS", C_MUTE, na, size.tiny, AC, false)
-    f_put(2, 2, r, "CHOCH", C_MUTE, na, size.tiny, AC, false)
-    f_put(3, 3, r, "SWEEP", C_MUTE, na, size.tiny, AC, false)
-    f_put(4, 4, r, "FVG", C_MUTE, na, size.tiny, AC, false)
-    f_put(5, 5, r, "BIAS", C_MUTE, na, size.tiny, AC, false)
-    r += 1
-    f_tfRow(r, tfA, nz(aB), nz(aC), nz(aS), nz(aF), nz(aD))
-    r += 1
-    f_tfRow(r, tfB, nz(bB), nz(bC), nz(bS), nz(bF), nz(bD))
-    r += 1
-    f_tfRow(r, tfC, nz(cB), nz(cC), nz(cS), nz(cF), nz(cD))
-    r += 1
     int upN = (nz(aD) == 1 ? 1 : 0) + (nz(bD) == 1 ? 1 : 0) + (nz(cD) == 1 ? 1 : 0)
     int dnN = (nz(aD) == -1 ? 1 : 0) + (nz(bD) == -1 ? 1 : 0) + (nz(cD) == -1 ? 1 : 0)
-    string alTxt = upN == 3 ? "✓ STRUCTURE ALIGNED · BULL 3/3" : dnN == 3 ? "✓ STRUCTURE ALIGNED · BEAR 3/3" : upN == 2 ? "BULL 2/3 · HTF " + (nz(aD) == 1 ? "✓" : "✕") : dnN == 2 ? "BEAR 2/3 · HTF " + (nz(aD) == -1 ? "✓" : "✕") : "MIXED · STAND ASIDE"
-    f_put(0, 5, r, alTxt, upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN, f_soft(upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN), size.tiny, AC, false)
-    r += 1
 
-    // ── SUPPLY / DEMAND (nearest zone each side + strength)
     Zone zs = f_zNear(-1)
     Zone zd = f_zNear(1)
     bool inS = not na(zs) and close >= zs.bot
     bool inD = not na(zd) and close <= zd.top
-    f_put(0, 0, r, "SUPPLY", C_DN, f_soft(C_DN), size.tiny, AC, false)
-    f_put(1, 3, r, na(zs) ? "—" : f_px(zs.bot) + "–" + f_px(zs.top) + (inS ? "  ⚠ IN" : "  ↑" + str.tostring(zs.bot - close, "#.##")), inS ? C_WARN : C_TXT, na, size.tiny, AL, true)
-    f_put(4, 5, r, na(zs) ? "" : f_starTxt(f_zStars(zs)), C_GOLD, na, szS, AC, false)
-    r += 1
-    f_put(0, 0, r, "DEMAND", C_UP, f_soft(C_UP), size.tiny, AC, false)
-    f_put(1, 3, r, na(zd) ? "—" : f_px(zd.bot) + "–" + f_px(zd.top) + (inD ? "  ⚠ IN" : "  ↓" + str.tostring(close - zd.top, "#.##")), inD ? C_WARN : C_TXT, na, size.tiny, AL, true)
-    f_put(4, 5, r, na(zd) ? "" : f_starTxt(f_zStars(zd)), C_GOLD, na, szS, AC, false)
-    r += 1
 
-    // ── TRADE CARD (live setup, else last one) ────────
+    float  kUpP = na
+    string kUpN = ""
+    float  kDnP = na
+    string kDnN = ""
+    for v in f_klList()
+        if v.p > close and (na(kUpP) or v.p < kUpP)
+            kUpP := v.p
+            kUpN := v.n
+        if v.p < close and (na(kDnP) or v.p > kDnP)
+            kDnP := v.p
+            kDnN := v.n
+
     Setup s = na
     if not na(cur)
         s := cur
@@ -869,149 +1036,234 @@ if barstate.islast
     bool  has  = not na(s)
     bool  run  = has and s.state == 2
     color dCol = has ? (s.dir == 1 ? C_UP : C_DN) : C_MUTE
-    string pill = not has ? "WAITING" : (s.dir == 1 ? "BUY" : "SELL") + (s.state == 1 ? " LIMIT" : s.state == 2 ? " · LIVE" : " · LAST")
-    f_put(0, 1, r, pill, has ? (s.dir == 1 ? C_ONUP : color.white) : C_MUTE, has ? dCol : C_OFF, szS, AC, false)
-    f_put(2, 3, r, has ? s.grade + "  " + f_bar(s.score, 5, "▰", "▱") : "—", has ? C_GOLD : C_MUTE, C_SEC, szS, AC, false)
-    f_put(4, 5, r, has ? "R:R 1 : " + str.tostring(f_rAt(s, s.nTp), "#.#") : "R:R —", C_BLUE, C_SEC, szS, AC, true)
-    r += 1
-    string flg = has ? str.replace_all(str.replace_all(s.flags, "✓", " ✓"), "✗", " ✕") : "waiting for Sweep → CHoCH → OB"
-    f_put(0, 5, r, flg, C_TXT, na, size.tiny, AC, false)
-    r += 1
-    f_put(0, 1, r, "ENTRY", C_MUTE, f_soft(C_BLUE), size.tiny, AC, false)
-    f_put(2, 3, r, "EARLY", C_MUTE, f_soft(C_GOLD), size.tiny, AC, false)
-    f_put(4, 5, r, has and s.sl != s.slInit ? "STOP · TRAILED" : "STOP", C_MUTE, f_soft(C_DN), size.tiny, AC, false)
-    r += 1
-    f_put(0, 1, r, has ? f_px(s.entry) : "—", C_BLUE, f_soft(C_BLUE), szS, AC, true)
-    f_put(2, 3, r, has ? f_px(s.earlyPx) : "—", C_GOLD, f_soft(C_GOLD), szS, AC, true)
-    f_put(4, 5, r, has ? f_px(s.sl) : "—", C_DN, f_soft(C_DN), szS, AC, true)
-    r += 1
+    float liveR = run ? ((s.dir == 1 ? close : close + spread) - s.entry) * s.dir / s.risk : na
 
-    // TP ladder (always 5 rows → static layout)
-    for k = 0 to 4
-        bool ex   = has and k < s.nTp
-        bool hit  = ex and s.tpHit > k
-        bool nxt  = ex and not hit and s.state <= 2 and s.tpHit == k
-        string dot = hit ? "●" : nxt ? "◉" : "○"
-        color  dc  = hit ? C_UP : nxt ? C_BLUE : C_OFF
-        f_put(0, 0, r, dot, dc, na, szS, AC, false)
-        f_put(1, 1, r, "TP" + str.tostring(k + 1), hit ? C_UP : nxt ? C_BLUE : C_MUTE, na, szS, AL, false)
-        f_put(2, 3, r, ex ? f_px(s.tps.get(k)) : "—", hit ? C_TXT : C_MUTE, na, szS, AL, true)
-        f_put(4, 4, r, ex ? "+" + str.tostring(f_rAt(s, k + 1), "#.#") + "R" : "", C_MUTE, na, size.tiny, AR, true)
-        f_put(5, 5, r, hit ? "HIT" : nxt ? "NEXT" : "", hit ? C_UP : C_BLUE, hit ? f_soft(C_UP) : nxt ? f_soft(C_BLUE) : na, size.tiny, AC, false)
-        r += 1
+    // performance (selected period)
+    int pStart = statPeriod == "Today" ? tD : statPeriod == "This Week" ? tW : statPeriod == "This Month" ? tM : 0
+    int   n    = 0
+    int   wN   = 0
+    int   lN   = 0
+    float sumR = 0.0
+    float gW   = 0.0
+    float gL   = 0.0
+    float cum  = 0.0
+    float peak = 0.0
+    float mdd  = 0.0
+    array<int>   form  = array.new<int>()
+    array<float> curve = array.new<float>()
+    array<int>   gN    = array.new<int>(4, 0)
+    array<int>   gWn   = array.new<int>(4, 0)
+    if stT.size() > 0
+        for i = 0 to stT.size() - 1
+            if stT.get(i) >= pStart
+                float R  = stR.get(i)
+                int   sc = stG.get(i)
+                int   gi = sc >= 6 ? 0 : sc == 5 ? 1 : sc == 4 ? 2 : 3
+                n    += 1
+                sumR += R
+                gN.set(gi, gN.get(gi) + 1)
+                if stW.get(i) == 1
+                    wN += 1
+                    gWn.set(gi, gWn.get(gi) + 1)
+                else
+                    lN += 1
+                if R > 0
+                    gW += R
+                else
+                    gL -= R
+                cum  += R
+                peak := math.max(peak, cum)
+                mdd  := math.max(mdd, peak - cum)
+                form.push(stW.get(i))
+                if form.size() > 10
+                    form.shift()
+                curve.push(cum)
+                if curve.size() > 24
+                    curve.shift()
+    float wr = n > 0 ? 100.0 * wN / n : 0.0
 
-    // Live P/L
-    float liveR  = run ? ((s.dir == 1 ? close : close + spread) - s.entry) * s.dir / s.risk : na
-    string stTxt = not has ? "NO ACTIVE SETUP" : s.state == 1 ? "⏳ PENDING · " + str.tostring(expiryBars - (bar_index - s.born)) + " bars left" : s.state == 2 ? "LIVE P/L · RUNNING TP" + str.tostring(math.min(s.tpHit + 1, s.nTp)) : s.state == 3 ? "CLOSED · " + s.result : "CANCELLED · " + s.result
-    color  stCol = not has ? C_MUTE : s.state == 1 or s.state == 4 ? C_WARN : s.state == 2 ? C_MUTE : s.tpHit > 0 ? C_UP : C_DN
-    f_put(0, 2, r, stTxt, stCol, C_SEC, size.tiny, AL, false)
-    f_put(3, 5, r, run ? f_r(liveR) : has and s.state == 3 ? f_r(s.rFinal) : "—", run ? (liveR >= 0 ? C_UP : C_DN) : has and s.state == 3 ? (s.rFinal >= 0 ? C_UP : C_DN) : C_MUTE, C_SEC, szL, AR, true)
-    r += 1
-    f_put(0, 2, r, run ? "$" + str.tostring(liveR * s.risk, "#.##") + " / oz" : "", C_TXT, C_SEC, size.tiny, AL, true)
-    f_put(3, 5, r, run ? "Banked " + f_r(s.rReal) + " · " + str.tostring(bar_index - s.fillBar) + " bars" : "", C_MUTE, C_SEC, size.tiny, AR, true)
-    r += 1
-
-    // ── PERFORMANCE ───────────────────────────────────
-    if hudMode == "Full"
-        int pStart = statPeriod == "Today" ? tD : statPeriod == "This Week" ? tW : statPeriod == "This Month" ? tM : 0
-        string pName = statPeriod == "This Month" ? str.upper(str.format_time(time, "MMM yyyy", syminfo.timezone)) : str.upper(statPeriod)
-        int   n         = 0
-        int   wN        = 0
-        int   lN        = 0
-        float sumR      = 0.0
-        float gW        = 0.0
-        float gL        = 0.0
-        float cum       = 0.0
-        float peak      = 0.0
-        float mdd       = 0.0
-        array<int>   form  = array.new<int>()
-        array<float> curve = array.new<float>()
-        array<int>   gN    = array.new<int>(4, 0)      // A+, A, B, C trade counts
-        array<int>   gWn   = array.new<int>(4, 0)      // A+, A, B, C wins
-        if stT.size() > 0
-            for i = 0 to stT.size() - 1
-                if stT.get(i) >= pStart
-                    float R = stR.get(i)
-                    int   sc = stG.get(i)
-                    int   gi = sc >= 5 ? 0 : sc == 4 ? 1 : sc == 3 ? 2 : 3
-                    n    += 1
-                    sumR += R
-                    gN.set(gi, gN.get(gi) + 1)
-                    if stW.get(i) == 1
-                        wN += 1
-                        gWn.set(gi, gWn.get(gi) + 1)
-                    else
-                        lN += 1
-                    if R > 0
-                        gW += R
-                    else
-                        gL -= R
-                    cum  += R
-                    peak := math.max(peak, cum)
-                    mdd  := math.max(mdd, peak - cum)
-                    form.push(stW.get(i))
-                    if form.size() > 10
-                        form.shift()
-                    curve.push(cum)
-                    if curve.size() > 24
-                        curve.shift()
-        float wr = n > 0 ? 100.0 * wN / n : 0.0
-        string formTxt = ""
-        for v in form
-            formTxt += v == 1 ? "🟩" : "🟥"
-        string spark = ""
-        if curve.size() > 1
-            float mn = curve.min()
-            float mx = curve.max()
-            for v in curve
-                int idx = mx > mn ? math.round((v - mn) / (mx - mn) * 7) : 3
-                spark += SPK.get(idx)
-
-        f_put(0, 3, r, "PERFORMANCE · " + pName, C_MUTE, na, size.tiny, AL, false)
-        f_put(4, 5, r, statPeriod == "Today" ? "D" : statPeriod == "This Week" ? "W" : statPeriod == "This Month" ? "M" : "ALL", C_INK, C_ACC, size.tiny, AC, false)
-        r += 1
-        f_put(0, 1, r, "TRADES", C_MUTE, C_SEC, size.tiny, AL, false)
-        f_put(2, 3, r, "WIN RATE", C_MUTE, C_SEC, size.tiny, AL, false)
-        f_put(4, 5, r, "NET", C_MUTE, C_SEC, size.tiny, AL, false)
-        r += 1
-        f_put(0, 1, r, str.tostring(n), C_TXT, C_SEC, szL, AL, true)
-        f_put(2, 3, r, str.tostring(wr, "#.#") + "%", C_GOLD, C_SEC, szL, AL, true)
-        f_put(4, 5, r, f_r(sumR), sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
-        r += 1
-        f_put(0, 1, r, "PROFIT F.", C_MUTE, C_SEC, size.tiny, AL, false)
-        f_put(2, 3, r, "MAX DD", C_MUTE, C_SEC, size.tiny, AL, false)
-        f_put(4, 5, r, "AVG / TRADE", C_MUTE, C_SEC, size.tiny, AL, false)
-        r += 1
-        f_put(0, 1, r, gL > 0 ? str.tostring(gW / gL, "#.##") : "—", C_TXT, C_SEC, szL, AL, true)
-        f_put(2, 3, r, "-" + str.tostring(mdd, "#.#") + "R", C_DN, C_SEC, szL, AL, true)
-        f_put(4, 5, r, n > 0 ? f_r(sumR / n) : "—", sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
-        r += 1
-        f_put(0, 1, r, str.tostring(wN) + "W / " + str.tostring(lN) + "L", C_MUTE, na, size.tiny, AL, true)
-        f_put(2, 5, r, f_bar(math.round(wr / 5), 20, "█", "░"), C_GOLD, na, size.tiny, AL, false)
-        r += 1
-        string gTxt = ""
-        array<string> gName = array.from("A+", "A", "B", "C")
-        for g = 0 to 3
-            if gN.get(g) > 0
-                gTxt += (gTxt == "" ? "" : "  ·  ") + gName.get(g) + " " + str.tostring(100.0 * gWn.get(g) / gN.get(g), "#") + "% (" + str.tostring(gN.get(g)) + ")"
-        f_put(0, 1, r, "WR BY GRADE", C_MUTE, na, size.tiny, AL, false)
-        f_put(2, 5, r, gTxt == "" ? "—" : gTxt, C_GOLD, f_soft(C_GOLD), size.tiny, AL, true)
-        r += 1
-        f_put(0, 1, r, "LAST 10", C_MUTE, na, size.tiny, AL, false)
-        f_put(2, 5, r, formTxt == "" ? "—" : formTxt, C_TXT, na, size.tiny, AL, false)
-        r += 1
-        f_put(0, 1, r, "EQUITY (R)", C_MUTE, na, size.tiny, AL, false)
-        f_put(2, 5, r, spark == "" ? "—" : spark, C_UP, f_soft(C_UP), szS, AL, false)
-        r += 1
-
-    // ── SESSION / CLOCK ───────────────────────────────
     [lSt, lEn] = f_kz(kzLon)
     [nSt, nEn] = f_kz(kzNy)
     bool lOn = timenow >= lSt and timenow < lEn
     bool nOn = timenow >= nSt and timenow < nEn
     string kzTxt = lOn ? "◷ LONDON KZ · ends " + f_hms(lEn - timenow) : nOn ? "◷ NEW YORK KZ · ends " + f_hms(nEn - timenow) : lSt - timenow < nSt - timenow ? "◷ LONDON KZ in " + f_hms(lSt - timenow) : "◷ NEW YORK KZ in " + f_hms(nSt - timenow)
-    f_put(0, 3, r, kzTxt, lOn or nOn ? C_GOLD : C_MUTE, C_SEC, size.tiny, AL, false)
-    f_put(4, 5, r, "bar " + f_hms(math.max(0, nz(time_close - timenow))), C_TXT, C_SEC, size.tiny, AR, true)
-    r += 1
-    string mdl = rModel == "Partial (equal split)" ? "Partial-R" : rModel == "Max TP reached" ? "Max-TP-R" : "Final-R"
-    f_put(0, 5, r, "spread $" + str.tostring(spread, "#.##") + " · " + mdl + " · today " + str.tostring(tradesToday) + (maxTradesDay > 0 ? "/" + str.tostring(maxTradesDay) : "") + " filled", C_MUTE, na, size.tiny, AC, false)
+    string barTxt = "bar " + f_hms(math.max(0, nz(time_close - timenow)))
+    string liveDot = second(timenow) % 2 == 0 ? "● LIVE" : "○ LIVE"
+
+    int r = 0
+    if isMobile
+        // ═══ MOBILE: 7 rows, tiny text ══════════════════
+        f_put(0, 3, r, "⬡ YOUNGYUU SMC", C_INK, C_ACC, szT, AL, false)
+        f_put(4, 5, r, liveDot, C_UP, f_soft(C_UP), szT, AC, false)
+        r += 1
+        f_put(0, 1, r, biasTxt, biasCol, f_soft(biasCol), szT, AC, false)
+        f_put(2, 5, r, f_tfName(tfA) + f_dirTxt(nz(aD)) + " " + f_tfName(tfB) + f_dirTxt(nz(bD)) + " " + f_tfName(tfC) + f_dirTxt(nz(cD)) + "  " + str.tostring(conf) + "%", C_TXT, C_SEC, szT, AC, true)
+        r += 1
+        f_put(0, 2, r, na(zs) ? "S —" : "S " + f_starTxt(f_zStars(zs)) + (inS ? " IN" : " ↑" + str.tostring(zs.bot - close, "#.#")), C_DN, C_SEC, szT, AL, false)
+        f_put(3, 5, r, na(zd) ? "D —" : "D " + f_starTxt(f_zStars(zd)) + (inD ? " IN" : " ↓" + str.tostring(close - zd.top, "#.#")), C_UP, C_SEC, szT, AL, false)
+        r += 1
+        f_put(0, 1, r, not has ? "WAIT" : (s.dir == 1 ? "BUY " : "SELL ") + s.grade, has ? (s.dir == 1 ? C_ONUP : color.white) : C_MUTE, has ? dCol : C_OFF, szT, AC, false)
+        f_put(2, 3, r, has ? "E " + f_px(s.entry) : "—", C_BLUE, f_soft(C_BLUE), szT, AC, true)
+        f_put(4, 5, r, has ? "SL " + f_px(s.sl) : "—", C_DN, f_soft(C_DN), szT, AC, true)
+        r += 1
+        string dots = ""
+        if has
+            for k = 0 to s.nTp - 1
+                dots += s.tpHit > k ? "●" : (s.state == 2 and s.tpHit == k) ? "◉" : "○"
+        string nxt = has and s.tpHit < s.nTp ? "  next " + f_px(s.tps.get(s.tpHit)) : ""
+        f_put(0, 5, r, has ? "TP " + dots + nxt : "TP —", C_UP, na, szT, AL, true)
+        r += 1
+        f_put(0, 2, r, run ? f_r(liveR) : has and s.state == 3 ? f_r(s.rFinal) : "—", run ? (liveR >= 0 ? C_UP : C_DN) : C_MUTE, C_SEC, szS, AL, true)
+        f_put(3, 5, r, "WR " + str.tostring(wr, "#.#") + "% · " + f_r(sumR), C_GOLD, C_SEC, szT, AR, true)
+        r += 1
+        f_put(0, 5, r, kzTxt + " · " + barTxt, lOn or nOn ? C_GOLD : C_MUTE, na, szT, AL, false)
+    else
+        // ═══ FULL / COMPACT / CUSTOM ════════════════════
+        f_put(0, 3, r, "⬡ YOUNGYUU  SMC ENTRY PRO", C_INK, C_ACC, szS, AL, false)
+        f_put(4, 5, r, liveDot, C_UP, f_soft(C_UP), szS, AC, false)
+        r += 1
+        f_put(0, 2, r, syminfo.ticker + " · " + f_tfName(timeframe.period), C_MUTE, na, szT, AL, true)
+        f_put(3, 5, r, "NON-REPAINT · BAR CLOSE", C_MUTE, na, szT, AR, false)
+        r += 1
+
+        if secBias
+            f_put(0, 1, r, "MARKET\nBIAS", C_MUTE, C_SEC, szT, AL, false)
+            f_put(2, 3, r, biasTxt, biasCol, C_SEC, szL, AC, false)
+            f_put(4, 5, r, str.tostring(conf) + "%\n" + f_bar(math.round(conf / 10), 10, "▰", "▱"), biasCol, C_SEC, szS, AR, true)
+            r += 1
+
+        if secMtx
+            f_put(0, 0, r, "TF", C_MUTE, na, szT, AL, false)
+            f_put(1, 1, r, "BOS", C_MUTE, na, szT, AC, false)
+            f_put(2, 2, r, "CHOCH", C_MUTE, na, szT, AC, false)
+            f_put(3, 3, r, "SWEEP", C_MUTE, na, szT, AC, false)
+            f_put(4, 4, r, "FVG", C_MUTE, na, szT, AC, false)
+            f_put(5, 5, r, "BIAS", C_MUTE, na, szT, AC, false)
+            r += 1
+            f_tfRow(r, tfA, nz(aB), nz(aC), nz(aS), nz(aF), nz(aD))
+            r += 1
+            f_tfRow(r, tfB, nz(bB), nz(bC), nz(bS), nz(bF), nz(bD))
+            r += 1
+            f_tfRow(r, tfC, nz(cB), nz(cC), nz(cS), nz(cF), nz(cD))
+            r += 1
+        if secBias or secMtx
+            string alTxt = upN == 3 ? "✓ STRUCTURE ALIGNED · BULL 3/3" : dnN == 3 ? "✓ STRUCTURE ALIGNED · BEAR 3/3" : upN == 2 ? "BULL 2/3 · " + f_tfName(tfA) + " " + (nz(aD) == 1 ? "✓" : "✕") : dnN == 2 ? "BEAR 2/3 · " + f_tfName(tfA) + " " + (nz(aD) == -1 ? "✓" : "✕") : "MIXED · STAND ASIDE"
+            color  alCol = upN >= 2 ? C_UP : dnN >= 2 ? C_DN : C_WARN
+            f_put(0, 5, r, alTxt, alCol, f_soft(alCol), szT, AC, false)
+            r += 1
+
+        if secZone
+            f_put(0, 0, r, "SUPPLY", C_DN, f_soft(C_DN), szT, AC, false)
+            f_put(1, 3, r, na(zs) ? "—" : f_px(zs.bot) + "–" + f_px(zs.top) + (inS ? "  ⚠ IN" : "  ↑" + str.tostring(zs.bot - close, "#.##")), inS ? C_WARN : C_TXT, na, szT, AL, true)
+            f_put(4, 5, r, na(zs) ? "" : f_starTxt(f_zStars(zs)), C_GOLD, na, szS, AC, false)
+            r += 1
+            f_put(0, 0, r, "DEMAND", C_UP, f_soft(C_UP), szT, AC, false)
+            f_put(1, 3, r, na(zd) ? "—" : f_px(zd.bot) + "–" + f_px(zd.top) + (inD ? "  ⚠ IN" : "  ↓" + str.tostring(close - zd.top, "#.##")), inD ? C_WARN : C_TXT, na, szT, AL, true)
+            f_put(4, 5, r, na(zd) ? "" : f_starTxt(f_zStars(zd)), C_GOLD, na, szS, AC, false)
+            r += 1
+
+        if secKL
+            f_put(0, 0, r, "▲ KEY", C_BLUE, f_soft(C_BLUE), szT, AC, false)
+            f_put(1, 3, r, na(kUpP) ? "—" : kUpN, C_TXT, na, szT, AL, false)
+            f_put(4, 5, r, na(kUpP) ? "" : f_px(kUpP) + "  +" + str.tostring(kUpP - close, "#.#"), C_MUTE, na, szT, AR, true)
+            r += 1
+            f_put(0, 0, r, "▼ KEY", C_BLUE, f_soft(C_BLUE), szT, AC, false)
+            f_put(1, 3, r, na(kDnP) ? "—" : kDnN, C_TXT, na, szT, AL, false)
+            f_put(4, 5, r, na(kDnP) ? "" : f_px(kDnP) + "  −" + str.tostring(close - kDnP, "#.#"), C_MUTE, na, szT, AR, true)
+            r += 1
+
+        if secTrd
+            string pill = not has ? "WAITING" : (s.dir == 1 ? "BUY" : "SELL") + (s.state == 1 ? " LIMIT" : s.state == 2 ? " · LIVE" : " · LAST")
+            f_put(0, 1, r, pill, has ? (s.dir == 1 ? C_ONUP : color.white) : C_MUTE, has ? dCol : C_OFF, szS, AC, false)
+            f_put(2, 3, r, has ? s.grade + "  " + f_bar(s.score, 7, "▰", "▱") : "—", has ? C_GOLD : C_MUTE, C_SEC, szS, AC, false)
+            f_put(4, 5, r, has ? "R:R 1 : " + str.tostring(f_rAt(s, s.nTp), "#.#") : "R:R —", C_BLUE, C_SEC, szS, AC, true)
+            r += 1
+            string flg = has ? str.replace_all(str.replace_all(s.flags, "✓", " ✓"), "✗", " ✕") : "waiting for Sweep → CHoCH → OB"
+            f_put(0, 5, r, flg, C_TXT, na, szT, AC, false)
+            r += 1
+            f_put(0, 1, r, "ENTRY", C_MUTE, f_soft(C_BLUE), szT, AC, false)
+            f_put(2, 3, r, "EARLY", C_MUTE, f_soft(C_GOLD), szT, AC, false)
+            f_put(4, 5, r, has and s.sl != s.slInit ? "STOP · TRAILED" : "STOP", C_MUTE, f_soft(C_DN), szT, AC, false)
+            r += 1
+            f_put(0, 1, r, has ? f_px(s.entry) : "—", C_BLUE, f_soft(C_BLUE), szS, AC, true)
+            f_put(2, 3, r, has ? f_px(s.earlyPx) : "—", C_GOLD, f_soft(C_GOLD), szS, AC, true)
+            f_put(4, 5, r, has ? f_px(s.sl) : "—", C_DN, f_soft(C_DN), szS, AC, true)
+            r += 1
+
+        if secTp
+            for k = 0 to 4
+                bool ex  = has and k < s.nTp
+                bool hit = ex and s.tpHit > k
+                bool nx  = ex and not hit and s.state <= 2 and s.tpHit == k
+                f_put(0, 0, r, hit ? "●" : nx ? "◉" : "○", hit ? C_UP : nx ? C_BLUE : C_OFF, na, szS, AC, false)
+                f_put(1, 1, r, "TP" + str.tostring(k + 1), hit ? C_UP : nx ? C_BLUE : C_MUTE, na, szS, AL, false)
+                f_put(2, 3, r, ex ? f_px(s.tps.get(k)) : "—", hit ? C_TXT : C_MUTE, na, szS, AL, true)
+                f_put(4, 4, r, ex ? "+" + str.tostring(f_rAt(s, k + 1), "#.#") + "R" : "", C_MUTE, na, szT, AR, true)
+                f_put(5, 5, r, hit ? "HIT" : nx ? "NEXT" : "", hit ? C_UP : C_BLUE, hit ? f_soft(C_UP) : nx ? f_soft(C_BLUE) : na, szT, AC, false)
+                r += 1
+
+        if secPnl
+            string stTxt = not has ? "NO ACTIVE SETUP" : s.state == 1 ? "⏳ PENDING · " + str.tostring(expiryBars - (bar_index - s.born)) + " bars left" : s.state == 2 ? "LIVE P/L · RUNNING TP" + str.tostring(math.min(s.tpHit + 1, s.nTp)) : s.state == 3 ? "CLOSED · " + s.result : "CANCELLED · " + s.result
+            color  stCol = not has ? C_MUTE : s.state == 1 or s.state == 4 ? C_WARN : s.state == 2 ? C_MUTE : s.tpHit > 0 ? C_UP : C_DN
+            f_put(0, 2, r, stTxt, stCol, C_SEC, szT, AL, false)
+            f_put(3, 5, r, run ? f_r(liveR) : has and s.state == 3 ? f_r(s.rFinal) : "—", run ? (liveR >= 0 ? C_UP : C_DN) : has and s.state == 3 ? (s.rFinal >= 0 ? C_UP : C_DN) : C_MUTE, C_SEC, szL, AR, true)
+            r += 1
+            f_put(0, 2, r, run ? "$" + str.tostring(liveR * s.risk, "#.##") + " / oz" : "", C_TXT, C_SEC, szT, AL, true)
+            f_put(3, 5, r, run ? "Banked " + f_r(s.rReal) + " · " + str.tostring(bar_index - s.fillBar) + " bars" : "", C_MUTE, C_SEC, szT, AR, true)
+            r += 1
+
+        if secPerf
+            string pName = statPeriod == "This Month" ? str.upper(str.format_time(time, "MMM yyyy", syminfo.timezone)) : str.upper(statPeriod)
+            string formTxt = ""
+            for v in form
+                formTxt += v == 1 ? "🟩" : "🟥"
+            string spark = ""
+            if curve.size() > 1
+                float mn = curve.min()
+                float mx = curve.max()
+                for v in curve
+                    int idx = mx > mn ? math.round((v - mn) / (mx - mn) * 7) : 3
+                    spark += SPK.get(idx)
+            string gTxt = ""
+            array<string> gName = array.from("A+", "A", "B", "C")
+            for g = 0 to 3
+                if gN.get(g) > 0
+                    gTxt += (gTxt == "" ? "" : "  ·  ") + gName.get(g) + " " + str.tostring(100.0 * gWn.get(g) / gN.get(g), "#") + "% (" + str.tostring(gN.get(g)) + ")"
+            f_put(0, 3, r, "PERFORMANCE · " + pName, C_MUTE, na, szT, AL, false)
+            f_put(4, 5, r, statPeriod == "Today" ? "D" : statPeriod == "This Week" ? "W" : statPeriod == "This Month" ? "M" : "ALL", C_INK, C_ACC, szT, AC, false)
+            r += 1
+            f_put(0, 1, r, "TRADES", C_MUTE, C_SEC, szT, AL, false)
+            f_put(2, 3, r, "WIN RATE", C_MUTE, C_SEC, szT, AL, false)
+            f_put(4, 5, r, "NET", C_MUTE, C_SEC, szT, AL, false)
+            r += 1
+            f_put(0, 1, r, str.tostring(n), C_TXT, C_SEC, szL, AL, true)
+            f_put(2, 3, r, str.tostring(wr, "#.#") + "%", C_GOLD, C_SEC, szL, AL, true)
+            f_put(4, 5, r, f_r(sumR), sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
+            r += 1
+            f_put(0, 1, r, "PROFIT F.", C_MUTE, C_SEC, szT, AL, false)
+            f_put(2, 3, r, "MAX DD", C_MUTE, C_SEC, szT, AL, false)
+            f_put(4, 5, r, "AVG / TRADE", C_MUTE, C_SEC, szT, AL, false)
+            r += 1
+            f_put(0, 1, r, gL > 0 ? str.tostring(gW / gL, "#.##") : "—", C_TXT, C_SEC, szL, AL, true)
+            f_put(2, 3, r, "-" + str.tostring(mdd, "#.#") + "R", C_DN, C_SEC, szL, AL, true)
+            f_put(4, 5, r, n > 0 ? f_r(sumR / n) : "—", sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
+            r += 1
+            f_put(0, 1, r, str.tostring(wN) + "W / " + str.tostring(lN) + "L", C_MUTE, na, szT, AL, true)
+            f_put(2, 5, r, f_bar(math.round(wr / 5), 20, "█", "░"), C_GOLD, na, szT, AL, false)
+            r += 1
+            f_put(0, 1, r, "WR BY GRADE", C_MUTE, na, szT, AL, false)
+            f_put(2, 5, r, gTxt == "" ? "—" : gTxt, C_GOLD, f_soft(C_GOLD), szT, AL, true)
+            r += 1
+            f_put(0, 1, r, "LAST 10", C_MUTE, na, szT, AL, false)
+            f_put(2, 5, r, formTxt == "" ? "—" : formTxt, C_TXT, na, szT, AL, false)
+            r += 1
+            f_put(0, 1, r, "EQUITY (R)", C_MUTE, na, szT, AL, false)
+            f_put(2, 5, r, spark == "" ? "—" : spark, C_UP, f_soft(C_UP), szS, AL, false)
+            r += 1
+
+        if secClk
+            f_put(0, 3, r, kzTxt, lOn or nOn ? C_GOLD : C_MUTE, C_SEC, szT, AL, false)
+            f_put(4, 5, r, barTxt, C_TXT, C_SEC, szT, AR, true)
+            r += 1
+        string mdl = rModel == "Partial (equal split)" ? "Partial-R" : rModel == "Max TP reached" ? "Max-TP-R" : "Final-R"
+        f_put(0, 5, r, "spread $" + str.tostring(spread, "#.##") + " · " + mdl + " · today " + str.tostring(tradesToday) + (maxTradesDay > 0 ? "/" + str.tostring(maxTradesDay) : "") + " filled", C_MUTE, na, szT, AC, false)
