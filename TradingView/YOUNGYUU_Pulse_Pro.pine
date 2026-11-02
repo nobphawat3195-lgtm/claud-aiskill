@@ -12,6 +12,7 @@ indicator(title = "YOUNGYUU Pulse Pro", shorttitle = "YY_PULSE", overlay = true,
 GRP_Pulse   = "📈 Pulse Engine"
 GRP_ADX   = "💪 ADX Filter"
 GRP_FILT  = "✅ Confirmations (v4)"
+GRP_CHOP  = "🛡️ Chop Shield (Sideways Filter)"
 GRP_SCALP = "📊 Sideways Scalp (v4)"
 GRP_SIG   = "📍 Signals"
 GRP_TPSL  = "🎯 SL / TP (v4)"
@@ -35,7 +36,7 @@ WARMUP    = 120
 // INPUTS
 // ══════════════════════════════════════
 // ── Pulse Cross
-signalModeInput = input.string("Filtered", "Signal Mode", options = ["Filtered", "ADX Only", "Pure Cross"], group = GRP_Pulse, tooltip = "Filtered: Pulse signal + ADX + all confirmations you enabled.\nADX Only: Pulse signal + ADX ≥ threshold (other filters ignored).\nPure Cross: every Pulse signal is a BUY / SELL (no filters, no max-SL skip, no scalp mode).")
+signalModeInput = input.string("Chop Shield", "Signal Mode", options = ["Chop Shield", "Filtered", "ADX Only", "Pure Cross"], group = GRP_Pulse, tooltip = "Chop Shield: Pulse signal + sideways filter only (recommended).\nFiltered: Pulse signal + ADX + every confirmation you enabled (+ Chop Shield if ticked).\nADX Only: Pulse signal + ADX ≥ threshold.\nPure Cross: every Pulse signal is a BUY / SELL (no filters, no max-SL skip, no scalp mode).")
 emaFastInput  = input.int(9, "Fast Length", minval = 2, maxval = 100, group = GRP_Pulse)
 emaSlowInput  = input.int(21, "Slow Length", minval = 3, maxval = 300, group = GRP_Pulse)
 showEmaInput  = input.bool(false, "Show Pulse Lines", group = GRP_Pulse)
@@ -67,6 +68,15 @@ useHTFInput   = input.bool(false, "HTF Bias (TF 1 must agree)", group = GRP_FILT
 useSessInput  = input.bool(false, "Session Filter (UTC)", group = GRP_FILT)
 londonInput   = input.session("0700-1600", "London", group = GRP_FILT)
 nyInput       = input.session("1200-2000", "New York", group = GRP_FILT)
+
+// ── Chop Shield (Sideways Filter)
+chopLookInput   = input.int(30, "Whipsaw Lookback (bars)", minval = 10, maxval = 200, group = GRP_CHOP, tooltip = "Counts Pulse signals (both directions) in this window.")
+chopCrossInput  = input.int(3, "Whipsaw: signals ≥", minval = 2, maxval = 10, group = GRP_CHOP, tooltip = "This many signals inside the lookback = price is whipsawing.")
+erLenInput      = input.int(20, "Efficiency Ratio Length", minval = 5, maxval = 100, group = GRP_CHOP)
+erMinInput      = input.float(0.30, "Efficiency Ratio Min", minval = 0.05, maxval = 0.9, step = 0.05, group = GRP_CHOP, tooltip = "ER = net move / total path. Below this = noise.")
+chopAdxInput    = input.bool(true, "Use ADX < threshold as a vote", group = GRP_CHOP)
+chopVotesInput  = input.int(2, "Block when votes ≥", minval = 1, maxval = 3, group = GRP_CHOP, tooltip = "Votes: Whipsaw · Efficiency Ratio · ADX. Default 2 of 3.")
+chopInFiltInput = input.bool(true, "Also apply in Filtered mode", group = GRP_CHOP)
 
 // ── Sideways Scalp (v4)
 useScalpInput   = input.bool(false, "Sideways Scalp Mode", group = GRP_SCALP, tooltip = "In SIDEWAYS regime, take Pulse signals only from the edge of the range (mean reversion). ADX filter is bypassed for these.")
@@ -416,6 +426,11 @@ float emaSlow = ta.ema(close, emaSlowInput)
 bool  crossUp   = ta.crossover(emaFast, emaSlow)
 bool  crossDown = ta.crossunder(emaFast, emaSlow)
 
+// ── Chop Shield: 3 independent sideways votes
+float crossCnt = math.sum(crossUp or crossDown ? 1 : 0, chopLookInput)
+float erPath   = math.sum(math.abs(close - nz(close[1], close)), erLenInput)
+float erVal    = erPath > 0 ? math.abs(close - nz(close[erLenInput], close)) / erPath : 1.0
+
 float atrBase = nz(ta.atr(atrLenInput), 0.0)
 [diPlus, diMinus, adxRaw] = ta.dmi(adxLenInput, adxLenInput)
 float adx    = nz(adxRaw, 0.0)
@@ -452,6 +467,14 @@ bool weakTrend   = (adxOk or tsfPass) and not strongTrend
 bool sideways    = not adxOk and not tsfPass
 string regimeStr = strongTrend ? "STRONG" : weakTrend ? "WEAK" : "SIDEWAYS"
 color  regimeCol = strongTrend ? BULL_TEXT : weakTrend ? NEU_TEXT : BEAR_TEXT
+
+bool vWhip   = crossCnt >= chopCrossInput
+bool vEr     = erVal < erMinInput
+bool vAdx    = chopAdxInput and not adxOk
+int  chopVotes = (vWhip ? 1 : 0) + (vEr ? 1 : 0) + (vAdx ? 1 : 0)
+int  chopMax   = chopAdxInput ? 3 : 2
+bool isChop    = chopVotes >= chopVotesInput
+string chopTxt = "Chop " + str.tostring(chopVotes) + "/" + str.tostring(chopMax) + ": whip " + str.tostring(crossCnt, "0") + "x · ER " + str.tostring(erVal, "0.00") + (chopAdxInput ? " · ADX " + str.tostring(adx, "0.0") : "")
 
 // ── Trend state (for dashboard / zones)
 bool trendBull = emaFast > emaSlow and stDir == 1
@@ -490,6 +513,7 @@ inSession(string sess) =>
     not na(time(timeframe.period, sess, "UTC"))
 
 // ── Signal Mode → effective filter switches
+bool modeChop = signalModeInput == "Chop Shield"
 bool modeFilt = signalModeInput == "Filtered"
 bool modeAdx  = signalModeInput == "ADX Only"
 bool modePure = signalModeInput == "Pure Cross"
@@ -505,7 +529,8 @@ bool eHTF    = modeFilt and useHTFInput
 bool eSess   = modeFilt and useSessInput
 bool eScalp  = modeFilt and useScalpInput
 bool eMaxSL  = not modePure and maxSlAtrInput > 0
-string modeTag = modeFilt ? "" : modeAdx ? " · ADX ONLY" : " · PURE"
+bool eChop   = modeChop or (modeFilt and chopInFiltInput)
+string modeTag = modeChop ? "" : modeFilt ? " · FILTERED" : modeAdx ? " · ADX ONLY" : " · PURE"
 
 bool  sessOK   = not eSess or inSession(londonInput) or inSession(nyInput)
 float bodyRat  = atrBase > 0 ? math.abs(close - open) / atrBase : 0.0
@@ -556,6 +581,13 @@ int totalB = countOn(fAdxB, fDiB, fRisB, fStrB, fStB, fRsiB, fBodyB, fMomB, fHtf
 int passS  = countPass(fAdxS, fDiS, fRisS, fStrS, fStS, fRsiS, fBodyS, fMomS, fHtfS, fSesS)
 int totalS = countOn(fAdxS, fDiS, fRisS, fStrS, fStS, fRsiS, fBodyS, fMomS, fHtfS, fSesS)
 
+// Chop Shield counts as one more filter (both directions)
+int fChop = fstate(eChop, not isChop)
+passB  += fChop == 1 ? 1 : 0
+totalB += fChop >= 0 ? 1 : 0
+passS  += fChop == 1 ? 1 : 0
+totalS += fChop >= 0 ? 1 : 0
+
 float bullScore = totalB > 0 ? 100.0 * passB / totalB : 100.0
 float bearScore = totalS > 0 ? 100.0 * passS / totalS : 100.0
 
@@ -598,8 +630,8 @@ bool confirmedSell = sellRaw and not wideSell and not confirmedBuy
 // blocked cross (for ✕ marker / dashboard)
 bool crossBlockedUp   = crossUp and barstate.isconfirmed and isWarmedUp and not confirmedBuy
 bool crossBlockedDown = crossDown and barstate.isconfirmed and isWarmedUp and not confirmedSell
-string reasonUp   = wideBuy and buyRaw ? "SL too wide" : blockReason(fAdxB, fDiB, fRisB, fStrB, fStB, fRsiB, fBodyB, fMomB, fHtfB, fSesB, true)
-string reasonDown = wideSell and sellRaw ? "SL too wide" : blockReason(fAdxS, fDiS, fRisS, fStrS, fStS, fRsiS, fBodyS, fMomS, fHtfS, fSesS, false)
+string reasonUp   = wideBuy and buyRaw ? "SL too wide" : fChop == 0 ? chopTxt : blockReason(fAdxB, fDiB, fRisB, fStrB, fStB, fRsiB, fBodyB, fMomB, fHtfB, fSesB, true)
+string reasonDown = wideSell and sellRaw ? "SL too wide" : fChop == 0 ? chopTxt : blockReason(fAdxS, fDiS, fRisS, fStrS, fStS, fRsiS, fBodyS, fMomS, fHtfS, fSesS, false)
 
 var string lastBlock = ""
 if crossBlockedUp
@@ -991,8 +1023,8 @@ if showDashInput and barstate.islast
 
     // ── bias + MTF
     int    bias    = trendBull ? 1 : trendBear ? -1 : 0
-    string biasTx  = bias == 1 ? "BULLISH" : bias == -1 ? "BEARISH" : "NEUTRAL"
-    color  biasCol = bias == 1 ? P_BULL : bias == -1 ? P_BEAR : P_YELLOW
+    string biasTx  = eChop and isChop ? "SIDEWAYS" : bias == 1 ? "BULLISH" : bias == -1 ? "BEARISH" : "NEUTRAL"
+    color  biasCol = eChop and isChop ? P_YELLOW : bias == 1 ? P_BULL : bias == -1 ? P_BEAR : P_YELLOW
     int    sc      = bias == -1 ? math.round(bearScore) : math.round(bullScore)
     string mtfTx   = tfName(mtfTF3Input) + stateArrow(mtf3State, mtf3Valid) + " " + tfName(mtfTF2Input) + stateArrow(mtf2State, mtf2Valid) + " " + tfName(mtfTF1Input) + stateArrow(mtf1State, mtf1Valid) + "   " + str.tostring(sc) + "%"
 
@@ -1054,7 +1086,7 @@ if showDashInput and barstate.islast
         msgBg := P_BULL_DK
         msgTx := P_BULL
     else
-        msg := not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอสัญญาณ Pulse"
+        msg := eChop and isChop ? "⛔ ตลาด Sideways (Chop " + str.tostring(chopVotes) + "/" + str.tostring(chopMax) + ") · ห้ามเทรด รอตลาดมีทิศ" : not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอสัญญาณ Pulse"
         msgTx := P_MUTED
 
     // ── kill zones
@@ -1131,8 +1163,8 @@ if showDashInput and barstate.islast
     r += 1
     // PC extras: ADX/regime + last block
     if isPC
-        table.cell(dashTable, 0, r, "ADX " + str.tostring(adx, "0.0"), text_color = adxOk ? P_BULL : P_BEAR, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-        table.cell(dashTable, 1, r, "thr " + str.tostring(adxThr, "0") + " · DI+ " + str.tostring(diPlus, "0") + "/" + str.tostring(diMinus, "0") + " · " + regimeStr, text_color = regimeCol, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
+        table.cell(dashTable, 0, r, "CHOP " + str.tostring(chopVotes) + "/" + str.tostring(chopMax), text_color = isChop ? P_BEAR : P_BULL, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+        table.cell(dashTable, 1, r, "whip " + str.tostring(crossCnt, "0") + "x · ER " + str.tostring(erVal, "0.00") + " · ADX " + str.tostring(adx, "0.0") + "/" + str.tostring(adxThr, "0") + " · " + regimeStr, text_color = isChop ? P_BEAR : regimeCol, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
         table.merge_cells(dashTable, 1, r, 2, r)
         r += 1
         table.cell(dashTable, 0, r, "Block", text_color = P_MUTED, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
