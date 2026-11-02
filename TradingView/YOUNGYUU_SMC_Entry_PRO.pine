@@ -17,8 +17,8 @@ indicator("YOUNGYUU SMC Entry PRO", shorttitle = "YY_SMC_PRO", overlay = true,
 // 🎨 THEME  (Obsidian Gold · Neon Cyber · Light Pro)
 // ══════════════════════════════════════
 G_TH    = "🎨 THEME"
-themeIn = input.string("Obsidian Gold", "HUD Theme", options = ["Obsidian Gold", "Neon Cyber", "Light Pro"], group = G_TH)
-lang    = input.string("ไทย", "ภาษา / Language", options = ["ไทย", "English"], group = G_TH, tooltip = "ภาษาของคำแนะนำ 👉 ทำอะไรตอนนี้, ป้าย TP และ Alert แบบข้อความ")
+themeIn = input.string("Obsidian Gold", "HUD Theme", options = ["Obsidian Gold", "Neon Cyber", "Light Pro"], group = G_TH, display = display.none)
+lang    = input.string("ไทย", "ภาษา / Language", options = ["ไทย", "English"], group = G_TH, tooltip = "ภาษาของคำแนะนำ 👉 ทำอะไรตอนนี้, ป้าย TP และ Alert แบบข้อความ", display = display.none)
 f_tx(string th, string en) => lang == "ไทย" ? th : en
 isNeon  = themeIn == "Neon Cyber"
 isLight = themeIn == "Light Pro"
@@ -44,130 +44,131 @@ C_NONE = color.new(color.black, 100)
 // ⚙️ INPUTS
 // ══════════════════════════════════════
 G_ST       = "🧱 STRUCTURE"
-swLen      = input.int(5, "Swing Length", minval = 2, group = G_ST)
-trigMode   = input.string("CHoCH", "Setup Trigger", options = ["CHoCH", "CHoCH + BOS"], group = G_ST)
-reqSweep   = input.bool(true, "Require Liquidity Sweep before Trigger", group = G_ST)
-sweepLook  = input.int(40, "Sweep Lookback (bars)", minval = 1, group = G_ST)
-showStructIn = input.bool(true, "Show BOS / CHoCH  (Custom)", group = G_ST)
-showLiqIn    = input.bool(true, "Show Liquidity / Sweep  (Custom)", group = G_ST)
-showFvgIn    = input.bool(false, "Show FVG  (Custom)", inline = "fvg", group = G_ST)
-fvgMinAtr  = input.float(0.15, "min ATR×", step = 0.05, inline = "fvg", group = G_ST)
-fvgMax     = input.int(8, "Max FVG Boxes", minval = 1, group = G_ST)
+swLen      = input.int(5, "Swing Length", minval = 2, group = G_ST, display = display.none)
+trigMode   = input.string("CHoCH", "Setup Trigger", options = ["CHoCH", "CHoCH + BOS"], group = G_ST, display = display.none)
+reqSweep   = input.bool(true, "Require Liquidity Sweep before Trigger", group = G_ST, display = display.none)
+sweepLook  = input.int(40, "Sweep Lookback (bars)", minval = 1, group = G_ST, display = display.none)
+showStructIn = input.bool(true, "Show BOS / CHoCH  (Custom)", group = G_ST, display = display.none)
+showLiqIn    = input.bool(true, "Show Liquidity / Sweep  (Custom)", group = G_ST, display = display.none)
+showFvgIn    = input.bool(false, "Show FVG  (Custom)", inline = "fvg", group = G_ST, display = display.none)
+fvgMinAtr  = input.float(0.15, "min ATR×", step = 0.05, inline = "fvg", group = G_ST, display = display.none)
+fvgMax     = input.int(8, "Max FVG Boxes", minval = 1, group = G_ST, display = display.none)
 
 G_CH        = "🖼️ CHART DETAIL"
 chartDetail = input.string("Standard", "Chart Detail", options = ["Clean", "Standard", "Full", "Custom"], group = G_CH,
-     tooltip = "Clean = เฉพาะไม้ + โซน ≥3★ + Key Levels (สะอาดสุด)\nStandard = + BOS/CHoCH + Liquidity/Sweep\nFull = ทุกอย่างรวม FVG M5\nCustom = ใช้สวิตช์ (Custom) แต่ละตัว")
+     tooltip = "Clean = เฉพาะไม้ + โซน ≥3★ + Key Levels (สะอาดสุด)\nStandard = + BOS/CHoCH + Liquidity/Sweep\nFull = ทุกอย่างรวม FVG M5\nCustom = ใช้สวิตช์ (Custom) แต่ละตัว", display = display.none)
 bool isCustomCh = chartDetail == "Custom"
 showStruct = isCustomCh ? showStructIn : chartDetail != "Clean"
 showLiq    = isCustomCh ? showLiqIn : chartDetail != "Clean"
 showFvg    = isCustomCh ? showFvgIn : chartDetail == "Full"
 
 G_KL     = "📍 KEY LEVELS"
-showKL   = input.bool(true, "Show Key Levels", group = G_KL, tooltip = "ระดับที่ห่างกันน้อยกว่า Merge จะถูกรวมเป็นเส้นเดียว เช่น \"PDH · R4675\" เพื่อไม่ให้ป้ายทับกัน")
-klPD     = input.bool(true, "Previous Day High / Low", group = G_KL)
-klPW     = input.bool(false, "Previous Week High / Low", group = G_KL)
-klAsia   = input.bool(true, "Asia Range (UTC)", inline = "as", group = G_KL)
-asiaSess = input.session("0000-0600", "", inline = "as", group = G_KL)
-klRound  = input.bool(true, "Round Numbers  Step $", inline = "rn", group = G_KL)
-rnStep   = input.float(25.0, "", minval = 1, inline = "rn", group = G_KL)
-klPoi    = input.bool(true, "HTF POI (FVG)", inline = "hp", group = G_KL)
-poiTf    = input.timeframe("60", "", inline = "hp", group = G_KL)
-klRange  = input.float(8.0, "Show within ± ATR ×", minval = 1, group = G_KL)
-klMerge  = input.float(0.35, "Merge closer than ATR ×", step = 0.05, group = G_KL)
-klLblPos = input.string("Left", "Label Position", options = ["Left", "Right"], group = G_KL, tooltip = "Left = ป้ายอยู่ต้นเส้นเหนือเส้น (ไม่ชนแดชบอร์ด/ป้าย TP)\nRight = ป้ายอยู่ปลายเส้นขวาสุด")
-klOffset = input.int(18, "Right Label Offset (bars)", minval = 0, group = G_KL)
+showKL   = input.bool(true, "Show Key Levels", group = G_KL, tooltip = "ระดับที่ห่างกันน้อยกว่า Merge จะถูกรวมเป็นเส้นเดียว เช่น \"PDH · R4675\" เพื่อไม่ให้ป้ายทับกัน", display = display.none)
+klPD     = input.bool(true, "Previous Day High / Low", group = G_KL, display = display.none)
+klPW     = input.bool(false, "Previous Week High / Low", group = G_KL, display = display.none)
+klAsia   = input.bool(true, "Asia Range (UTC)", inline = "as", group = G_KL, display = display.none)
+asiaSess = input.session("0000-0600", "", inline = "as", group = G_KL, display = display.none)
+klRound  = input.bool(true, "Round Numbers  Step $", inline = "rn", group = G_KL, display = display.none)
+rnStep   = input.float(25.0, "", minval = 1, inline = "rn", group = G_KL, display = display.none)
+klPoi    = input.bool(true, "HTF POI (FVG)", inline = "hp", group = G_KL, display = display.none)
+poiTf    = input.timeframe("60", "", inline = "hp", group = G_KL, display = display.none)
+klRange  = input.float(8.0, "Show within ± ATR ×", minval = 1, group = G_KL, display = display.none)
+klMerge  = input.float(0.35, "Merge closer than ATR ×", step = 0.05, group = G_KL, display = display.none)
+klLblPos = input.string("Left", "Label Position", options = ["Left", "Right"], group = G_KL, tooltip = "Left = ป้ายอยู่ต้นเส้นเหนือเส้น (ไม่ชนแดชบอร์ด/ป้าย TP)\nRight = ป้ายอยู่ปลายเส้นขวาสุด", display = display.none)
+klOffset = input.int(18, "Right Label Offset (bars)", minval = 0, group = G_KL, display = display.none)
 
 G_Z        = "🧱 SUPPLY / DEMAND ZONES"
-showZones  = input.bool(true, "Show Zones", group = G_Z, tooltip = "ความแข็งแรง ★1-5:\n★ ฐาน (ทุกโซน)\n★ วิ่งออกแรง ≥ Strong Departure × ATR\n★ ทิ้ง FVG/Imbalance ตอนวิ่งออก\n★ Fresh ยังไม่เคยถูกทดสอบ\n★ ทิศตรงกับ HTF Bias (Matrix TF 1)")
-zMinDep    = input.float(1.5, "Min Departure (ATR ×)", step = 0.1, group = G_Z)
-zStrongDep = input.float(3.0, "Strong Departure ★ (ATR ×)", step = 0.1, group = G_Z)
-zMaxAtr    = input.float(1.0, "Max Zone Height (ATR ×)", step = 0.1, group = G_Z)
-zMax       = input.int(4, "Max Zones per Side", minval = 1, maxval = 15, group = G_Z)
-zBreak     = input.string("Close", "Invalidate on", options = ["Close", "Wick"], group = G_Z)
-zMaxTest   = input.int(3, "Remove after N Tests (0 = never)", minval = 0, group = G_Z)
-zMinStars  = input.int(1, "Show Zones with ≥ ★", minval = 1, maxval = 5, group = G_Z)
+showZones  = input.bool(true, "Show Zones", group = G_Z, tooltip = "ความแข็งแรง ★1-5:\n★ ฐาน (ทุกโซน)\n★ วิ่งออกแรง ≥ Strong Departure × ATR\n★ ทิ้ง FVG/Imbalance ตอนวิ่งออก\n★ Fresh ยังไม่เคยถูกทดสอบ\n★ ทิศตรงกับ HTF Bias (Matrix TF 1)", display = display.none)
+zMinDep    = input.float(1.5, "Min Departure (ATR ×)", step = 0.1, group = G_Z, display = display.none)
+zStrongDep = input.float(3.0, "Strong Departure ★ (ATR ×)", step = 0.1, group = G_Z, display = display.none)
+zMaxAtr    = input.float(1.0, "Max Zone Height (ATR ×)", step = 0.1, group = G_Z, display = display.none)
+zMax       = input.int(4, "Max Zones per Side", minval = 1, maxval = 15, group = G_Z, display = display.none)
+zBreak     = input.string("Close", "Invalidate on", options = ["Close", "Wick"], group = G_Z, display = display.none)
+zMaxTest   = input.int(3, "Remove after N Tests (0 = never)", minval = 0, group = G_Z, display = display.none)
+zMinStars  = input.int(1, "Show Zones with ≥ ★", minval = 1, maxval = 5, group = G_Z, display = display.none)
 
 G_EN       = "🎯 ENTRY"
-entryLvl   = input.string("OB Body", "Limit Level", options = ["OB Body", "OB Wick", "OB 50%"], group = G_EN)
-fillMode   = input.string("Limit", "Fill At", options = ["Limit", "Early"], group = G_EN, tooltip = "Early = ไม้ล่วงหน้าก่อนถึง Limit เพิ่มโอกาส fill แต่ R ต่อไม้ลดลง")
-earlyR     = input.float(0.3, "Early Offset (R)", step = 0.05, group = G_EN)
-expiryBars = input.int(30, "Pending Expiry (bars)", minval = 1, group = G_EN)
-exitOnCh   = input.bool(false, "Exit Running Trade on Opposite CHoCH", group = G_EN)
+entryLvl   = input.string("OB Body", "Limit Level", options = ["OB Body", "OB Wick", "OB 50%"], group = G_EN, display = display.none)
+fillMode   = input.string("Limit", "Fill At", options = ["Limit", "Early"], group = G_EN, tooltip = "Early = ไม้ล่วงหน้าก่อนถึง Limit เพิ่มโอกาส fill แต่ R ต่อไม้ลดลง", display = display.none)
+earlyR     = input.float(0.3, "Early Offset (R)", step = 0.05, group = G_EN, display = display.none)
+expiryBars = input.int(30, "Pending Expiry (bars)", minval = 1, group = G_EN, display = display.none)
+exitOnCh   = input.bool(false, "Exit Running Trade on Opposite CHoCH", group = G_EN, display = display.none)
 
 G_RK       = "🛡️ RISK"
-slMode     = input.string("Structure", "SL Mode", options = ["Structure", "Fixed $"], group = G_RK)
-slBufAtr   = input.float(0.10, "SL Buffer (ATR ×)", step = 0.05, group = G_RK)
-slFixed    = input.float(3.0, "Fixed SL ($)", step = 0.1, group = G_RK)
-minRiskAtr = input.float(0.4, "Min Risk (ATR ×)", step = 0.1, group = G_RK)
-maxRiskAtr = input.float(3.0, "Max Risk (ATR ×) — skip wider", step = 0.1, group = G_RK)
-spread     = input.float(0.20, "Spread ($) for fills", step = 0.01, group = G_RK, tooltip = "กราฟเป็น Bid: Buy fill/Sell exit ใช้ Ask = Bid + Spread")
+slMode     = input.string("Structure", "SL Mode", options = ["Structure", "Fixed $"], group = G_RK, display = display.none)
+slBufAtr   = input.float(0.10, "SL Buffer (ATR ×)", step = 0.05, group = G_RK, display = display.none)
+slFixed    = input.float(3.0, "Fixed SL ($)", step = 0.1, group = G_RK, display = display.none)
+minRiskAtr = input.float(0.4, "Min Risk (ATR ×)", step = 0.1, group = G_RK, display = display.none)
+maxRiskAtr = input.float(3.0, "Max Risk (ATR ×) — skip wider", step = 0.1, group = G_RK, display = display.none)
+spread     = input.float(0.20, "Spread ($) for fills", step = 0.01, group = G_RK, tooltip = "กราฟเป็น Bid: Buy fill/Sell exit ใช้ Ask = Bid + Spread", display = display.none)
 
 G_TP      = "💰 TAKE PROFIT"
 tpMode    = input.string("Fixed Points", "TP Mode", options = ["Fixed Points", "R Multiple", "Fixed $ Step"], group = G_TP,
-     tooltip = "Fixed Points = TP1 ห่างจาก Entry ตามจำนวนจุดที่ตั้ง, TP2 = 2 เท่า, TP3 = 3 เท่า ...")
-tpPts     = input.int(500, "TP Step (points)", minval = 1, group = G_TP, tooltip = "500 จุด × 0.01 = $5.00 ต่อ TP")
-pointSize = input.float(0.01, "1 Point = $", step = 0.001, group = G_TP, tooltip = "ทองคำแบบ MT5 2 ทศนิยม: 1 จุด = 0.01\nถ้าโบรกเกอร์ 3 ทศนิยม (1 จุด = 0.001) ให้ตั้ง 0.001")
-tpCount   = input.int(5, "TP Levels", minval = 1, maxval = 5, group = G_TP)
-r1        = input.float(1.0, "TP1 R", step = 0.1, inline = "r", group = G_TP)
-r2        = input.float(2.0, "TP2", step = 0.1, inline = "r", group = G_TP)
-r3        = input.float(3.0, "TP3", step = 0.1, inline = "r", group = G_TP)
-r4        = input.float(4.0, "TP4", step = 0.1, inline = "r2", group = G_TP)
-r5        = input.float(5.0, "TP5", step = 0.1, inline = "r2", group = G_TP)
-fixedStep = input.float(5.0, "Fixed $ Step", step = 0.5, group = G_TP)
+     tooltip = "Fixed Points = TP1 ห่างจาก Entry ตามจำนวนจุดที่ตั้ง, TP2 = 2 เท่า, TP3 = 3 เท่า ...", display = display.none)
+tpPts     = input.int(500, "TP Step (points)", minval = 1, group = G_TP, tooltip = "500 จุด × 0.01 = $5.00 ต่อ TP", display = display.none)
+pointSize = input.float(0.01, "1 Point = $", step = 0.001, group = G_TP, tooltip = "ทองคำแบบ MT5 2 ทศนิยม: 1 จุด = 0.01\nถ้าโบรกเกอร์ 3 ทศนิยม (1 จุด = 0.001) ให้ตั้ง 0.001", display = display.none)
+tpCount   = input.int(5, "TP Levels", minval = 1, maxval = 5, group = G_TP, display = display.none)
+r1        = input.float(1.0, "TP1 R", step = 0.1, inline = "r", group = G_TP, display = display.none)
+r2        = input.float(2.0, "TP2", step = 0.1, inline = "r", group = G_TP, display = display.none)
+r3        = input.float(3.0, "TP3", step = 0.1, inline = "r", group = G_TP, display = display.none)
+r4        = input.float(4.0, "TP4", step = 0.1, inline = "r2", group = G_TP, display = display.none)
+r5        = input.float(5.0, "TP5", step = 0.1, inline = "r2", group = G_TP, display = display.none)
+fixedStep = input.float(5.0, "Fixed $ Step", step = 0.5, group = G_TP, display = display.none)
 capMode    = input.string("Cap Before Obstacle", "Smart TP Cap", options = ["Off", "Cap Before Obstacle", "Last TP = Obstacle"], group = G_TP,
-     tooltip = "ตัด TP ที่อยู่เลยสิ่งกีดขวางทิ้ง (โซนฝั่งตรงข้าม / PDH-PDL / Asia / HTF FVG)\nCap Before Obstacle = เก็บเฉพาะ TP ที่อยู่ก่อนสิ่งกีดขวาง\nLast TP = Obstacle = เพิ่ม TP สุดท้ายไว้หน้าสิ่งกีดขวางพอดี")
-capZone    = input.bool(true, "Obstacle: Opposing S/D Zone", inline = "cz", group = G_TP)
-capStars   = input.int(3, "≥ ★", minval = 1, maxval = 5, inline = "cz", group = G_TP)
-capKey     = input.bool(true, "Obstacle: PDH/PDL · Asia · PWH/PWL", group = G_TP)
-capRound   = input.bool(false, "Obstacle: Round Numbers", group = G_TP)
-capPoi     = input.bool(true, "Obstacle: Opposing HTF FVG", group = G_TP)
-capBuf     = input.float(0.15, "Exit Buffer before Obstacle (ATR ×)", step = 0.05, group = G_TP)
-skipNoRoom = input.bool(true, "Skip Setup if Obstacle before TP1", group = G_TP)
-minRR      = input.float(0.7, "Min R:R after Cap (0 = off)", step = 0.1, minval = 0, group = G_TP)
-beAfter   = input.int(1, "🛡 กันทุน: SL → BE after TP# (0 = off)", minval = 0, maxval = 5, group = G_TP)
-beLockPts = input.int(50, "🛡 BE + Lock (points)", minval = 0, group = G_TP, tooltip = "เลื่อน SL ไปที่ Entry + จุดนี้ เพื่อให้ครอบคลุม spread/ค่าคอม\n50 จุด × 0.01 = $0.50 · ตั้ง 0 = เท่าทุนพอดี")
-trailTp   = input.bool(true, "Trail SL to previous TP", group = G_TP)
-rModel    = input.string("Partial (equal split)", "R Accounting", options = ["Partial (equal split)", "Max TP reached", "All at final TP"], group = G_TP)
+     tooltip = "ตัด TP ที่อยู่เลยสิ่งกีดขวางทิ้ง (โซนฝั่งตรงข้าม / PDH-PDL / Asia / HTF FVG)\nCap Before Obstacle = เก็บเฉพาะ TP ที่อยู่ก่อนสิ่งกีดขวาง\nLast TP = Obstacle = เพิ่ม TP สุดท้ายไว้หน้าสิ่งกีดขวางพอดี", display = display.none)
+capZone    = input.bool(true, "Obstacle: Opposing S/D Zone", inline = "cz", group = G_TP, display = display.none)
+capStars   = input.int(3, "≥ ★", minval = 1, maxval = 5, inline = "cz", group = G_TP, display = display.none)
+capKey     = input.bool(true, "Obstacle: PDH/PDL · Asia · PWH/PWL", group = G_TP, display = display.none)
+capRound   = input.bool(false, "Obstacle: Round Numbers", group = G_TP, display = display.none)
+capPoi     = input.bool(true, "Obstacle: Opposing HTF FVG", group = G_TP, display = display.none)
+capBuf     = input.float(0.15, "Exit Buffer before Obstacle (ATR ×)", step = 0.05, group = G_TP, display = display.none)
+skipNoRoom = input.bool(true, "Skip Setup if Obstacle before TP1", group = G_TP, display = display.none)
+minRR      = input.float(0.7, "Min R:R after Cap (0 = off)", step = 0.1, minval = 0, group = G_TP, display = display.none)
+beAfter   = input.int(1, "🛡 กันทุน: SL → BE after TP# (0 = off)", minval = 0, maxval = 5, group = G_TP, display = display.none)
+beLockPts = input.int(50, "🛡 BE + Lock (points)", minval = 0, group = G_TP, tooltip = "เลื่อน SL ไปที่ Entry + จุดนี้ เพื่อให้ครอบคลุม spread/ค่าคอม\n50 จุด × 0.01 = $0.50 · ตั้ง 0 = เท่าทุนพอดี", display = display.none)
+trailTp   = input.bool(true, "Trail SL to previous TP", group = G_TP, display = display.none)
+rModel    = input.string("Partial (equal split)", "R Accounting", options = ["Partial (equal split)", "Max TP reached", "All at final TP"], group = G_TP, display = display.none)
 
 G_FL         = "🧪 FILTERS"
-useHtf       = input.bool(true, "HTF Bias Filter (Matrix TF 1)", group = G_FL)
-minGrade     = input.string("C", "Min Grade", options = ["C", "B", "A", "A+"], group = G_FL)
-useKz        = input.bool(false, "Killzone Only", group = G_FL)
-kzLon        = input.session("0700-1000", "London KZ (UTC)", group = G_FL)
-kzNy         = input.session("1230-1530", "New York KZ (UTC)", group = G_FL)
-maxTradesDay = input.int(0, "Max Filled Trades / Day (0 = ∞)", minval = 0, group = G_FL)
+useHtf       = input.bool(true, "HTF Bias Filter (Matrix TF 1)", group = G_FL, display = display.none)
+minGrade     = input.string("C", "Min Grade", options = ["C", "B", "A", "A+"], group = G_FL, display = display.none)
+useKz        = input.bool(false, "Killzone Only", group = G_FL, display = display.none)
+kzLon        = input.session("0700-1000", "London KZ (UTC)", group = G_FL, display = display.none)
+kzNy         = input.session("1230-1530", "New York KZ (UTC)", group = G_FL, display = display.none)
+maxTradesDay = input.int(0, "Max Filled Trades / Day (0 = ∞)", minval = 0, group = G_FL, display = display.none)
 
 G_MT = "🧭 MTF MATRIX"
-tfA  = input.timeframe("60", "TF 1 (HTF bias)", group = G_MT)
-tfB  = input.timeframe("15", "TF 2", group = G_MT)
-tfC  = input.timeframe("5", "TF 3", group = G_MT)
+tfA  = input.timeframe("60", "TF 1 (HTF bias)", group = G_MT, display = display.none)
+tfB  = input.timeframe("15", "TF 2", group = G_MT, display = display.none)
+tfC  = input.timeframe("5", "TF 3", group = G_MT, display = display.none)
 
 G_DS          = "📊 DASHBOARD"
-dashLayout    = input.string("Full", "Layout", options = ["Full", "Compact", "Mobile", "Custom"], group = G_DS,
-     tooltip = "Full = ครบทุกส่วน\nCompact = ตัด MTF Matrix + Performance\nMobile = 7 แถว ตัวเล็ก สำหรับมือถือจอเล็ก\nCustom = เลือกส่วนที่จะโชว์ด้วยสวิตช์ ▸ ด้านล่าง")
-dashPos       = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Top Center", "Bottom Right", "Bottom Left", "Bottom Center", "Middle Right"], group = G_DS)
-dashSzIn      = input.string("Small", "Text Size", options = ["Tiny", "Small", "Normal"], group = G_DS)
-secBiasIn     = input.bool(true, "▸ Market Bias", inline = "s1", group = G_DS)
-secMtxIn      = input.bool(true, "▸ MTF Matrix", inline = "s1", group = G_DS)
-secZoneIn     = input.bool(true, "▸ S/D Zones", inline = "s2", group = G_DS)
-secKLIn       = input.bool(true, "▸ Key Levels", inline = "s2", group = G_DS)
-secTrdIn      = input.bool(true, "▸ Trade", inline = "s3", group = G_DS)
-secTpIn       = input.bool(true, "▸ TP Ladder", inline = "s3", group = G_DS)
-secPnlIn      = input.bool(true, "▸ Live P/L", inline = "s4", group = G_DS)
-secPerfIn     = input.bool(true, "▸ Performance", inline = "s4", group = G_DS)
-secClkIn      = input.bool(true, "▸ Session Clock", inline = "s5", group = G_DS)
-secHistIn     = input.bool(true, "▸ Trade History", inline = "s5", group = G_DS)
+dashLayout    = input.string("PC", "Device Layout", options = ["PC", "iPad / Tablet", "Mobile", "Custom"], group = G_DS,
+     tooltip = "PC = ครบทุกส่วน แยก 2 แผ่น (เทรด ขวาบน · สถิติ+ประวัติ มุมล่าง)\niPad = ข้อมูลเทรด + โซน แยกสถิติไว้มุมล่าง ไม่มี Matrix/Key Levels\nMobile = 8 แถว เฉพาะข้อมูลสำคัญ\nCustom = แผ่นเดียว เลือกส่วนเองด้วยสวิตช์ ▸", display = display.none)
+statsPos      = input.string("Bottom Left", "Stats Panel Position (PC / iPad)", options = ["Bottom Left", "Bottom Right", "Top Left", "Middle Left"], group = G_DS, display = display.none)
+dashPos       = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Top Center", "Bottom Right", "Bottom Left", "Bottom Center", "Middle Right"], group = G_DS, display = display.none)
+dashSzIn      = input.string("Small", "Text Size", options = ["Tiny", "Small", "Normal"], group = G_DS, display = display.none)
+secBiasIn     = input.bool(true, "▸ Market Bias", inline = "s1", group = G_DS, display = display.none)
+secMtxIn      = input.bool(true, "▸ MTF Matrix", inline = "s1", group = G_DS, display = display.none)
+secZoneIn     = input.bool(true, "▸ S/D Zones", inline = "s2", group = G_DS, display = display.none)
+secKLIn       = input.bool(true, "▸ Key Levels", inline = "s2", group = G_DS, display = display.none)
+secTrdIn      = input.bool(true, "▸ Trade", inline = "s3", group = G_DS, display = display.none)
+secTpIn       = input.bool(true, "▸ TP Ladder", inline = "s3", group = G_DS, display = display.none)
+secPnlIn      = input.bool(true, "▸ Live P/L", inline = "s4", group = G_DS, display = display.none)
+secPerfIn     = input.bool(true, "▸ Performance", inline = "s4", group = G_DS, display = display.none)
+secClkIn      = input.bool(true, "▸ Session Clock", inline = "s5", group = G_DS, display = display.none)
+secHistIn     = input.bool(true, "▸ Trade History", inline = "s5", group = G_DS, display = display.none)
 
 G_HS      = "📜 HISTORY"
-showMarks = input.bool(true, "Result Marks on All Past Trades", group = G_HS, tooltip = "ไม้เก่าที่ลบกล่องไปแล้ว จะเหลือป้ายผลเล็กๆ ที่จุดเข้า (✅ TP3 +2.4R / 🛑 SL −1R)\nชี้เมาส์ที่ป้ายเพื่อดูรายละเอียด")
-histRows  = input.int(5, "History Rows in Dashboard", minval = 1, maxval = 10, group = G_HS)
-statPeriod    = input.string("This Month", "Stats Period", options = ["Today", "This Week", "This Month", "All Time"], group = G_DS)
-keepHist      = input.int(8, "Keep Past Trades on Chart", minval = 0, maxval = 25, group = G_DS)
-showCancelled = input.bool(false, "Show Missed / Expired Setups", group = G_DS)
-extBars       = input.int(10, "Extend Levels (bars)", minval = 1, group = G_DS)
+showMarks = input.bool(true, "Result Marks on All Past Trades", group = G_HS, tooltip = "ไม้เก่าที่ลบกล่องไปแล้ว จะเหลือป้ายผลเล็กๆ ที่จุดเข้า (✅ TP3 +2.4R / 🛑 SL −1R)\nชี้เมาส์ที่ป้ายเพื่อดูรายละเอียด", display = display.none)
+histRows  = input.int(5, "History Rows in Dashboard", minval = 1, maxval = 10, group = G_HS, display = display.none)
+statPeriod    = input.string("This Month", "Stats Period", options = ["Today", "This Week", "This Month", "All Time"], group = G_DS, display = display.none)
+keepHist      = input.int(8, "Keep Past Trades on Chart", minval = 0, maxval = 25, group = G_DS, display = display.none)
+showCancelled = input.bool(false, "Show Missed / Expired Setups", group = G_DS, display = display.none)
+extBars       = input.int(10, "Extend Levels (bars)", minval = 1, group = G_DS, display = display.none)
 
 G_AL      = "🔔 ALERTS"
-alertJson = input.bool(false, "JSON Message (Webhook → MT5 EA)", group = G_AL, tooltip = "ปิด = ข้อความภาษาคนอ่านง่าย สำหรับมือใหม่ (แนะนำ)\nเปิด = JSON สำหรับส่งเข้า EA อัตโนมัติ")
+alertJson = input.bool(false, "JSON Message (Webhook → MT5 EA)", group = G_AL, tooltip = "ปิด = ข้อความภาษาคนอ่านง่าย สำหรับมือใหม่ (แนะนำ)\nเปิด = JSON สำหรับส่งเข้า EA อัตโนมัติ", display = display.none)
 
 // ══════════════════════════════════════
 // 🧱 TYPES & STATE
@@ -1117,19 +1118,28 @@ szL = isMobile ? size.small : szBig
 szT = size.tiny
 
 bool lCus    = dashLayout == "Custom"
-bool lFull   = dashLayout == "Full"
+bool lPC     = dashLayout == "PC"
+bool lPad    = dashLayout == "iPad / Tablet"
+bool lFull   = lPC
+bool split   = lPC or lPad
 bool secBias = lCus ? secBiasIn : true
-bool secMtx  = lCus ? secMtxIn : lFull
+bool secMtx  = lCus ? secMtxIn : lPC
 bool secZone = lCus ? secZoneIn : true
-bool secKL   = lCus ? secKLIn : true
+bool secKL   = lCus ? secKLIn : lPC
 bool secTrd  = lCus ? secTrdIn : true
 bool secTp   = lCus ? secTpIn : true
 bool secPnl  = lCus ? secPnlIn : true
-bool secPerf = lCus ? secPerfIn : lFull
-bool secClk  = lCus ? secClkIn : true
-bool secHist = lCus ? secHistIn : lFull
+bool secPerf = lCus ? secPerfIn : split
+bool secClk  = lCus ? secClkIn : lPC
+bool secHist = lCus ? secHistIn : split
 
 var table tb = table.new(tblPos, 6, 56, bgcolor = C_BG, frame_color = C_GRID, frame_width = 1, border_color = C_BG, border_width = 2)
+tb2Pos = switch statsPos
+    "Bottom Right" => position.bottom_right
+    "Top Left"     => position.top_left
+    "Middle Left"  => position.middle_left
+    => position.bottom_left
+var table tb2 = table.new(tb2Pos, 6, 32, bgcolor = C_BG, frame_color = C_GRID, frame_width = 1, border_color = C_BG, border_width = 2)
 
 AL = text.align_left
 AC = text.align_center
@@ -1140,6 +1150,18 @@ f_put(int c0, int c1, int r, string t, color tc, color bg, string sz, string ha,
          text_font_family = mono ? font.family_monospace : font.family_default)
     if c1 > c0
         table.merge_cells(tb, c0, r, c1, r)
+
+f_put2(int c0, int c1, int r, string t, color tc, color bg, string sz, string ha, bool mono) =>
+    table.cell(tb2, c0, r, t, text_color = tc, bgcolor = na(bg) ? C_BG : bg, text_size = sz, text_halign = ha,
+         text_font_family = mono ? font.family_monospace : font.family_default)
+    if c1 > c0
+        table.merge_cells(tb2, c0, r, c1, r)
+
+f_pp(bool two, int c0, int c1, int r, string t, color tc, color bg, string sz, string ha, bool mono) =>
+    if two
+        f_put2(c0, c1, r, t, tc, bg, sz, ha, mono)
+    else
+        f_put(c0, c1, r, t, tc, bg, sz, ha, mono)
 
 f_soft(color c)  => color.new(c, isLight ? 88 : 82)
 f_dirBg(int d)   => d > 0 ? f_soft(C_UP) : d < 0 ? f_soft(C_DN) : C_OFF
@@ -1431,6 +1453,7 @@ if barstate.islast
             f_put(3, 5, r, run ? "Banked " + f_r(s.rReal) + " · " + str.tostring(bar_index - s.fillBar) + " bars" : "", C_MUTE, C_SEC, szT, AR, true)
             r += 1
 
+        int rs = split ? 0 : r
         if secPerf
             string pName = statPeriod == "This Month" ? str.upper(str.format_time(time, "MMM yyyy", syminfo.timezone)) : str.upper(statPeriod)
             string formTxt = ""
@@ -1448,58 +1471,60 @@ if barstate.islast
             for g = 0 to 3
                 if gN.get(g) > 0
                     gTxt += (gTxt == "" ? "" : "  ·  ") + gName.get(g) + " " + str.tostring(100.0 * gWn.get(g) / gN.get(g), "#") + "% (" + str.tostring(gN.get(g)) + ")"
-            f_put(0, 3, r, "PERFORMANCE · " + pName, C_MUTE, na, szT, AL, false)
-            f_put(4, 5, r, statPeriod == "Today" ? "D" : statPeriod == "This Week" ? "W" : statPeriod == "This Month" ? "M" : "ALL", C_INK, C_ACC, szT, AC, false)
-            r += 1
-            f_put(0, 1, r, "TRADES", C_MUTE, C_SEC, szT, AL, false)
-            f_put(2, 3, r, "WIN RATE", C_MUTE, C_SEC, szT, AL, false)
-            f_put(4, 5, r, "NET", C_MUTE, C_SEC, szT, AL, false)
-            r += 1
-            f_put(0, 1, r, str.tostring(n), C_TXT, C_SEC, szL, AL, true)
-            f_put(2, 3, r, str.tostring(wr, "#.#") + "%", C_GOLD, C_SEC, szL, AL, true)
-            f_put(4, 5, r, f_r(sumR), sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
-            r += 1
-            f_put(0, 1, r, "PROFIT F.", C_MUTE, C_SEC, szT, AL, false)
-            f_put(2, 3, r, "MAX DD", C_MUTE, C_SEC, szT, AL, false)
-            f_put(4, 5, r, "AVG / TRADE", C_MUTE, C_SEC, szT, AL, false)
-            r += 1
-            f_put(0, 1, r, gL > 0 ? str.tostring(gW / gL, "#.##") : "—", C_TXT, C_SEC, szL, AL, true)
-            f_put(2, 3, r, mdd > 0 ? "-" + str.tostring(mdd, "#.#") + "R" : "0R", C_DN, C_SEC, szL, AL, true)
-            f_put(4, 5, r, n > 0 ? f_r(sumR / n) : "—", sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
-            r += 1
-            f_put(0, 1, r, str.tostring(wN) + "W / " + str.tostring(lN) + "L", C_MUTE, na, szT, AL, true)
-            f_put(2, 5, r, f_bar(math.round(wr / 5), 20, "█", "░"), C_GOLD, na, szT, AL, false)
-            r += 1
-            f_put(0, 1, r, "WR BY GRADE", C_MUTE, na, szT, AL, false)
-            f_put(2, 5, r, gTxt == "" ? "—" : gTxt, C_GOLD, f_soft(C_GOLD), szT, AL, true)
-            r += 1
-            f_put(0, 1, r, "🔎 FUNNEL", C_MUTE, na, szT, AL, false)
-            f_put(2, 5, r, "Trig " + str.tostring(fTrig) + " › Risk " + str.tostring(fRisk) + " › Swp " + str.tostring(fSw) + " › HTF " + str.tostring(fHtf) + " › Grd " + str.tostring(fGrd) + " › Room " + str.tostring(fRoom) + " › RR " + str.tostring(fRR), C_TXT, na, szT, AL, true)
-            r += 1
-            f_put(0, 1, r, "LAST 10", C_MUTE, na, szT, AL, false)
-            f_put(2, 5, r, formTxt == "" ? "—" : formTxt, C_TXT, na, szT, AL, false)
-            r += 1
-            f_put(0, 1, r, "EQUITY (R)", C_MUTE, na, szT, AL, false)
-            f_put(2, 5, r, spark == "" ? "—" : spark, C_UP, f_soft(C_UP), szS, AL, false)
-            r += 1
+            f_pp(split, 0, 3, rs, "PERFORMANCE · " + pName, C_MUTE, na, szT, AL, false)
+            f_pp(split, 4, 5, rs, statPeriod == "Today" ? "D" : statPeriod == "This Week" ? "W" : statPeriod == "This Month" ? "M" : "ALL", C_INK, C_ACC, szT, AC, false)
+            rs += 1
+            f_pp(split, 0, 1, rs, "TRADES", C_MUTE, C_SEC, szT, AL, false)
+            f_pp(split, 2, 3, rs, "WIN RATE", C_MUTE, C_SEC, szT, AL, false)
+            f_pp(split, 4, 5, rs, "NET", C_MUTE, C_SEC, szT, AL, false)
+            rs += 1
+            f_pp(split, 0, 1, rs, str.tostring(n), C_TXT, C_SEC, szL, AL, true)
+            f_pp(split, 2, 3, rs, str.tostring(wr, "#.#") + "%", C_GOLD, C_SEC, szL, AL, true)
+            f_pp(split, 4, 5, rs, f_r(sumR), sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
+            rs += 1
+            f_pp(split, 0, 1, rs, "PROFIT F.", C_MUTE, C_SEC, szT, AL, false)
+            f_pp(split, 2, 3, rs, "MAX DD", C_MUTE, C_SEC, szT, AL, false)
+            f_pp(split, 4, 5, rs, "AVG / TRADE", C_MUTE, C_SEC, szT, AL, false)
+            rs += 1
+            f_pp(split, 0, 1, rs, gL > 0 ? str.tostring(gW / gL, "#.##") : "—", C_TXT, C_SEC, szL, AL, true)
+            f_pp(split, 2, 3, rs, mdd > 0 ? "-" + str.tostring(mdd, "#.#") + "R" : "0R", C_DN, C_SEC, szL, AL, true)
+            f_pp(split, 4, 5, rs, n > 0 ? f_r(sumR / n) : "—", sumR >= 0 ? C_UP : C_DN, C_SEC, szL, AL, true)
+            rs += 1
+            f_pp(split, 0, 1, rs, str.tostring(wN) + "W / " + str.tostring(lN) + "L", C_MUTE, na, szT, AL, true)
+            f_pp(split, 2, 5, rs, f_bar(math.round(wr / 5), 20, "█", "░"), C_GOLD, na, szT, AL, false)
+            rs += 1
+            f_pp(split, 0, 1, rs, "WR BY GRADE", C_MUTE, na, szT, AL, false)
+            f_pp(split, 2, 5, rs, gTxt == "" ? "—" : gTxt, C_GOLD, f_soft(C_GOLD), szT, AL, true)
+            rs += 1
+            f_pp(split, 0, 1, rs, "🔎 FUNNEL", C_MUTE, na, szT, AL, false)
+            f_pp(split, 2, 5, rs, "Trig " + str.tostring(fTrig) + " › Risk " + str.tostring(fRisk) + " › Swp " + str.tostring(fSw) + " › HTF " + str.tostring(fHtf) + " › Grd " + str.tostring(fGrd) + " › Room " + str.tostring(fRoom) + " › RR " + str.tostring(fRR), C_TXT, na, szT, AL, true)
+            rs += 1
+            f_pp(split, 0, 1, rs, "LAST 10", C_MUTE, na, szT, AL, false)
+            f_pp(split, 2, 5, rs, formTxt == "" ? "—" : formTxt, C_TXT, na, szT, AL, false)
+            rs += 1
+            f_pp(split, 0, 1, rs, "EQUITY (R)", C_MUTE, na, szT, AL, false)
+            f_pp(split, 2, 5, rs, spark == "" ? "—" : spark, C_UP, f_soft(C_UP), szS, AL, false)
+            rs += 1
 
         if secHist
-            f_put(0, 5, r, f_tx("📜 ประวัติสัญญาณล่าสุด", "📜 RECENT TRADES"), C_MUTE, C_SEC, szT, AL, false)
-            r += 1
+            f_pp(split, 0, 5, rs, f_tx("📜 ประวัติสัญญาณล่าสุด", "📜 RECENT TRADES"), C_MUTE, C_SEC, szT, AL, false)
+            rs += 1
             int nH = stT.size()
             for h = 0 to histRows - 1
                 int ix = nH - 1 - h
                 if ix >= 0
                     float hr = stR.get(ix)
-                    f_put(0, 1, r, str.format_time(stE.get(ix), "dd MMM HH:mm", syminfo.timezone), C_MUTE, na, szT, AL, true)
-                    f_put(2, 2, r, stD.get(ix) == 1 ? "BUY" : "SELL", stD.get(ix) == 1 ? C_UP : C_DN, f_soft(stD.get(ix) == 1 ? C_UP : C_DN), szT, AC, false)
-                    f_put(3, 3, r, f_grade(stG.get(ix)), C_GOLD, na, szT, AC, false)
-                    f_put(4, 4, r, stRes.get(ix), stW.get(ix) == 1 ? C_UP : C_DN, na, szT, AL, false)
-                    f_put(5, 5, r, f_r(hr), hr >= 0 ? C_UP : C_DN, na, szT, AR, true)
+                    f_pp(split, 0, 1, rs, str.format_time(stE.get(ix), "dd MMM HH:mm", syminfo.timezone), C_MUTE, na, szT, AL, true)
+                    f_pp(split, 2, 2, rs, stD.get(ix) == 1 ? "BUY" : "SELL", stD.get(ix) == 1 ? C_UP : C_DN, f_soft(stD.get(ix) == 1 ? C_UP : C_DN), szT, AC, false)
+                    f_pp(split, 3, 3, rs, f_grade(stG.get(ix)), C_GOLD, na, szT, AC, false)
+                    f_pp(split, 4, 4, rs, stRes.get(ix), stW.get(ix) == 1 ? C_UP : C_DN, na, szT, AL, false)
+                    f_pp(split, 5, 5, rs, f_r(hr), hr >= 0 ? C_UP : C_DN, na, szT, AR, true)
                 else
-                    f_put(0, 5, r, h == 0 ? f_tx("ยังไม่มีไม้ที่ปิด", "no closed trades yet") : "", C_MUTE, na, szT, AC, false)
-                r += 1
+                    f_pp(split, 0, 5, rs, h == 0 ? f_tx("ยังไม่มีไม้ที่ปิด", "no closed trades yet") : "", C_MUTE, na, szT, AC, false)
+                rs += 1
 
+        if not split
+            r := rs
         if secClk
             f_put(0, 3, r, kzTxt, lOn or nOn ? C_GOLD : C_MUTE, C_SEC, szT, AL, false)
             f_put(4, 5, r, barTxt, C_TXT, C_SEC, szT, AR, true)
