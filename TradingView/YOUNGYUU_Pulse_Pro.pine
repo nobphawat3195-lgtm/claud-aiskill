@@ -1,6 +1,6 @@
 //@version=6
 // ══════════════════════════════════════════════════════════════
-// YOUNGYUU PULSE PRO — Gold Edition · v1.2 (CME Levels)
+// YOUNGYUU PULSE PRO — Gold Edition · v1.3
 // © YOUNGYUU Systems — publish as Protected / Invite-only to keep
 // the source private.
 // ══════════════════════════════════════════════════════════════
@@ -24,7 +24,7 @@ GRP_MONEY = "💰 Money Simulator"
 GRP_COL   = "🎨 Colors"
 GRP_ALERT = "🔔 Alerts"
 
-VERSION   = "v1.0"
+VERSION   = "v1.3"
 LINE_FWD  = 15
 LINE_UPD  = 5
 LBL_OFF   = 1
@@ -37,144 +37,148 @@ WARMUP    = 120
 // INPUTS
 // ══════════════════════════════════════
 // ── Pulse Cross
-signalModeInput = input.string("Chop Shield", "Signal Mode", options = ["Chop Shield", "Filtered", "ADX Only", "Pure Cross"], group = GRP_Pulse, tooltip = "Chop Shield: Pulse signal + sideways filter only (recommended).\nFiltered: Pulse signal + ADX + every confirmation you enabled (+ Chop Shield if ticked).\nADX Only: Pulse signal + ADX ≥ threshold.\nPure Cross: every Pulse signal is a BUY / SELL (no filters, no max-SL skip, no scalp mode).")
-emaFastInput  = input.int(9, "Fast Length", minval = 2, maxval = 100, group = GRP_Pulse)
-emaSlowInput  = input.int(21, "Slow Length", minval = 3, maxval = 300, group = GRP_Pulse)
-showEmaInput  = input.bool(false, "Show Pulse Lines", group = GRP_Pulse)
+signalModeInput = input.string("Chop Shield", "Signal Mode", options = ["Chop Shield", "Filtered", "ADX Only", "Pure Cross"], group = GRP_Pulse, tooltip = "Chop Shield: Pulse signal + sideways filter only (recommended).\nFiltered: Pulse signal + ADX + every confirmation you enabled (+ Chop Shield if ticked).\nADX Only: Pulse signal + ADX ≥ threshold.\nPure Cross: every Pulse signal is a BUY / SELL (no filters, no max-SL skip, no scalp mode).", display = display.none)
+emaFastInput  = input.int(9, "Fast Length", minval = 2, maxval = 100, group = GRP_Pulse, display = display.none)
+emaSlowInput  = input.int(21, "Slow Length", minval = 3, maxval = 300, group = GRP_Pulse, display = display.none)
+showEmaInput  = input.bool(false, "Show Pulse Lines", group = GRP_Pulse, display = display.none)
 
 // ── ADX Filter
-useADXInput     = input.bool(true, "ADX Filter", group = GRP_ADX, tooltip = "Cross is valid only when ADX ≥ threshold.")
-adxLenInput     = input.int(13, "ADX / DI Length", minval = 2, maxval = 50, group = GRP_ADX)
-autoSensInput   = input.bool(true, "Auto Threshold by Timeframe (v4)", group = GRP_ADX, tooltip = "M1 13 · M3 14 · M5 15 · M15 17 · M30 19 · H1 21 · H4 23 · D 25\nBBW: 0.2% → 1.2% on the same steps.")
-adxManualInput  = input.int(18, "Manual ADX Threshold", minval = 5, maxval = 60, group = GRP_ADX)
-bbwManualInput  = input.float(0.004, "Manual BBW Threshold", minval = 0.0005, step = 0.0005, group = GRP_ADX)
-useDIInput      = input.bool(true, "DI Direction (DI+ > DI- for Buy)", group = GRP_ADX)
-useRisingInput  = input.bool(false, "ADX Rising", group = GRP_ADX, tooltip = "ADX higher than the previous bar.")
-useTSFInput     = input.bool(true, "Trend Strength Filter (TSF, v4)", group = GRP_ADX, tooltip = "ADX / SMA(ADX) ≥ TSF Min — used for the STRONG / WEAK regime.")
-tsfLookInput    = input.int(50, "TSF Lookback", minval = 5, maxval = 200, group = GRP_ADX)
-tsfMinInput     = input.float(1.05, "TSF Min", minval = 0.5, maxval = 3.0, step = 0.05, group = GRP_ADX)
-strongOnlyInput = input.bool(false, "Signals in STRONG Regime Only", group = GRP_ADX)
+useADXInput     = input.bool(true, "ADX Filter", group = GRP_ADX, tooltip = "Cross is valid only when ADX ≥ threshold.", display = display.none)
+adxLenInput     = input.int(13, "ADX / DI Length", minval = 2, maxval = 50, group = GRP_ADX, display = display.none)
+autoSensInput   = input.bool(true, "Auto Threshold by Timeframe (v4)", group = GRP_ADX, tooltip = "M1 13 · M3 14 · M5 15 · M15 17 · M30 19 · H1 21 · H4 23 · D 25\nBBW: 0.2% → 1.2% on the same steps.", display = display.none)
+adxManualInput  = input.int(18, "Manual ADX Threshold", minval = 5, maxval = 60, group = GRP_ADX, display = display.none)
+bbwManualInput  = input.float(0.004, "Manual BBW Threshold", minval = 0.0005, step = 0.0005, group = GRP_ADX, display = display.none)
+useDIInput      = input.bool(true, "DI Direction (DI+ > DI- for Buy)", group = GRP_ADX, display = display.none)
+useRisingInput  = input.bool(false, "ADX Rising", group = GRP_ADX, tooltip = "ADX higher than the previous bar.", display = display.none)
+useTSFInput     = input.bool(true, "Trend Strength Filter (TSF, v4)", group = GRP_ADX, tooltip = "ADX / SMA(ADX) ≥ TSF Min — used for the STRONG / WEAK regime.", display = display.none)
+tsfLookInput    = input.int(50, "TSF Lookback", minval = 5, maxval = 200, group = GRP_ADX, display = display.none)
+tsfMinInput     = input.float(1.05, "TSF Min", minval = 0.5, maxval = 3.0, step = 0.05, group = GRP_ADX, display = display.none)
+strongOnlyInput = input.bool(false, "Signals in STRONG Regime Only", group = GRP_ADX, display = display.none)
 
 // ── Confirmations (v4)
-useSTInput    = input.bool(true, "Supertrend Direction", group = GRP_FILT, tooltip = "Buy only while Supertrend is up, Sell only while down.")
-stFactorInput = input.float(2.5, "Supertrend Factor", minval = 0.5, maxval = 10.0, step = 0.1, group = GRP_FILT)
-atrLenInput   = input.int(13, "ATR Length", minval = 2, maxval = 50, group = GRP_FILT)
-useRSIInput   = input.bool(true, "RSI OB/OS", group = GRP_FILT)
-rsiLenInput   = input.int(14, "RSI Length", minval = 2, maxval = 50, group = GRP_FILT)
-rsiOBInput    = input.int(70, "RSI Overbought", minval = 50, maxval = 95, group = GRP_FILT)
-rsiOSInput    = input.int(30, "RSI Oversold", minval = 5, maxval = 50, group = GRP_FILT)
-useBodyInput  = input.bool(true, "Solid Body", group = GRP_FILT, tooltip = "Body / ATR ≥ 0.05 (≤M5) · 0.08 (≤M15) · 0.12 (higher).")
-useMomInput   = input.bool(true, "Momentum", group = GRP_FILT, tooltip = "≤M5: close > close[1]. Higher TF: 2 rising closes.")
-useHTFInput   = input.bool(false, "HTF Bias (TF 1 must agree)", group = GRP_FILT)
-useSessInput  = input.bool(false, "Session Filter (UTC)", group = GRP_FILT)
-londonInput   = input.session("0700-1600", "London", group = GRP_FILT)
-nyInput       = input.session("1200-2000", "New York", group = GRP_FILT)
+useSTInput    = input.bool(true, "Supertrend Direction", group = GRP_FILT, tooltip = "Buy only while Supertrend is up, Sell only while down.", display = display.none)
+stFactorInput = input.float(2.5, "Supertrend Factor", minval = 0.5, maxval = 10.0, step = 0.1, group = GRP_FILT, display = display.none)
+atrLenInput   = input.int(13, "ATR Length", minval = 2, maxval = 50, group = GRP_FILT, display = display.none)
+useRSIInput   = input.bool(true, "RSI OB/OS", group = GRP_FILT, display = display.none)
+rsiLenInput   = input.int(14, "RSI Length", minval = 2, maxval = 50, group = GRP_FILT, display = display.none)
+rsiOBInput    = input.int(70, "RSI Overbought", minval = 50, maxval = 95, group = GRP_FILT, display = display.none)
+rsiOSInput    = input.int(30, "RSI Oversold", minval = 5, maxval = 50, group = GRP_FILT, display = display.none)
+useBodyInput  = input.bool(true, "Solid Body", group = GRP_FILT, tooltip = "Body / ATR ≥ 0.05 (≤M5) · 0.08 (≤M15) · 0.12 (higher).", display = display.none)
+useMomInput   = input.bool(true, "Momentum", group = GRP_FILT, tooltip = "≤M5: close > close[1]. Higher TF: 2 rising closes.", display = display.none)
+useHTFInput   = input.bool(false, "HTF Bias (TF 1 must agree)", group = GRP_FILT, display = display.none)
+useSessInput  = input.bool(false, "Session Filter (UTC)", group = GRP_FILT, display = display.none)
+londonInput   = input.session("0700-1600", "London", group = GRP_FILT, display = display.none)
+nyInput       = input.session("1200-2000", "New York", group = GRP_FILT, display = display.none)
 
 // ── Chop Shield (Sideways Filter)
-chopLookInput   = input.int(30, "Whipsaw Lookback (bars)", minval = 10, maxval = 200, group = GRP_CHOP, tooltip = "Counts Pulse signals (both directions) in this window.")
-chopCrossInput  = input.int(3, "Whipsaw: signals ≥", minval = 2, maxval = 10, group = GRP_CHOP, tooltip = "This many signals inside the lookback = price is whipsawing.")
-erLenInput      = input.int(20, "Efficiency Ratio Length", minval = 5, maxval = 100, group = GRP_CHOP)
-erMinInput      = input.float(0.30, "Efficiency Ratio Min", minval = 0.05, maxval = 0.9, step = 0.05, group = GRP_CHOP, tooltip = "ER = net move / total path. Below this = noise.")
-chopAdxInput    = input.bool(true, "Use ADX < threshold as a vote", group = GRP_CHOP)
-chopVotesInput  = input.int(2, "Block when votes ≥", minval = 1, maxval = 3, group = GRP_CHOP, tooltip = "Votes: Whipsaw · Efficiency Ratio · ADX. Default 2 of 3.")
-chopInFiltInput = input.bool(true, "Also apply in Filtered mode", group = GRP_CHOP)
+chopLookInput   = input.int(30, "Whipsaw Lookback (bars)", minval = 10, maxval = 200, group = GRP_CHOP, tooltip = "Counts Pulse signals (both directions) in this window.", display = display.none)
+chopCrossInput  = input.int(3, "Whipsaw: signals ≥", minval = 2, maxval = 10, group = GRP_CHOP, tooltip = "This many signals inside the lookback = price is whipsawing.", display = display.none)
+erLenInput      = input.int(20, "Efficiency Ratio Length", minval = 5, maxval = 100, group = GRP_CHOP, display = display.none)
+erMinInput      = input.float(0.30, "Efficiency Ratio Min", minval = 0.05, maxval = 0.9, step = 0.05, group = GRP_CHOP, tooltip = "ER = net move / total path. Below this = noise.", display = display.none)
+chopAdxInput    = input.bool(true, "Use ADX < threshold as a vote", group = GRP_CHOP, display = display.none)
+chopVotesInput  = input.int(2, "Block when votes ≥", minval = 1, maxval = 3, group = GRP_CHOP, tooltip = "Votes: Whipsaw · Efficiency Ratio · ADX. Default 2 of 3.", display = display.none)
+chopInFiltInput = input.bool(true, "Also apply in Filtered mode", group = GRP_CHOP, display = display.none)
 
 // ── CME Levels (กรอกเองวันละครั้งจาก CME QuikStrike)
-useCmeInput    = input.bool(false, "เปิด CME Levels", group = GRP_CME, tooltip = "กรอก Strike จาก CME Gold Options (Weekly) + Basis.\nระบบแปลงเป็นราคาบนกราฟ = Strike − Basis แล้ววาดโซนและกรองสัญญาณ.\nใส่ 0 = ไม่ใช้ระดับนั้น")
-cmeBasisInput  = input.float(15.0, "Basis (Futures − Spot)", step = 0.5, group = GRP_CME, tooltip = "เช่น Futures 4,209.5 − ราคาโบรก 4,194.5 = 15")
-cmeC1Input     = input.float(0.0, "Call Wall หลัก (Strike)", step = 5.0, group = GRP_CME)
-cmeC2Input     = input.float(0.0, "Call Wall รอง (Strike)", step = 5.0, group = GRP_CME)
-cmeMInput      = input.float(0.0, "Magnet (Strike)", step = 5.0, group = GRP_CME, tooltip = "Strike ที่มีทั้ง Call และ Put หนาแน่น — ราคามักแกว่งวนรอบนี้")
-cmeP2Input     = input.float(0.0, "Put Wall รอง (Strike)", step = 5.0, group = GRP_CME)
-cmeP1Input     = input.float(0.0, "Put Wall หลัก (Strike)", step = 5.0, group = GRP_CME)
-cmeFilterInput = input.string("Avoid", "โหมดกรองสัญญาณ", options = ["Avoid", "Zone Only", "Off"], group = GRP_CME, tooltip = "Avoid: ไม่ BUY ใกล้ Call Wall · ไม่ SELL ใกล้ Put Wall · ไม่เทรดใน Magnet\nZone Only: BUY ได้เฉพาะใกล้ Put Wall · SELL ได้เฉพาะใกล้ Call Wall\nOff: วาดโซนอย่างเดียว ไม่กรอง")
-cmeZoneInput   = input.float(3.0, "ความกว้างโซน Wall (± $)", minval = 0.5, step = 0.5, group = GRP_CME)
-cmeNearInput   = input.float(5.0, "ระยะที่ถือว่า 'ใกล้ Wall' ($)", minval = 0.5, step = 0.5, group = GRP_CME)
-cmeMagBandInput = input.float(10.0, "ความกว้าง Magnet (± $)", minval = 1.0, step = 0.5, group = GRP_CME)
-cmeTpInput     = input.bool(true, "ตั้ง TP ที่ Wall ถัดไป", group = GRP_CME, tooltip = "TP1/TP2/TP3 = ระดับ CME ถัดไปตามทิศไม้ (ที่ห่างจาก Entry ≥ Min R). ถ้าระดับไม่พอ ใช้ TP แบบ ATR แทน")
-cmeFrontInput  = input.float(1.0, "ปิดก่อนถึง Wall ($)", minval = 0.0, step = 0.5, group = GRP_CME)
-cmeMinRInput   = input.float(0.8, "TP ต้องห่าง Entry อย่างน้อย (R)", minval = 0.3, step = 0.1, group = GRP_CME)
+useCmeInput    = input.bool(false, "เปิด CME Levels", group = GRP_CME, tooltip = "กรอก Strike จาก CME Gold Options (Weekly) + Basis.\nระบบแปลงเป็นราคาบนกราฟ = Strike − Basis แล้ววาดโซนและกรองสัญญาณ.\nใส่ 0 = ไม่ใช้ระดับนั้น", display = display.none)
+cmeBasisInput  = input.float(15.0, "Basis (Futures − Spot)", step = 0.5, group = GRP_CME, tooltip = "เช่น Futures 4,209.5 − ราคาโบรก 4,194.5 = 15", display = display.none)
+cmeC1Input     = input.float(0.0, "Call Wall หลัก (Strike)", step = 5.0, group = GRP_CME, display = display.none)
+cmeC2Input     = input.float(0.0, "Call Wall รอง (Strike)", step = 5.0, group = GRP_CME, display = display.none)
+cmeMInput      = input.float(0.0, "Magnet (Strike)", step = 5.0, group = GRP_CME, tooltip = "Strike ที่มีทั้ง Call และ Put หนาแน่น — ราคามักแกว่งวนรอบนี้", display = display.none)
+cmeP2Input     = input.float(0.0, "Put Wall รอง (Strike)", step = 5.0, group = GRP_CME, display = display.none)
+cmeP1Input     = input.float(0.0, "Put Wall หลัก (Strike)", step = 5.0, group = GRP_CME, display = display.none)
+cmeFilterInput = input.string("Avoid", "โหมดกรองสัญญาณ", options = ["Avoid", "Zone Only", "Off"], group = GRP_CME, tooltip = "Avoid: ไม่ BUY ใกล้ Call Wall · ไม่ SELL ใกล้ Put Wall · ไม่เทรดใน Magnet\nZone Only: BUY ได้เฉพาะใกล้ Put Wall · SELL ได้เฉพาะใกล้ Call Wall\nOff: วาดโซนอย่างเดียว ไม่กรอง", display = display.none)
+cmeZoneInput   = input.float(3.0, "ความกว้างโซน Wall (± $)", minval = 0.5, step = 0.5, group = GRP_CME, display = display.none)
+cmeNearInput   = input.float(5.0, "ระยะที่ถือว่า 'ใกล้ Wall' ($)", minval = 0.5, step = 0.5, group = GRP_CME, display = display.none)
+cmeMagBandInput = input.float(10.0, "ความกว้าง Magnet (± $)", minval = 1.0, step = 0.5, group = GRP_CME, display = display.none)
+cmeTpInput     = input.bool(true, "ตั้ง TP ที่ Wall ถัดไป", group = GRP_CME, tooltip = "TP1/TP2/TP3 = ระดับ CME ถัดไปตามทิศไม้ (ที่ห่างจาก Entry ≥ Min R). ถ้าระดับไม่พอ ใช้ TP แบบ ATR แทน", display = display.none)
+cmeFrontInput  = input.float(1.0, "ปิดก่อนถึง Wall ($)", minval = 0.0, step = 0.5, group = GRP_CME, display = display.none)
+cmeMinRInput   = input.float(0.8, "TP ต้องห่าง Entry อย่างน้อย (R)", minval = 0.3, step = 0.1, group = GRP_CME, display = display.none)
 
 // ── Sideways Scalp (v4)
-useScalpInput   = input.bool(false, "Sideways Scalp Mode", group = GRP_SCALP, tooltip = "In SIDEWAYS regime, take Pulse signals only from the edge of the range (mean reversion). ADX filter is bypassed for these.")
-scalpRangeInput = input.int(20, "Scalp Range Bars", minval = 5, maxval = 100, group = GRP_SCALP)
-scalpSLInput    = input.float(1.0, "Scalp SL (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_SCALP)
-scalpTPInput    = input.float(1.0, "Scalp TP1 (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_SCALP, tooltip = "TP2 = 1.5x, TP3 = 2x of this.")
+useScalpInput   = input.bool(false, "Sideways Scalp Mode", group = GRP_SCALP, tooltip = "In SIDEWAYS regime, take Pulse signals only from the edge of the range (mean reversion). ADX filter is bypassed for these.", display = display.none)
+scalpRangeInput = input.int(20, "Scalp Range Bars", minval = 5, maxval = 100, group = GRP_SCALP, display = display.none)
+scalpSLInput    = input.float(1.0, "Scalp SL (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_SCALP, display = display.none)
+scalpTPInput    = input.float(1.0, "Scalp TP1 (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_SCALP, tooltip = "TP2 = 1.5x, TP3 = 2x of this.", display = display.none)
 
 // ── Signals
-ignoreActiveInput = input.bool(true, "Ignore Signals While Trade Active", group = GRP_SIG)
-showSignalsInput  = input.bool(true, "Show Signal Labels", group = GRP_SIG)
-showScoreInput    = input.bool(true, "Show Score on Labels", group = GRP_SIG)
-showBlockedInput  = input.bool(true, "Show Blocked Crosses (✕)", group = GRP_SIG, tooltip = "Grey ✕ where a Pulse signal formed but a filter failed. Hover to see why.")
-signalSizeInput   = input.string("Small", "Signal Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_SIG)
+ignoreActiveInput = input.bool(true, "Ignore Signals While Trade Active", group = GRP_SIG, display = display.none)
+showSignalsInput  = input.bool(true, "Show Signal Labels", group = GRP_SIG, display = display.none)
+showScoreInput    = input.bool(true, "Show Score on Labels", group = GRP_SIG, display = display.none)
+showBlockedInput  = input.bool(true, "Show Blocked Crosses (✕)", group = GRP_SIG, tooltip = "Grey ✕ where a Pulse signal formed but a filter failed. Hover to see why.", display = display.none)
+signalSizeInput   = input.string("Small", "Signal Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_SIG, display = display.none)
 
 // ── SL / TP (v4)
-showTPSLInput   = input.bool(true, "Show TP/SL Lines", group = GRP_TPSL)
-slModeInput     = input.string("Swing", "SL Mode", options = ["Swing", "ATR", "Fixed Points"], group = GRP_TPSL)
-swingLenInput   = input.int(10, "Swing Lookback", minval = 2, maxval = 100, group = GRP_TPSL)
-slBufferInput   = input.float(0.3, "Swing Buffer (x ATR)", minval = 0.0, maxval = 3.0, step = 0.1, group = GRP_TPSL)
-slAtrInput      = input.float(1.5, "ATR SL (x ATR)", minval = 0.3, maxval = 10.0, step = 0.1, group = GRP_TPSL)
-slPointsInput   = input.int(500, "Fixed SL (points)", minval = 10, group = GRP_TPSL)
-minSlAtrInput   = input.float(1.0, "Min SL Distance (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_TPSL)
-maxSlAtrInput   = input.float(4.0, "Max SL Distance (x ATR, 0=off)", minval = 0.0, maxval = 20.0, step = 0.5, group = GRP_TPSL, tooltip = "Signal is skipped when the stop would be wider than this.")
-tp1AtrInput     = input.float(1.5, "TP1 (x ATR)", minval = 0.3, maxval = 10.0, step = 0.1, group = GRP_TPSL)
-tp2AtrInput     = input.float(3.0, "TP2 (x ATR)", minval = 0.5, maxval = 20.0, step = 0.1, group = GRP_TPSL)
-tp3AtrInput     = input.float(5.0, "TP3 (x ATR)", minval = 1.0, maxval = 30.0, step = 0.1, group = GRP_TPSL)
-rrMinInput      = input.float(1.5, "Min R:R for TP1", minval = 0.5, maxval = 5.0, step = 0.1, group = GRP_TPSL)
-beInput         = input.bool(true, "Break-Even after TP1", group = GRP_TPSL)
-keepClosedInput = input.int(0, "Keep Closed Trade Lines (bars)", minval = 0, maxval = 200, group = GRP_TPSL)
-showResultInput = input.bool(true, "Show Result Mark on Close", group = GRP_TPSL)
-showPctInput    = input.bool(false, "Show % Distance on Labels", group = GRP_TPSL)
-labelSizeInput  = input.string("Small", "TP/SL Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_TPSL)
+showTPSLInput   = input.bool(true, "Show TP/SL Lines", group = GRP_TPSL, display = display.none)
+slModeInput     = input.string("Swing", "SL Mode", options = ["Swing", "ATR", "Fixed Points"], group = GRP_TPSL, display = display.none)
+swingLenInput   = input.int(10, "Swing Lookback", minval = 2, maxval = 100, group = GRP_TPSL, display = display.none)
+slBufferInput   = input.float(0.3, "Swing Buffer (x ATR)", minval = 0.0, maxval = 3.0, step = 0.1, group = GRP_TPSL, display = display.none)
+slAtrInput      = input.float(1.5, "ATR SL (x ATR)", minval = 0.3, maxval = 10.0, step = 0.1, group = GRP_TPSL, display = display.none)
+slPointsInput   = input.int(500, "Fixed SL (points)", minval = 10, group = GRP_TPSL, display = display.none)
+minSlAtrInput   = input.float(1.0, "Min SL Distance (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_TPSL, display = display.none)
+maxSlAtrInput   = input.float(3.0, "Max SL Distance (x ATR, 0=off)", minval = 0.0, maxval = 20.0, step = 0.5, group = GRP_TPSL, tooltip = "Signal is skipped when the stop would be wider than this.", display = display.none)
+tp1AtrInput     = input.float(1.5, "TP1 (x ATR)", minval = 0.3, maxval = 10.0, step = 0.1, group = GRP_TPSL, display = display.none)
+tp2AtrInput     = input.float(3.0, "TP2 (x ATR)", minval = 0.5, maxval = 20.0, step = 0.1, group = GRP_TPSL, display = display.none)
+tp3AtrInput     = input.float(5.0, "TP3 (x ATR)", minval = 1.0, maxval = 30.0, step = 0.1, group = GRP_TPSL, display = display.none)
+tpModeInput     = input.string("R Multiple", "TP Mode", options = ["R Multiple", "ATR (v4)"], group = GRP_TPSL, tooltip = "R Multiple: TP = ระยะ SL × R (ใกล้กว่า เหมาะกับ M1/M5)\nATR (v4): TP = ATR × ค่า TP1/TP2/TP3 ด้านบน", display = display.none)
+tp1RInput       = input.float(1.0, "TP1 (R)", minval = 0.3, maxval = 10.0, step = 0.1, group = GRP_TPSL, display = display.none)
+tp2RInput       = input.float(2.0, "TP2 (R)", minval = 0.5, maxval = 15.0, step = 0.1, group = GRP_TPSL, display = display.none)
+tp3RInput       = input.float(3.0, "TP3 (R)", minval = 1.0, maxval = 20.0, step = 0.1, group = GRP_TPSL, display = display.none)
+rrMinInput      = input.float(1.5, "Min R:R for TP1 (ATR mode)", minval = 0.5, maxval = 5.0, step = 0.1, group = GRP_TPSL, display = display.none)
+beInput         = input.bool(true, "Break-Even after TP1", group = GRP_TPSL, display = display.none)
+keepClosedInput = input.int(0, "Keep Closed Trade Lines (bars)", minval = 0, maxval = 200, group = GRP_TPSL, display = display.none)
+showResultInput = input.bool(true, "Show Result Mark on Close", group = GRP_TPSL, display = display.none)
+showPctInput    = input.bool(false, "Show % Distance on Labels", group = GRP_TPSL, display = display.none)
+labelSizeInput  = input.string("Small", "TP/SL Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_TPSL, display = display.none)
 
 // ── Supply / Demand
-showZonesInput  = input.bool(true, "Show Supply/Demand Zones", group = GRP_ZONE)
-impMultInput    = input.float(1.5, "Impulse Body (x ATR)", minval = 0.8, maxval = 4.0, step = 0.1, group = GRP_ZONE)
-baseBodyInput   = input.float(0.6, "Base Candle Max Body (x ATR)", minval = 0.2, maxval = 1.5, step = 0.1, group = GRP_ZONE)
-baseMaxInput    = input.int(3, "Max Base Candles", minval = 1, maxval = 6, group = GRP_ZONE)
-maxZonesInput   = input.int(4, "Max Zones per Side", minval = 1, maxval = 10, group = GRP_ZONE)
-showStarsInput  = input.bool(true, "Show Star Rating", group = GRP_ZONE, tooltip = "★ base · ★ strong departure (≥2 ATR) · ★ tight base (≤2 candles) · ★ with Pulse trend · ★ volume spike (or thin zone when no volume).\nA touched zone loses one star.")
+showZonesInput  = input.bool(true, "Show Supply/Demand Zones", group = GRP_ZONE, display = display.none)
+impMultInput    = input.float(1.5, "Impulse Body (x ATR)", minval = 0.8, maxval = 4.0, step = 0.1, group = GRP_ZONE, display = display.none)
+baseBodyInput   = input.float(0.6, "Base Candle Max Body (x ATR)", minval = 0.2, maxval = 1.5, step = 0.1, group = GRP_ZONE, display = display.none)
+baseMaxInput    = input.int(3, "Max Base Candles", minval = 1, maxval = 6, group = GRP_ZONE, display = display.none)
+maxZonesInput   = input.int(4, "Max Zones per Side", minval = 1, maxval = 10, group = GRP_ZONE, display = display.none)
+showStarsInput  = input.bool(true, "Show Star Rating", group = GRP_ZONE, tooltip = "★ base · ★ strong departure (≥2 ATR) · ★ tight base (≤2 candles) · ★ with Pulse trend · ★ volume spike (or thin zone when no volume).\nA touched zone loses one star.", display = display.none)
 
 // ── MTF
-mtfTF1Input = input.timeframe("15", "TF 1", group = GRP_MTF)
-mtfTF2Input = input.timeframe("60", "TF 2", group = GRP_MTF)
-mtfTF3Input = input.timeframe("240", "TF 3", group = GRP_MTF)
+mtfTF1Input = input.timeframe("15", "TF 1", group = GRP_MTF, display = display.none)
+mtfTF2Input = input.timeframe("60", "TF 2", group = GRP_MTF, display = display.none)
+mtfTF3Input = input.timeframe("240", "TF 3", group = GRP_MTF, display = display.none)
 
 // ── Dashboard
-showDashInput   = input.bool(true, "Show Dashboard", group = GRP_DASH)
-deviceInput     = input.string("PC", "Layout", options = ["PC", "iPad", "Mobile"], group = GRP_DASH, tooltip = "YY_SMC_PRO panel.\nPC: + ADX / Block / money detail rows · iPad: small font · Mobile: tiny font, core rows.")
-dashPosStr      = input.string("Top Right", "Position", options = ["Top Left", "Top Right", "Bottom Left", "Bottom Right", "Middle Right"], group = GRP_DASH)
-dashFontInput   = input.string("Small", "PC Font Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_DASH)
-showKzInput     = input.bool(true, "Kill Zone Countdown", group = GRP_DASH)
-kzTzInput       = input.string("America/New_York", "Kill Zone Timezone", group = GRP_DASH, tooltip = "IANA timezone, DST handled automatically.")
-asiaKzInput     = input.session("2000-0000", "Asia KZ", group = GRP_DASH)
-londonKzInput   = input.session("0200-0500", "London KZ", group = GRP_DASH)
-nyKzInput       = input.session("0700-1000", "New York KZ", group = GRP_DASH)
-themeInput      = input.string("Auto", "Theme", options = ["Auto", "Dark", "Light"], group = GRP_DASH)
+showDashInput   = input.bool(true, "Show Dashboard", group = GRP_DASH, display = display.none)
+deviceInput     = input.string("PC", "Layout", options = ["PC", "iPad", "Mobile"], group = GRP_DASH, tooltip = "YY_SMC_PRO panel.\nPC: + ADX / Block / money detail rows · iPad: small font · Mobile: tiny font, core rows.", display = display.none)
+dashPosStr      = input.string("Top Right", "Position", options = ["Top Left", "Top Right", "Bottom Left", "Bottom Right", "Middle Right"], group = GRP_DASH, display = display.none)
+dashFontInput   = input.string("Small", "PC Font Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_DASH, display = display.none)
+showKzInput     = input.bool(true, "Kill Zone Countdown", group = GRP_DASH, display = display.none)
+kzTzInput       = input.string("America/New_York", "Kill Zone Timezone", group = GRP_DASH, tooltip = "IANA timezone, DST handled automatically.", display = display.none)
+asiaKzInput     = input.session("2000-0000", "Asia KZ", group = GRP_DASH, display = display.none)
+londonKzInput   = input.session("0200-0500", "London KZ", group = GRP_DASH, display = display.none)
+nyKzInput       = input.session("0700-1000", "New York KZ", group = GRP_DASH, display = display.none)
+themeInput      = input.string("Auto", "Theme", options = ["Auto", "Dark", "Light"], group = GRP_DASH, display = display.none)
 
 // ── Money Simulator
-moneyOnInput    = input.bool(false, "เปิดโหมดจำลองเงินทุน", group = GRP_MONEY, tooltip = "Simulates trading every signal on the loaded chart history.\nShown on the dashboard and on TP/SL labels.\n⚠ Simulation only — not a broker backtest, no slippage modelling.")
-capitalInput    = input.float(300.0, "เงินทุน (USD)", minval = 1.0, step = 10.0, group = GRP_MONEY)
-sizeModeInput   = input.string("Risk %", "ขนาดไม้", options = ["Risk %", "Fixed Lot"], group = GRP_MONEY)
-riskPctInput    = input.float(1.0, "Risk % ต่อไม้", minval = 0.1, maxval = 20.0, step = 0.1, group = GRP_MONEY)
-fixLotInput     = input.float(0.01, "Fixed Lot", minval = 0.01, step = 0.01, group = GRP_MONEY)
-compoundInput   = input.bool(true, "ทบต้น (Risk % คิดจากยอดเงินล่าสุด)", group = GRP_MONEY)
-contractInput   = input.float(100.0, "Contract Size (oz / lot)", minval = 1.0, group = GRP_MONEY, tooltip = "XAUUSD standard: 1 lot = 100 oz → $1 move = $100 per lot.")
-minLotInput     = input.float(0.01, "Min Lot", minval = 0.001, step = 0.01, group = GRP_MONEY)
-lotStepInput    = input.float(0.01, "Lot Step", minval = 0.001, step = 0.01, group = GRP_MONEY)
-commLotInput    = input.float(7.0, "ค่าคอม $/lot (ไป-กลับ)", minval = 0.0, step = 0.5, group = GRP_MONEY)
-spreadPxInput   = input.float(0.20, "Spread (ราคา $)", minval = 0.0, step = 0.05, group = GRP_MONEY)
+moneyOnInput    = input.bool(true, "เปิดโหมดจำลองเงินทุน", group = GRP_MONEY, tooltip = "Simulates trading every signal on the loaded chart history.\nShown on the dashboard and on TP/SL labels.\n⚠ Simulation only — not a broker backtest, no slippage modelling.", display = display.none)
+capitalInput    = input.float(300.0, "เงินทุน (USD)", minval = 1.0, step = 10.0, group = GRP_MONEY, display = display.none)
+sizeModeInput   = input.string("Risk %", "ขนาดไม้", options = ["Risk %", "Fixed Lot"], group = GRP_MONEY, display = display.none)
+riskPctInput    = input.float(1.0, "Risk % ต่อไม้", minval = 0.1, maxval = 20.0, step = 0.1, group = GRP_MONEY, display = display.none)
+fixLotInput     = input.float(0.01, "Fixed Lot", minval = 0.01, step = 0.01, group = GRP_MONEY, display = display.none)
+compoundInput   = input.bool(true, "ทบต้น (Risk % คิดจากยอดเงินล่าสุด)", group = GRP_MONEY, display = display.none)
+contractInput   = input.float(100.0, "Contract Size (oz / lot)", minval = 1.0, group = GRP_MONEY, tooltip = "XAUUSD standard: 1 lot = 100 oz → $1 move = $100 per lot.", display = display.none)
+minLotInput     = input.float(0.01, "Min Lot", minval = 0.001, step = 0.01, group = GRP_MONEY, display = display.none)
+lotStepInput    = input.float(0.01, "Lot Step", minval = 0.001, step = 0.01, group = GRP_MONEY, display = display.none)
+commLotInput    = input.float(7.0, "ค่าคอม $/lot (ไป-กลับ)", minval = 0.0, step = 0.5, group = GRP_MONEY, display = display.none)
+spreadPxInput   = input.float(0.20, "Spread (ราคา $)", minval = 0.0, step = 0.05, group = GRP_MONEY, display = display.none)
 
 // ── Colors
-bullColorInput   = input.color(#00E676, "Bull", inline = "c1", group = GRP_COL)
-bearColorInput   = input.color(#FF5252, "Bear", inline = "c1", group = GRP_COL)
-emaFastColor     = input.color(#FFC940, "Pulse Fast", inline = "c2", group = GRP_COL)
-emaSlowColor     = input.color(#5C8AFF, "Pulse Slow", inline = "c2", group = GRP_COL)
-demandColorInput = input.color(#26A69A, "Demand", inline = "c3", group = GRP_COL)
-supplyColorInput = input.color(#EF5350, "Supply", inline = "c3", group = GRP_COL)
+bullColorInput   = input.color(#00E676, "Bull", inline = "c1", group = GRP_COL, display = display.none)
+bearColorInput   = input.color(#FF5252, "Bear", inline = "c1", group = GRP_COL, display = display.none)
+emaFastColor     = input.color(#FFC940, "Pulse Fast", inline = "c2", group = GRP_COL, display = display.none)
+emaSlowColor     = input.color(#5C8AFF, "Pulse Slow", inline = "c2", group = GRP_COL, display = display.none)
+demandColorInput = input.color(#26A69A, "Demand", inline = "c3", group = GRP_COL, display = display.none)
+supplyColorInput = input.color(#EF5350, "Supply", inline = "c3", group = GRP_COL, display = display.none)
 
 // ── Alerts
-webhookInput = input.bool(false, "Webhook JSON Format", group = GRP_ALERT)
+webhookInput = input.bool(false, "Webhook JSON Format", group = GRP_ALERT, display = display.none)
 
 // ══════════════════════════════════════
 // THEME
@@ -302,6 +306,9 @@ type Stats
     float  rSum     = 0.0
     string form     = ""
     string lastExit = ""
+    int    wins     = 0
+    int    losses   = 0
+    int    bes      = 0
     float  lastR    = 0.0
 
 type Money
@@ -365,6 +372,12 @@ finalizeTrade(Trade t, Stats s, Money m, string how) =>
     s.rSum     := s.rSum + t.rAcc
     s.lastR    := t.rAcc
     s.lastExit := how
+    if t.rAcc > 0.0001
+        s.wins := s.wins + 1
+    else if t.rAcc < -0.0001
+        s.losses := s.losses + 1
+    else
+        s.bes := s.bes + 1
     pushForm(s, t.tp1Hit)
     float net = t.realized - tradeCost(t.lot)
     if not m.bust
@@ -694,9 +707,10 @@ tpDistances(bool scalp, float slDist) =>
     float m1 = scalp ? scalpTPInput : tp1AtrInput
     float m2 = scalp ? scalpTPInput * 1.5 : tp2AtrInput
     float m3 = scalp ? scalpTPInput * 2.0 : tp3AtrInput
-    float d1 = math.max(m1 * atrBase, slDist * rrMinInput)
-    float d2 = math.max(m2 * atrBase, d1 * 1.5)
-    float d3 = math.max(m3 * atrBase, d2 * 1.3)
+    bool  rMode = tpModeInput == "R Multiple" and not scalp
+    float d1 = rMode ? slDist * tp1RInput : math.max(m1 * atrBase, slDist * rrMinInput)
+    float d2 = rMode ? math.max(slDist * tp2RInput, d1 + slDist * 0.25) : math.max(m2 * atrBase, d1 * 1.5)
+    float d3 = rMode ? math.max(slDist * tp3RInput, d2 + slDist * 0.25) : math.max(m3 * atrBase, d2 * 1.3)
     [d1, d2, d3]
 
 float labelOffset = atrBase * 0.5
@@ -1049,30 +1063,8 @@ if array.size(label.all) > 450
 
 
 // ══════════════════════════════════════
-// DASHBOARD — YY_SMC_PRO panel (PC / iPad / Mobile)
+// DASHBOARD — STRAT-style sectioned panel (PC / iPad / Mobile)
 // ══════════════════════════════════════
-// Panel palette (always dark, like the original YY_SMC_PRO panel)
-P_BG       = #12141C
-P_CELL     = #1A1D29
-P_BORDER   = #2A2E3D
-P_GOLD_BG  = #E8C25A
-P_GOLD_TX  = #1A1A1A
-P_LIVE_BG  = #0E3B2E
-P_LIVE_TX  = #2EE59D
-P_HIST_BG  = #2A2E3D
-P_HIST_TX  = #8A93B2
-P_TEXT     = #E6E9F2
-P_MUTED    = #8A93B2
-P_BULL     = #2EE59D
-P_BEAR     = #FF6B81
-P_BULL_BG  = #1FBF7A
-P_BEAR_BG  = #F2546B
-P_BULL_DK  = #0F2E24
-P_BEAR_DK  = #3A1A24
-P_INFO_DK  = #16223A
-P_E_TX     = #7FB2FF
-P_YELLOW   = #FFC940
-
 fmtDur(float ms) =>
     int tot = math.max(0, int(math.floor(ms / 1000.0)))
     int h = int(math.floor(tot / 3600.0))
@@ -1107,6 +1099,50 @@ kzInfo(string sess) =>
         ms := st + 86400000 - timenow
     [state, ms]
 
+// row buffers: 0 key/value · 1 section · 2 full-width text · 3 header
+var string[] dK  = array.new_string()
+var string[] dV  = array.new_string()
+var color[]  dKC = array.new_color()
+var color[]  dVC = array.new_color()
+var color[]  dBG = array.new_color()
+var int[]    dT  = array.new_int()
+
+rowKV(string k, string v, color vc) =>
+    array.push(dK, k)
+    array.push(dV, v)
+    array.push(dKC, TEXT_MUTED)
+    array.push(dVC, vc)
+    array.push(dBG, TABLE_BG)
+    array.push(dT, 0)
+
+rowSec(string t) =>
+    array.push(dK, t)
+    array.push(dV, "")
+    array.push(dKC, TEXT_MUTED)
+    array.push(dVC, TEXT_MUTED)
+    array.push(dBG, ROW_ALT)
+    array.push(dT, 1)
+
+rowFull(string t, color c, color bg) =>
+    array.push(dK, t)
+    array.push(dV, "")
+    array.push(dKC, c)
+    array.push(dVC, c)
+    array.push(dBG, bg)
+    array.push(dT, 2)
+
+rowHead(string t, color bg) =>
+    array.push(dK, t)
+    array.push(dV, "")
+    array.push(dKC, HEADER_TEXT)
+    array.push(dVC, HEADER_TEXT)
+    array.push(dBG, bg)
+    array.push(dT, 3)
+
+gauge(float pct, int width) =>
+    int filled = math.round(math.max(0.0, math.min(100.0, pct)) / 100.0 * width)
+    str.repeat("■", filled) + str.repeat("□", width - filled)
+
 var table dashTable = na
 
 dashPos = switch dashPosStr
@@ -1118,187 +1154,156 @@ dashPos = switch dashPosStr
     =>                position.top_right
 
 if showDashInput and barstate.islast
+    array.clear(dK)
+    array.clear(dV)
+    array.clear(dKC)
+    array.clear(dVC)
+    array.clear(dBG)
+    array.clear(dT)
     bool isPC  = deviceInput == "PC"
     bool isMob = deviceInput == "Mobile"
-    fsz = isPC ? sizeFromString(dashFontInput) : isMob ? size.tiny : size.small
+    string fStr = isPC ? dashFontInput : isMob ? "Tiny" : "Small"
+    fsz    = sizeFromString(fStr)
+    fszSub = sizeDown(fStr)
 
-    // ── bias + MTF
-    int    bias    = trendBull ? 1 : trendBear ? -1 : 0
-    string biasTx  = eChop and isChop ? "SIDEWAYS" : bias == 1 ? "BULLISH" : bias == -1 ? "BEARISH" : "NEUTRAL"
-    color  biasCol = eChop and isChop ? P_YELLOW : bias == 1 ? P_BULL : bias == -1 ? P_BEAR : P_YELLOW
-    int    sc      = bias == -1 ? math.round(bearScore) : math.round(bullScore)
-    string mtfTx   = tfName(mtfTF3Input) + stateArrow(mtf3State, mtf3Valid) + " " + tfName(mtfTF2Input) + stateArrow(mtf2State, mtf2Valid) + " " + tfName(mtfTF1Input) + stateArrow(mtf1State, mtf1Valid) + "   " + str.tostring(sc) + "%"
+    // ── values
+    bool   inTrade  = T.dir != 0
+    int    bias     = trendBull ? 1 : trendBear ? -1 : 0
+    bool   chopNow  = eChop and isChop
+    string biasTx   = chopNow ? "SIDEWAYS" : bias == 1 ? "BULL" : bias == -1 ? "BEAR" : "NEUTRAL"
+    color  biasCol  = chopNow ? NEU_TEXT : bias == 1 ? BULL_TEXT : bias == -1 ? BEAR_TEXT : NEU_TEXT
+    string headTx   = "◆ YY PULSE · " + (inTrade ? (T.dir == 1 ? "Long" : "Short") : "Flat") + modeTag
+    color  headBg   = inTrade ? (T.dir == 1 ? HEADER_BULL : HEADER_BEAR) : HEADER_NEU
+    string mtfTx    = tfName(mtfTF3Input) + stateArrow(mtf3State, mtf3Valid) + " " + tfName(mtfTF2Input) + stateArrow(mtf2State, mtf2Valid) + " " + tfName(mtfTF1Input) + stateArrow(mtf1State, mtf1Valid)
+    color  mtfCol   = mtfAllBull ? BULL_TEXT : mtfAllBear ? BEAR_TEXT : TEXT_COLOR
+    float  liveR    = inTrade and T.risk > 0 ? T.rAcc + T.rem * (close - T.entry) * T.dir / T.risk : S.lastR
+    float  slPct    = inTrade and T.entry != 0 ? math.abs(T.entry - T.sl) / T.entry * 100.0 : 0.0
+    float  floatP   = inTrade ? T.realized + T.rem * (close - T.entry) * T.dir * contractInput * T.lot - tradeCost(T.lot) : 0.0
+    float  riskUsd  = inTrade ? T.risk * contractInput * T.lot + tradeCost(T.lot) : 0.0
+    float  fullUsd  = inTrade ? ((T.tp1 - T.entry) + (T.tp2 - T.entry) + (T.tp3 - T.entry)) * T.dir / 3.0 * contractInput * T.lot - tradeCost(T.lot) : 0.0
+    int    decided  = S.wins + S.losses
+    float  wrPct    = decided > 0 ? 100.0 * S.wins / decided : 0.0
+    float  avgR     = S.closed > 0 ? S.rSum / S.closed : 0.0
+    string sigAgo   = lastSignal == "None" ? "—" : lastSignal + " (" + str.tostring(bar_index - lastSignalBar) + ")"
 
-    // ── nearest zones
+    // nearest zones
     float nDT = na
-    float nDB = na
     int   nDS = 0
-    float nST = na
     float nSB = na
     int   nSS = 0
     if array.size(zBox) > 0
         for i = 0 to array.size(zBox) - 1
             float zt = array.get(zTop, i)
             float zb = array.get(zBot, i)
-            if array.get(zDir, i) == 1 and zb <= close
-                if na(nDT) or zt > nDT
-                    nDT := zt
-                    nDB := zb
-                    nDS := array.get(zStar, i)
-            if array.get(zDir, i) == -1 and zt >= close
-                if na(nSB) or zb < nSB
-                    nST := zt
-                    nSB := zb
-                    nSS := array.get(zStar, i)
-    string supTx = na(nSB) ? "S —" : "S " + str.repeat("★", nSS) + str.repeat("☆", 5 - nSS) + (close >= nSB ? " IN" : " ↑" + str.tostring(nSB - close, "0.0"))
-    string demTx = na(nDT) ? "D —" : "D " + str.repeat("★", nDS) + str.repeat("☆", 5 - nDS) + (close <= nDT ? " IN" : " ↓" + str.tostring(close - nDT, "0.0"))
+            if array.get(zDir, i) == 1 and zb <= close and (na(nDT) or zt > nDT)
+                nDT := zt
+                nDS := array.get(zStar, i)
+            if array.get(zDir, i) == -1 and zt >= close and (na(nSB) or zb < nSB)
+                nSB := zb
+                nSS := array.get(zStar, i)
+    string zoneTx = "S " + (na(nSB) ? "—" : str.repeat("★", nSS) + " ↑" + str.tostring(nSB - close, "0.0")) + "  ·  D " + (na(nDT) ? "—" : str.repeat("★", nDS) + " ↓" + str.tostring(close - nDT, "0.0"))
 
-    // ── trade
-    bool   inTrade = T.dir != 0
-    string sideTx  = inTrade ? (T.dir == 1 ? "BUY " : "SELL ") + T.src : "FLAT"
-    color  sideBg  = inTrade ? (T.dir == 1 ? P_BULL_BG : P_BEAR_BG) : P_CELL
-    color  sideTxC = inTrade ? #FFFFFF : P_MUTED
-    string tpDots  = (T.tp1Hit ? "●" : "○") + (T.tp2Hit ? "●" : "○") + "🏁"
-    float  nextTP  = not inTrade ? na : not T.tp1Hit ? T.tp1 : not T.tp2Hit ? T.tp2 : T.tp3
-    float  liveR   = inTrade and T.risk > 0 ? T.rAcc + T.rem * (close - T.entry) * T.dir / T.risk : S.lastR
-    float  floatP  = inTrade ? T.realized + T.rem * (close - T.entry) * T.dir * contractInput * T.lot - tradeCost(T.lot) : 0.0
-    float  tp1Rate = S.closed > 0 ? 100.0 * S.tp1Cnt / S.closed : 0.0
-    float  avgR    = S.closed > 0 ? S.rSum / S.closed : 0.0
-    string sigAgo  = lastSignal == "None" ? "—" : lastSignal + " (" + str.tostring(bar_index - lastSignalBar) + ")"
-
-    // ── status message (Thai, YY_SMC_PRO style)
-    string msg = ""
-    color  msgBg = P_CELL
-    color  msgTx = P_MUTED
-    if inTrade
-        msg := (T.dir == 1 ? "🟢 ถือ BUY" : "🔴 ถือ SELL") + (T.tp2Hit ? " · TP2 ✓ ปล่อยวิ่งหา TP3" : T.tp1Hit ? " · TP1 ✓" + (T.be ? " SL→BE ไม่ต้องกังวล" : "") : " · รอ TP1 " + fmtPrice(T.tp1))
-        msgBg := T.dir == 1 ? P_BULL_DK : P_BEAR_DK
-        msgTx := T.dir == 1 ? P_BULL : P_BEAR
-    else if S.lastExit == "SL"
-        msg := "👉 โดน SL " + fmtR(S.lastR) + " · อย่ารีบเอาคืน รอสัญญาณใหม่"
-        msgBg := P_BEAR_DK
-        msgTx := P_BEAR
-    else if S.lastExit == "BE"
-        msg := "🛡️ ออกที่ BE " + fmtR(S.lastR) + " · ทุนปลอดภัย รอสัญญาณใหม่"
-        msgBg := P_INFO_DK
-        msgTx := P_E_TX
-    else if S.lastExit == "TP3"
-        msg := "🏆 ปิดครบ TP3 " + fmtR(S.lastR) + " · เยี่ยม! พักก่อนได้"
-        msgBg := P_BULL_DK
-        msgTx := P_BULL
-    else
-        msg := eCme and inMagnet ? "🟡 ราคาอยู่ในโซน Magnet CME · ห้ามเทรด รอราคาออกจากโซน" : eChop and isChop ? "⛔ ตลาด Sideways (Chop " + str.tostring(chopVotes) + "/" + str.tostring(chopMax) + ") · ห้ามเทรด รอตลาดมีทิศ" : not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอสัญญาณ Pulse"
-        msgTx := P_MUTED
-
-    // ── kill zones
+    // kill zone
     [aSt, aMs] = kzInfo(asiaKzInput)
     [lSt, lMs] = kzInfo(londonKzInput)
     [nSt, nMs] = kzInfo(nyKzInput)
-    string kzTx = ""
-    if aSt == 1
-        kzTx := "◷ IN ASIA KZ · ends " + fmtDur(aMs)
-    else if lSt == 1
-        kzTx := "◷ IN LONDON KZ · ends " + fmtDur(lMs)
-    else if nSt == 1
-        kzTx := "◷ IN NEW YORK KZ · ends " + fmtDur(nMs)
-    else
+    string kzTx = aSt == 1 ? "IN ASIA · " + fmtDur(aMs) : lSt == 1 ? "IN LONDON · " + fmtDur(lMs) : nSt == 1 ? "IN NY · " + fmtDur(nMs) : ""
+    if kzTx == ""
         float best = math.min(aMs, math.min(lMs, nMs))
-        string nm = best == aMs ? "ASIA" : best == lMs ? "LONDON" : "NEW YORK"
-        kzTx := "◷ " + nm + " KZ in " + fmtDur(best)
-    string barTx = barstate.isrealtime ? " · bar " + fmtDur(time_close - timenow) : ""
-    bool   inKz  = aSt == 1 or lSt == 1 or nSt == 1
+        kzTx := (best == aMs ? "ASIA" : best == lMs ? "LONDON" : "NY") + " in " + fmtDur(best)
+    bool inKz = aSt == 1 or lSt == 1 or nSt == 1
 
-    // ── row count
-    int rows = 8
-    rows += isPC ? 2 : 0
-    rows += moneyOnInput ? (isPC ? 2 : 1) : 0
-    rows += showKzInput ? 1 : 0
-    rows += useCmeInput ? 1 : 0
-
-    if not na(dashTable)
-        table.delete(dashTable)
-    dashTable := table.new(dashPos, 3, rows, bgcolor = P_BG, border_color = P_BORDER, border_width = 1, frame_color = P_BORDER, frame_width = 1)
-    int r = 0
-
-    // header
-    table.cell(dashTable, 0, r, "◆ YOUNGYUU PULSE" + modeTag, text_color = P_GOLD_TX, bgcolor = P_GOLD_BG, text_size = fsz, text_halign = text.align_left)
-    table.merge_cells(dashTable, 0, r, 1, r)
-    table.cell(dashTable, 2, r, barstate.isrealtime ? "● LIVE" : "◌ HIST", text_color = barstate.isrealtime ? P_LIVE_TX : P_HIST_TX, bgcolor = barstate.isrealtime ? P_LIVE_BG : P_HIST_BG, text_size = fsz)
-    r += 1
-    // status
-    table.cell(dashTable, 0, r, msg, text_color = msgTx, bgcolor = msgBg, text_size = fsz, text_halign = text.align_left)
-    table.merge_cells(dashTable, 0, r, 2, r)
-    r += 1
-    // bias + MTF
-    table.cell(dashTable, 0, r, biasTx, text_color = biasCol, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-    table.cell(dashTable, 1, r, mtfTx, text_color = P_TEXT, bgcolor = P_BG, text_size = fsz)
-    table.merge_cells(dashTable, 1, r, 2, r)
-    r += 1
-    // zones
-    table.cell(dashTable, 0, r, supTx, text_color = supplyColorInput, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-    table.cell(dashTable, 1, r, demTx, text_color = demandColorInput, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
-    table.merge_cells(dashTable, 1, r, 2, r)
-    r += 1
-    // side / entry / SL
-    table.cell(dashTable, 0, r, sideTx, text_color = sideTxC, bgcolor = sideBg, text_size = fsz)
+    // status message (Thai)
+    string msg = ""
+    color  msgCol = TEXT_MUTED
     if inTrade
-        table.cell(dashTable, 1, r, "E " + fmtPrice(T.entry), text_color = P_E_TX, bgcolor = P_INFO_DK, text_size = fsz)
-        table.cell(dashTable, 2, r, (T.be ? "BE " : "SL ") + fmtPrice(T.sl), text_color = T.be ? BE_COLOR : P_BEAR, bgcolor = P_BEAR_DK, text_size = fsz)
+        msg := (T.tp2Hit ? "TP2 ✓ ปล่อยวิ่งหา TP3" : T.tp1Hit ? "TP1 ✓" + (T.be ? " · SL→BE ไม่ต้องกังวล" : "") : "รอ TP1 " + fmtPrice(T.tp1))
+        msgCol := T.dir == 1 ? BULL_TEXT : BEAR_TEXT
+    else if S.lastExit == "SL"
+        msg := "โดน SL " + fmtR(S.lastR) + " · อย่ารีบเอาคืน รอสัญญาณใหม่"
+        msgCol := BEAR_TEXT
+    else if S.lastExit == "BE"
+        msg := "ออกที่ BE · ทุนปลอดภัย รอสัญญาณใหม่"
+        msgCol := BE_COLOR
+    else if S.lastExit == "TP3"
+        msg := "ปิดครบ TP3 " + fmtR(S.lastR) + " · พักก่อนได้"
+        msgCol := BULL_TEXT
     else
-        table.cell(dashTable, 1, r, "last " + sigAgo, text_color = P_MUTED, bgcolor = P_BG, text_size = fsz)
-        table.merge_cells(dashTable, 1, r, 2, r)
-    r += 1
-    // TP progress
-    table.cell(dashTable, 0, r, "TP " + (inTrade ? tpDots : "—"), text_color = TP_LBL_COLOR, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-    table.cell(dashTable, 1, r, inTrade ? "next " + fmtPrice(nextTP) + (moneyOnInput ? "  " + fmtUsdS(floatP) : "") : "—", text_color = P_TEXT, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
-    table.merge_cells(dashTable, 1, r, 2, r)
-    r += 1
-    // R + WR
-    table.cell(dashTable, 0, r, fmtR(liveR), text_color = liveR >= 0 ? P_BULL : P_BEAR, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-    table.cell(dashTable, 1, r, "WR " + str.tostring(math.round(tp1Rate)) + "% · " + fmtR(avgR) + " · n" + str.tostring(S.closed), text_color = P_YELLOW, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
-    table.merge_cells(dashTable, 1, r, 2, r)
-    r += 1
-    // form strip
-    table.cell(dashTable, 0, r, "Form", text_color = P_MUTED, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-    table.cell(dashTable, 1, r, S.form == "" ? "—" : S.form, text_color = FORM_COLOR, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
-    table.merge_cells(dashTable, 1, r, 2, r)
-    r += 1
-    // PC extras: ADX/regime + last block
-    if isPC
-        table.cell(dashTable, 0, r, "CHOP " + str.tostring(chopVotes) + "/" + str.tostring(chopMax), text_color = isChop ? P_BEAR : P_BULL, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-        table.cell(dashTable, 1, r, "whip " + str.tostring(crossCnt, "0") + "x · ER " + str.tostring(erVal, "0.00") + " · ADX " + str.tostring(adx, "0.0") + "/" + str.tostring(adxThr, "0") + " · " + regimeStr, text_color = isChop ? P_BEAR : regimeCol, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
-        table.merge_cells(dashTable, 1, r, 2, r)
-        r += 1
-        table.cell(dashTable, 0, r, "Block", text_color = P_MUTED, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-        table.cell(dashTable, 1, r, lastBlock == "" ? "—" : lastBlock, text_color = P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
-        table.merge_cells(dashTable, 1, r, 2, r)
-        r += 1
-    // money
+        msg := eCme and inMagnet ? "ราคาอยู่ในโซน Magnet CME · ห้ามเทรด" : chopNow ? "ตลาด Sideways · ห้ามเทรด รอตลาดมีทิศ" : "รอสัญญาณ"
+        msgCol := chopNow or (eCme and inMagnet) ? NEU_TEXT : TEXT_MUTED
+
+    // ── build rows
+    rowHead(headTx, headBg)
+    rowFull(msg, msgCol, TABLE_BG)
+
+    rowSec("— Market —")
+    rowKV("Trend", biasTx, biasCol)
+    rowKV("MTF", mtfTx, mtfCol)
+    if not isMob
+        rowKV("Chop", str.tostring(chopVotes) + "/" + str.tostring(chopMax) + " · ADX " + str.tostring(adx, "0.0") + " · " + regimeStr, isChop ? BEAR_TEXT : regimeCol)
+        if showZonesInput
+            rowKV("Zones", zoneTx, TEXT_COLOR)
+        if useCmeInput
+            rowKV("CME", cmeWhere, inMagnet ? NEU_TEXT : nearCall ? BEAR_TEXT : nearPut ? BULL_TEXT : TEXT_COLOR)
+        if showKzInput
+            rowKV("Session", kzTx, inKz ? NEU_TEXT : TEXT_MUTED)
+
+    rowSec("— Trade —")
+    if inTrade
+        rowKV("Entry", (T.dir == 1 ? "Long @ " : "Short @ ") + fmtPrice(T.entry) + (isMob ? "" : "  " + T.src), T.dir == 1 ? BULL_TEXT : BEAR_TEXT)
+        rowKV("SL", (T.be ? "BE @ " : "") + fmtPrice(T.sl), T.be ? BE_COLOR : SL_COLOR)
+        rowKV("TP1", (T.tp1Hit ? "✓ " : "") + fmtPrice(T.tp1), T.tp1Hit ? TP_HIT_COLOR : TP_LBL_COLOR)
+        rowKV("TP2", (T.tp2Hit ? "✓ " : "") + fmtPrice(T.tp2), T.tp2Hit ? TP_HIT_COLOR : TP_LBL_COLOR)
+        rowKV("TP3", fmtPrice(T.tp3), TP_LBL_COLOR)
+        rowKV("R:R", fmtR(liveR), liveR >= 0 ? BULL_TEXT : BEAR_TEXT)
+        if not isMob
+            rowKV("SL Dist", str.tostring(slPct, "0.00") + "%", slPct > 1.0 ? NEU_TEXT : TEXT_COLOR)
+    else
+        rowKV("Status", "Flat · last " + sigAgo, TEXT_MUTED)
+        if isPC
+            rowKV("Block", lastBlock == "" ? "—" : lastBlock, TEXT_MUTED)
+
+    rowSec("— Stats · All-Time —")
+    if isMob
+        rowKV("W / L", str.tostring(S.wins) + " / " + str.tostring(S.losses) + "  (" + str.tostring(math.round(wrPct)) + "%)", wrPct >= 50 ? BULL_TEXT : BEAR_TEXT)
+    else
+        rowKV("Trades", str.tostring(S.closed), TEXT_COLOR)
+        rowKV("Wins", str.tostring(S.wins), BULL_TEXT)
+        rowKV("Losses", str.tostring(S.losses) + (S.bes > 0 ? "  (BE " + str.tostring(S.bes) + ")" : ""), BEAR_TEXT)
+        rowKV("Win rate", str.tostring(math.round(wrPct)) + "%  " + gauge(wrPct, 8), wrPct >= 55 ? BULL_TEXT : wrPct >= 45 ? NEU_TEXT : BEAR_TEXT)
+        rowKV("Avg R", fmtR(avgR), avgR >= 0 ? BULL_TEXT : BEAR_TEXT)
+        rowKV("Form", S.form == "" ? "—" : S.form, FORM_COLOR)
+
     if moneyOnInput
         float netAll = M.equity - capitalInput
         float netPct = capitalInput > 0 ? netAll / capitalInput * 100.0 : 0.0
-        table.cell(dashTable, 0, r, "💰 " + fmtUsd(capitalInput), text_color = P_YELLOW, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-        table.cell(dashTable, 1, r, "→ " + fmtUsd(M.equity) + " (" + fmtPctS(netPct) + ")" + (M.bust ? " 💥" : ""), text_color = netAll >= 0 ? P_BULL : P_BEAR, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
-        table.merge_cells(dashTable, 1, r, 2, r)
-        r += 1
-        if isPC
-            int mTot = M.wins + M.losses
-            table.cell(dashTable, 0, r, "W/L " + str.tostring(M.wins) + "/" + str.tostring(M.losses), text_color = P_TEXT, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-            table.cell(dashTable, 1, r, "DD -" + str.tostring(M.maxDD, "0.0") + "% · last " + (mTot > 0 ? fmtUsdS(M.lastPnl) : "—") + " · ⚠ จำลอง", text_color = P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
-            table.merge_cells(dashTable, 1, r, 2, r)
-            r += 1
-    // CME levels row
-    if useCmeInput
-        string cmeTx = "C " + (na(lvC1) ? "—" : str.tostring(lvC1, "0")) + "/" + (na(lvC2) ? "—" : str.tostring(lvC2, "0")) + " · M " + (na(lvM) ? "—" : str.tostring(lvM, "0")) + " · P " + (na(lvP2) ? "—" : str.tostring(lvP2, "0")) + "/" + (na(lvP1) ? "—" : str.tostring(lvP1, "0"))
-        color cmeCol = inMagnet ? P_YELLOW : nearCall ? P_BEAR : nearPut ? P_BULL : P_TEXT
-        table.cell(dashTable, 0, r, "CME " + cmeWhere, text_color = cmeCol, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
-        table.cell(dashTable, 1, r, cmeTx, text_color = P_TEXT, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
-        table.merge_cells(dashTable, 1, r, 2, r)
-        r += 1
-    // kill zone countdown
-    if showKzInput
-        table.cell(dashTable, 0, r, kzTx + barTx, text_color = inKz ? P_YELLOW : P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
-        table.merge_cells(dashTable, 0, r, 2, r)
+        rowSec("— 💰 ทุน " + fmtUsd(capitalInput) + " · " + (sizeModeInput == "Fixed Lot" ? str.tostring(fixLotInput, "0.00") + " lot" : str.tostring(riskPctInput, "0.0") + "% risk") + " —")
+        rowKV("ยอดเงิน", fmtUsd(M.equity) + (M.bust ? " 💥" : ""), netAll >= 0 ? BULL_TEXT : BEAR_TEXT)
+        rowKV("กำไรสุทธิ", fmtUsdS(netAll) + " (" + fmtPctS(netPct) + ")", netAll >= 0 ? BULL_TEXT : BEAR_TEXT)
+        if not isMob
+            rowKV("Max DD", "-" + str.tostring(M.maxDD, "0.0") + "%", M.maxDD >= 20 ? BEAR_TEXT : M.maxDD >= 10 ? NEU_TEXT : BULL_TEXT)
+            rowKV("ไม้ล่าสุด", (M.wins + M.losses) > 0 ? fmtUsdS(M.lastPnl) : "—", M.lastPnl >= 0 ? BULL_TEXT : BEAR_TEXT)
+        if inTrade
+            rowKV("ไม้นี้ · ลอย", str.tostring(T.lot, "0.00") + " lot · " + fmtUsdS(floatP), floatP >= 0 ? BULL_TEXT : BEAR_TEXT)
+            if not isMob
+                rowKV("ถ้า SL / TP3", "-" + fmtUsd(riskUsd) + " / " + fmtUsdS(fullUsd), TEXT_COLOR)
+
+    if not isMob
+        rowFull("YOUNGYUU Pulse Engine · " + VERSION + (moneyOnInput ? " · จำลองจากประวัติกราฟ" : ""), TEXT_MUTED, TABLE_BG)
+
+    // ── render
+    int nRows = array.size(dK)
+    if not na(dashTable)
+        table.delete(dashTable)
+    dashTable := table.new(dashPos, 2, nRows, bgcolor = TABLE_BG, border_color = TABLE_BORDER, border_width = 1, frame_color = TABLE_BORDER, frame_width = 1)
+    for i = 0 to nRows - 1
+        int tp = array.get(dT, i)
+        if tp == 0
+            table.cell(dashTable, 0, i, array.get(dK, i), text_color = array.get(dKC, i), bgcolor = TABLE_BG, text_size = fsz, text_halign = text.align_left)
+            table.cell(dashTable, 1, i, array.get(dV, i), text_color = array.get(dVC, i), bgcolor = TABLE_BG, text_size = fsz, text_halign = text.align_right)
+        else
+            table.cell(dashTable, 0, i, array.get(dK, i), text_color = array.get(dKC, i), bgcolor = array.get(dBG, i), text_size = tp == 3 ? fsz : fszSub, text_halign = text.align_center)
+            table.merge_cells(dashTable, 0, i, 1, i)
 else if not showDashInput and barstate.islast and not na(dashTable)
     table.delete(dashTable)
     dashTable := na
