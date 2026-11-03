@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// YOUNGYUU ทดลองเงิน · Dashboard Module v4.1  (Pine Script v6)
+// YOUNGYUU ทดลองเงิน · Dashboard Module v4.2  (Pine Script v6)
 // ────────────────────────────────────────────────────────────────
 // วิธีใช้:
 //   1) copy ทั้งไฟล์นี้ไปวาง "ต่อท้ายสุด" ของ indicator ที่ต้องการ (ต้องเป็น //@version=6)
@@ -16,6 +16,10 @@
 bool yyBuy  = false    // ← สัญญาณซื้อของ indicator (true เฉพาะแท่งที่เกิดสัญญาณ)
 bool yySell = false    // ← สัญญาณขายของ indicator
 string yyTitle = "YOUNGYUU"   // ← ชื่อที่แสดงบนหัวแผง (ใส่ชื่อ indicator ที่ทดสอบ)
+float yyExtSL  = na    // ← (ไม่บังคับ) ราคา SL ของ indicator ณ แท่งสัญญาณ · ใช้เมื่อเลือกโหมด "ตาม indicator"
+float yyExtTP1 = na    // ← (ไม่บังคับ) TP1 / TP2 / TP3 ของ indicator · ไม่ใส่ = ใช้ TP เป็น R
+float yyExtTP2 = na
+float yyExtTP3 = na
 // ▲▲▲ แก้ 2 บรรทัดนี้ ▲▲▲
 
 const string YYG1 = "💰 YY ทดลองเงิน"
@@ -25,6 +29,7 @@ const string YYM_SW  = "Swing · TP เป็น R"
 const string YYM_AR  = "SL ATR · TP เป็น R"
 const string YYM_ATR = "ATR"
 const string YYM_FIX = "คงที่ ($/จุด)"
+const string YYM_EXT = "ตาม indicator"
 const string YYX_SC  = "แบ่งปิด 5 ส่วน (20% ทุก TP)"
 
 yyCapital  = input.float(300.0, "เงินทุน ($)", minval = 1.0, step = 50.0, group = YYG1, display = display.none)
@@ -38,7 +43,7 @@ yyContract = input.float(100.0, "1 lot = กี่ ounce", minval = 1.0, group =
 yyComm     = input.float(7.0, "ค่าคอม ($ ต่อ 1 lot ไป-กลับ)", minval = 0.0, step = 0.5, group = YYG1, display = display.none)
 yySpread   = input.float(0.20, "Spread ($ ราคา)", minval = 0.0, step = 0.05, group = YYG1, display = display.none)
 
-yyMode     = input.string(YYM_SW, "รูปแบบ SL / TP", options = [YYM_SW, YYM_AR, YYM_ATR, YYM_FIX], group = YYG3, display = display.none, tooltip = "Swing: SL ใต้/เหนือ swing ของสัญญาณนั้น → กล่องเล็ก/ใหญ่ตามสัญญาณ · TP = กี่เท่าของ SL\nSL ATR · TP เป็น R: SL ตาม ATR · TP = กี่เท่าของ SL\nATR: SL/TP ตามความผันผวน\nคงที่: ระยะเท่ากันทุกไม้")
+yyMode     = input.string(YYM_SW, "รูปแบบ SL / TP", options = [YYM_SW, YYM_EXT, YYM_AR, YYM_ATR, YYM_FIX], group = YYG3, display = display.none, tooltip = "Swing: SL ใต้/เหนือ swing ของสัญญาณนั้น → กล่องเล็ก/ใหญ่ตามสัญญาณ · TP = กี่เท่าของ SL\nSL ATR · TP เป็น R: SL ตาม ATR · TP = กี่เท่าของ SL\nATR: SL/TP ตามความผันผวน\nคงที่: ระยะเท่ากันทุกไม้")
 yyPt       = input.float(0.01, "1 จุด = ราคาเท่าไร", minval = 0.00001, step = 0.001, group = YYG3, display = display.none, tooltip = "ทองคำ: นับ 1 จุด = 0.01 → 500 จุด = $5.00\nถ้านับแบบโบรก 3 ตำแหน่ง ใส่ 0.001 (500 จุด = $0.50)")
 yyMinSL    = input.int(500, "SL ขั้นต่ำ (จุด)", minval = 0, step = 50, group = YYG3, display = display.none, tooltip = "SL ทุกไม้จะไม่แคบกว่านี้ · 500 จุด × 0.01 = $5.00")
 yyTPr1     = input.float(1.0, "TP (R)  1", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "yr")
@@ -162,7 +167,7 @@ var label[] yyLbls  = array.new_label()
 int   yyLvl   = yyExit == "ปิดหมดที่ TP1" ? 1 : yyExit == "ปิดหมดที่ TP2" ? 2 : yyExit == "ปิดหมดที่ TP3" ? 3 : yyExit == "ปิดหมดที่ TP4" ? 4 : 5
 bool  yyScale = yyExit == YYX_SC
 bool  yyFix   = yyMode == YYM_FIX
-bool  yyUseR  = yyMode == YYM_SW or yyMode == YYM_AR
+bool  yyUseR  = yyMode == YYM_SW or yyMode == YYM_AR or yyMode == YYM_EXT
 float yyATR   = ta.atr(yyAtrLen)
 float yyLo    = ta.lowest(low, yySwLen)
 float yyHi    = ta.highest(high, yySwLen)
@@ -356,7 +361,8 @@ if yySig != 0 and (yt.dir == 0 or yyNewSig == "ปิดแล้วเข้า
         yyClose(yt, ys, "สลับ")
     // ระยะ SL ของสัญญาณนี้ (ไม่ต่ำกว่า SL ขั้นต่ำ)
     float y_sw = yySig == 1 ? close - (yyLo - yySwBuf * yyATR) : (yyHi + yySwBuf * yyATR) - close
-    float y_rd = yyFix ? yyDist(yySL) : yyMode == YYM_SW ? math.min(y_sw, yySwMax * yyATR) : yySLatr * yyATR
+    bool  y_ext = yyMode == YYM_EXT and not na(yyExtSL) and (yySig == 1 ? yyExtSL < close : yyExtSL > close)
+    float y_rd = y_ext ? math.abs(close - yyExtSL) : yyFix ? yyDist(yySL) : yyMode == YYM_SW or yyMode == YYM_EXT ? math.min(y_sw, yySwMax * yyATR) : yySLatr * yyATR
     y_rd := math.max(y_rd, yyMinD, syminfo.mintick)
     float[] y_rr = array.from(yyTPr1, yyTPr2, yyTPr3, yyTPr4, yyTPr5)
     float[] y_aa = array.from(yyTPa1, yyTPa2, yyTPa3, yyTPa4, yyTPa5)
@@ -365,6 +371,14 @@ if yySig != 0 and (yt.dir == 0 or yyNewSig == "ปิดแล้วเข้า
     float y_prev = 0.0
     for y_k = 0 to 4
         float y_d = yyFix ? yyDist(array.get(y_ff, y_k)) : yyUseR ? array.get(y_rr, y_k) * y_rd : array.get(y_aa, y_k) * yyATR
+        if yyMode == YYM_EXT and y_k <= 2
+            float y_xt = y_k == 0 ? yyExtTP1 : y_k == 1 ? yyExtTP2 : yyExtTP3
+            if not na(y_xt) and (y_xt - close) * yySig > 0
+                y_d := math.abs(y_xt - close)
+        if yyMode == YYM_EXT and y_k >= 3 and not na(yyExtTP3) and not na(yyExtTP2)
+            float y_st = math.abs(yyExtTP3 - yyExtTP2)
+            if y_st > 0 and (yyExtTP3 - close) * yySig > 0
+                y_d := math.abs(yyExtTP3 - close) + y_st * (y_k - 2)
         y_d := math.max(y_d, y_prev + syminfo.mintick)
         y_prev := y_d
         array.push(y_tp, close + yySig * y_d)
