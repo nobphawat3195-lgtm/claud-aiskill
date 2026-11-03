@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// YOUNGYUU ทดลองเงิน · Dashboard Module v4.0  (Pine Script v6)
+// YOUNGYUU ทดลองเงิน · Dashboard Module v4.1  (Pine Script v6)
 // ────────────────────────────────────────────────────────────────
 // วิธีใช้:
 //   1) copy ทั้งไฟล์นี้ไปวาง "ต่อท้ายสุด" ของ indicator ที่ต้องการ (ต้องเป็น //@version=6)
@@ -69,6 +69,9 @@ yyTheme    = input.string("อัตโนมัติ", "ธีมแผง", o
 yyShowDM   = input.bool(true, "แสดงผลรายวัน / รายเดือน", group = YYG2, display = display.none)
 yyMonthsN  = input.int(3, "แสดงย้อนหลังกี่เดือน", minval = 0, maxval = 12, group = YYG2, display = display.none)
 yyShowTP45 = input.bool(true, "แสดง TP4 / TP5 ในแผง", group = YYG2, display = display.none)
+yyPassN    = input.int(100, "เกณฑ์ผ่าน: ไม้ขั้นต่ำ", minval = 10, group = YYG2, display = display.none, inline = "yp")
+yyPassPF   = input.float(1.3, "PF", minval = 0.5, step = 0.1, group = YYG2, display = display.none, inline = "yp")
+yyPassDD   = input.float(20.0, "DD สูงสุด %", minval = 1.0, step = 1.0, group = YYG2, display = display.none, inline = "yp")
 yySizeTx   = input.string("อัตโนมัติ", "ขนาดตัวอักษร", options = ["อัตโนมัติ", "เล็กมาก", "เล็ก", "กลาง"], group = YYG2, display = display.none)
 yyPosTx    = input.string("อัตโนมัติ", "ตำแหน่งแผง", options = ["อัตโนมัติ", "ขวาบน", "ซ้ายบน", "ขวาล่าง", "ซ้ายล่าง", "ล่างกลาง", "บนกลาง", "กลางซ้าย", "กลางขวา"], group = YYG2, display = display.none, tooltip = "ถ้าแผงของ indicator ที่ทดสอบซ้อนกับแผง YY ให้ย้ายไปมุมที่ว่าง")
 yyAccent   = input.color(#F5B841, "สีหลัก", group = YYG2, display = display.none)
@@ -493,7 +496,7 @@ if barstate.islast and yyShow
     int    y_wrK   = int(math.round(y_wr / 12.5))
     string y_wrBar = str.repeat("■", y_wrK) + str.repeat("□", 8 - y_wrK)
     string y_side  = y_open ? (yt.dir == 1 ? "Long" : "Short") : "รอสัญญาณ"
-    string y_sub   = not y_open ? "SL ขั้นต่ำ " + str.tostring(yyMinSL) + " จุด · " + yyExit : (yt.nHit > 0 ? "TP" + str.tostring(yt.nHit) + " ✓" : "รอ TP1") + (yt.be ? " · SL→BE ไม่ต้องกังวล" : " · SL " + str.tostring(math.round(yt.risk / yyPt)) + " จุด")
+    string y_sub   = not y_open ? "เกณฑ์: " + str.tostring(yyPassN) + " ไม้ · PF ≥ " + str.tostring(yyPassPF, "0.0#") + " · DD < " + str.tostring(yyPassDD, "0") + "%" : (yt.nHit > 0 ? "TP" + str.tostring(yt.nHit) + " ✓" : "รอ TP1") + (yt.be ? " · SL→BE ไม่ต้องกังวล" : " · SL " + str.tostring(math.round(yt.risk / yyPt)) + " จุด")
     float  y_tpX   = y_open ? array.get(yt.tp, math.min(yyLvl, 5) - 1) : na
     int    y_nTP   = yyShowTP45 ? 5 : 3
 
@@ -538,7 +541,9 @@ if barstate.islast and yyShow
     y_row := yyRow(yyTbl, y_row, "ยอดเงิน", yyMoney(ys.eq), y_cMUT, yyColT(y_net, y_lt), y_cBG, y_sz)
     y_row := yyRow(yyTbl, y_row, "กำไรสุทธิ", yyMoneyS(y_net) + " (" + yyPct(y_netPct) + ")", y_cMUT, yyColT(y_net, y_lt), y_cBG, y_sz)
     y_row := yyRow(yyTbl, y_row, "Max DD", "-" + str.tostring(ys.dd, "0.0") + "%", y_cMUT, ys.dd >= 20 ? y_cDN : y_cWN, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "ผลสรุป", y_chip, y_cMUT, y_vCol, y_cBG, y_sz)
+    string y_pass = ys.eq <= 0 ? "❌ ไม่ผ่าน · พอร์ตแตก" : ys.n < yyPassN ? "⏳ ไม้ยังไม่ถึง " + str.tostring(yyPassN) + " (" + str.tostring(ys.n) + ")" : y_pf < yyPassPF ? "❌ ไม่ผ่าน · PF " + str.tostring(y_pf, "0.00") + " < " + str.tostring(yyPassPF, "0.0#") : ys.dd >= yyPassDD ? "❌ ไม่ผ่าน · DD " + str.tostring(ys.dd, "0") + "% ≥ " + str.tostring(yyPassDD, "0") + "%" : y_net <= 0 ? "❌ ไม่ผ่าน · ขาดทุน" : "✅ ผ่าน"
+    color  y_pCol = str.startswith(y_pass, "✅") ? y_cUP : str.startswith(y_pass, "⏳") ? y_cWN : y_cDN
+    y_row := yyRow(yyTbl, y_row, "ผ่านเกณฑ์?", y_pass, y_cMUT, y_pCol, y_cBG, y_sz)
     y_row := yyRow(yyTbl, y_row, "ไม้นี้ · ลอย", y_open ? str.tostring(yt.lot, "0.00") + " lot · " + yyMoneyS(y_floatP) : "—", y_cMUT, y_open ? yyColT(y_floatP, y_lt) : y_cMUT, y_cBG, y_sz)
     y_row := yyRow(yyTbl, y_row, "ถ้า SL / TP", y_open ? "-" + yyMoney(math.abs(yt.entry - yt.sl) * y_vpp) + " / +" + yyMoney(math.abs(y_tpX - yt.entry) * y_vpp) : "—", y_cMUT, y_cOP, y_cBG, y_sz)
 
