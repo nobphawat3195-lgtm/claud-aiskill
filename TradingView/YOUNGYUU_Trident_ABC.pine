@@ -576,7 +576,7 @@ yySec(table tb, int rw, string tx, color tc, color bg, string sz) =>
 var table yyTbl = na
 if barstate.islast and yyShow
     // ธีม
-    float  y_bgL = color.y_row(chart.bg_color) * 0.299 + color.g(chart.bg_color) * 0.587 + color.b(chart.bg_color) * 0.114
+    float  y_bgL = color.r(chart.bg_color) * 0.299 + color.g(chart.bg_color) * 0.587 + color.b(chart.bg_color) * 0.114
     bool   y_lt  = yyTheme == "สว่าง" or (yyTheme == "อัตโนมัติ" and y_bgL > 128)
     color  y_cBG  = y_lt ? #FFFFFF : #111726
     color  y_cSEC = y_lt ? #EEF1F7 : #161E33
