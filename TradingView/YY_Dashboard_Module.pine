@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// YOUNGYUU ทดลองเงิน · Dashboard Module v3.4  (Pine Script v6)
+// YOUNGYUU ทดลองเงิน · Dashboard Module v3.5  (Pine Script v6)
 // ────────────────────────────────────────────────────────────────
 // วิธีใช้:
 //   1) copy ทั้งไฟล์นี้ไปวาง "ต่อท้ายสุด" ของ indicator ที่ต้องการ (ต้องเป็น //@version=6)
@@ -389,7 +389,7 @@ if barstate.islast and yyShow
     bool   y_mob = yyDevice == "มือถือ (ย่อ)"
     string y_sz  = yySizeTx == "กลาง" ? size.normal : yySizeTx == "เล็ก" ? size.small : yySizeTx == "เล็กมาก" ? size.tiny : y_mob ? size.tiny : size.small
     string y_szB = y_sz == size.normal ? size.large : y_sz == size.small ? size.normal : size.small
-    y_pos = yyPosTx == "ซ้ายบน" ? position.top_left : yyPosTx == "ขวาล่าง" ? position.bottom_right : yyPosTx == "ซ้ายล่าง" ? position.bottom_left : yyPosTx == "ล่างกลาง" ? position.bottom_center : yyPosTx == "ขวาบน" ? position.top_right : yyPosTx == "บนกลาง" ? position.top_center : yyPosTx == "กลางซ้าย" ? position.middle_left : yyPosTx == "กลางขวา" ? position.middle_right : y_pad ? position.bottom_center : position.top_right
+    y_pos = yyPosTx == "ซ้ายบน" ? position.top_left : yyPosTx == "ขวาล่าง" ? position.bottom_right : yyPosTx == "ซ้ายล่าง" ? position.bottom_left : yyPosTx == "ล่างกลาง" ? position.bottom_center : yyPosTx == "ขวาบน" ? position.top_right : yyPosTx == "บนกลาง" ? position.top_center : yyPosTx == "กลางซ้าย" ? position.middle_left : yyPosTx == "กลางขวา" ? position.middle_right : y_pad ? position.bottom_center : y_mob ? position.bottom_left : position.top_right
     float y_net    = ys.eq - yyCapital
     float y_netPct = yyCapital > 0 ? y_net / yyCapital * 100.0 : 0.0
     float y_days   = na(ys.start) ? 1.0 : math.max(1.0, (time - ys.start) / 86400000.0 * 5.0 / 7.0)
@@ -429,8 +429,8 @@ if barstate.islast and yyShow
     if y_mob
         // มือถือ (ย่อ): 6 แถว + หัว + ท้าย
         yyAdd(y_k, y_v, y_c, y_g, 0, "§ทุน " + yyMoney(yyCapital) + " · " + y_lotTx, y_chip, y_vCol)
-        yyAdd(y_k, y_v, y_c, y_g, 0, "★" + yyMoney(ys.eq), yyMoneyS(y_net) + " (" + yyPct(y_netPct) + ")", yyCol(y_net))
-        yyAdd(y_k, y_v, y_c, y_g, 0, "วัน · เดือน", yyMoneyS(y_perDay) + " · " + yyMoneyS(y_perMon), yyCol(y_perMon))
+        yyAdd(y_k, y_v, y_c, y_g, 0, "★เดือนละ " + yyMoneyS(y_perMon), yyPct(yyCapital > 0 ? y_perMon / yyCapital * 100.0 : 0.0) + " / เดือน", yyCol(y_perMon))
+        yyAdd(y_k, y_v, y_c, y_g, 0, "วันละ · ยอดเงิน", yyMoneyS(y_perDay) + " · " + yyMoney(ys.eq) + " (" + yyPct(y_netPct) + ")", yyCol(y_net))
         yyAdd(y_k, y_v, y_c, y_g, 0, str.tostring(ys.n) + " ไม้ · ชนะ", str.tostring(y_wr, "0") + "% · PF " + str.tostring(y_pf, "0.00") + " · DD -" + str.tostring(ys.dd, "0") + "%", y_pf >= 1.1 ? YY_UP : y_pf >= 1.0 ? YY_WARN : YY_DN)
         yyAdd(y_k, y_v, y_c, y_g, 1, y_open ? (yt.dir == 1 ? "BUY " : "SELL ") + str.tostring(yt.entry, format.mintick) : "ไม้ปัจจุบัน", y_open ? y_chips : "⏳ รอสัญญาณ", y_open ? (yt.nHit > 0 ? YY_UP : YY_OPEN) : YY_MUT)
         if y_open
@@ -440,7 +440,7 @@ if barstate.islast and yyShow
         yyAdd(y_k, y_v, y_c, y_g, 0, "§ทดลองเงิน · ทุน " + yyMoney(yyCapital) + " · " + y_lotTx, y_chip, y_vCol)
         yyAdd(y_k, y_v, y_c, y_g, 0, "★" + yyMoney(ys.eq), yyMoneyS(y_net) + " (" + yyPct(y_netPct) + ")", yyCol(y_net))
         yyAdd(y_k, y_v, y_c, y_g, 0, "ต่อวัน", yyMoneyS(y_perDay), yyCol(y_perDay))
-        yyAdd(y_k, y_v, y_c, y_g, 0, "ต่อเดือน", yyMoneyS(y_perMon) + " (" + yyPct(yyCapital > 0 ? y_perMon / yyCapital * 100.0 : 0.0) + ")", yyCol(y_perMon))
+        yyAdd(y_k, y_v, y_c, y_g, 0, "กำไรต่อเดือน", yyMoneyS(y_perMon) + " (" + yyPct(yyCapital > 0 ? y_perMon / yyCapital * 100.0 : 0.0) + ")", yyCol(y_perMon))
         yyAdd(y_k, y_v, y_c, y_g, 0, "ลดลงสูงสุด", "-" + str.tostring(ys.dd, "0.0") + "%", ys.dd >= 20 ? YY_DN : YY_TXT)
         // กลุ่ม 1: ไม้ปัจจุบัน
         yyAdd(y_k, y_v, y_c, y_g, 1, "§ไม้ปัจจุบัน", y_rr, YY_MUT)
