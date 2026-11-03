@@ -1,6 +1,6 @@
 //@version=6
 // ══════════════════════════════════════════════════════════════
-// YOUNGYUU PULSE PRO — Gold Edition · v1.3
+// YOUNGYUU PULSE PRO — Gold Edition · v1.4
 // © YOUNGYUU Systems — publish as Protected / Invite-only to keep
 // the source private.
 // ══════════════════════════════════════════════════════════════
@@ -24,7 +24,7 @@ GRP_MONEY = "💰 Money Simulator"
 GRP_COL   = "🎨 Colors"
 GRP_ALERT = "🔔 Alerts"
 
-VERSION   = "v1.3"
+VERSION   = "v1.4"
 LINE_FWD  = 15
 LINE_UPD  = 5
 LBL_OFF   = 1
@@ -339,6 +339,7 @@ type Rec
 var Trade T = Trade.new()
 var Stats S = Stats.new()
 var Money M = Money.new(equity = capitalInput, peak = capitalInput)
+var int firstTradeTime = na
 var Rec   R = Rec.new()
 
 // Close a fraction of the position at a price (R model + money model)
@@ -777,6 +778,8 @@ if (confirmedBuy or confirmedSell) and showTPSLInput and canOpen
     float eqB  = compoundInput ? M.equity : capitalInput
     float lot0 = M.bust ? 0.0 : calcLot(rd, eqB)
     openTrade(T, nd, close, sl0, rd, t1, t2, t3, lot0, scl ? "S" : gradeFor(nd))
+    if na(firstTradeTime)
+        firstTradeTime := time
     if nd == 1
         evBuyEntry := true
     else
@@ -1177,7 +1180,14 @@ if showDashInput and barstate.islast
     string mtfTx    = tfName(mtfTF3Input) + stateArrow(mtf3State, mtf3Valid) + " " + tfName(mtfTF2Input) + stateArrow(mtf2State, mtf2Valid) + " " + tfName(mtfTF1Input) + stateArrow(mtf1State, mtf1Valid)
     color  mtfCol   = mtfAllBull ? BULL_TEXT : mtfAllBear ? BEAR_TEXT : TEXT_COLOR
     float  liveR    = inTrade and T.risk > 0 ? T.rAcc + T.rem * (close - T.entry) * T.dir / T.risk : S.lastR
-    float  slPct    = inTrade and T.entry != 0 ? math.abs(T.entry - T.sl) / T.entry * 100.0 : 0.0
+    float  slPct    = inTrade and T.entry != 0 and T.risk > 0 ? T.risk / T.entry * 100.0 : 0.0
+    // period covered by the stats (first simulated trade → last bar)
+    float  calDays  = na(firstTradeTime) ? 0.0 : (time - firstTradeTime) / 86400000.0
+    float  trDays   = math.max(1.0, calDays * 5.0 / 7.0)
+    string periodTx = na(firstTradeTime) ? "—" : str.format_time(firstTradeTime, "dd MMM", syminfo.timezone) + " → " + str.format_time(time, "dd MMM", syminfo.timezone) + " · " + str.tostring(trDays, "0") + " วันเทรด"
+    float  netNow   = M.equity - capitalInput
+    float  perDay   = netNow / trDays
+    float  perMonth = perDay * 21.0
     float  floatP   = inTrade ? T.realized + T.rem * (close - T.entry) * T.dir * contractInput * T.lot - tradeCost(T.lot) : 0.0
     float  riskUsd  = inTrade ? T.risk * contractInput * T.lot + tradeCost(T.lot) : 0.0
     float  fullUsd  = inTrade ? ((T.tp1 - T.entry) + (T.tp2 - T.entry) + (T.tp3 - T.entry)) * T.dir / 3.0 * contractInput * T.lot - tradeCost(T.lot) : 0.0
@@ -1257,7 +1267,7 @@ if showDashInput and barstate.islast
         rowKV("TP3", fmtPrice(T.tp3), TP_LBL_COLOR)
         rowKV("R:R", fmtR(liveR), liveR >= 0 ? BULL_TEXT : BEAR_TEXT)
         if not isMob
-            rowKV("SL Dist", str.tostring(slPct, "0.00") + "%", slPct > 1.0 ? NEU_TEXT : TEXT_COLOR)
+            rowKV("SL Dist", str.tostring(slPct, "0.00") + "% (เริ่มต้น)", slPct > 1.0 ? NEU_TEXT : TEXT_COLOR)
     else
         rowKV("Status", "Flat · last " + sigAgo, TEXT_MUTED)
         if isPC
@@ -1267,7 +1277,8 @@ if showDashInput and barstate.islast
     if isMob
         rowKV("W / L", str.tostring(S.wins) + " / " + str.tostring(S.losses) + "  (" + str.tostring(math.round(wrPct)) + "%)", wrPct >= 50 ? BULL_TEXT : BEAR_TEXT)
     else
-        rowKV("Trades", str.tostring(S.closed), TEXT_COLOR)
+        rowKV("ช่วงเวลา", periodTx, TEXT_COLOR)
+        rowKV("Trades", str.tostring(S.closed) + "  (" + str.tostring(S.closed / trDays, "0.0") + " ไม้/วัน)", TEXT_COLOR)
         rowKV("Wins", str.tostring(S.wins), BULL_TEXT)
         rowKV("Losses", str.tostring(S.losses) + (S.bes > 0 ? "  (BE " + str.tostring(S.bes) + ")" : ""), BEAR_TEXT)
         rowKV("Win rate", str.tostring(math.round(wrPct)) + "%  " + gauge(wrPct, 8), wrPct >= 55 ? BULL_TEXT : wrPct >= 45 ? NEU_TEXT : BEAR_TEXT)
@@ -1280,6 +1291,8 @@ if showDashInput and barstate.islast
         rowSec("— 💰 ทุน " + fmtUsd(capitalInput) + " · " + (sizeModeInput == "Fixed Lot" ? str.tostring(fixLotInput, "0.00") + " lot" : str.tostring(riskPctInput, "0.0") + "% risk") + " —")
         rowKV("ยอดเงิน", fmtUsd(M.equity) + (M.bust ? " 💥" : ""), netAll >= 0 ? BULL_TEXT : BEAR_TEXT)
         rowKV("กำไรสุทธิ", fmtUsdS(netAll) + " (" + fmtPctS(netPct) + ")", netAll >= 0 ? BULL_TEXT : BEAR_TEXT)
+        rowKV("เฉลี่ย / วัน", fmtUsdS(perDay) + " (" + fmtPctS(capitalInput > 0 ? perDay / capitalInput * 100.0 : 0.0) + ")", perDay >= 0 ? BULL_TEXT : BEAR_TEXT)
+        rowKV("ประมาณ / เดือน", fmtUsdS(perMonth) + " (" + fmtPctS(capitalInput > 0 ? perMonth / capitalInput * 100.0 : 0.0) + ")", perMonth >= 0 ? BULL_TEXT : BEAR_TEXT)
         if not isMob
             rowKV("Max DD", "-" + str.tostring(M.maxDD, "0.0") + "%", M.maxDD >= 20 ? BEAR_TEXT : M.maxDD >= 10 ? NEU_TEXT : BULL_TEXT)
             rowKV("ไม้ล่าสุด", (M.wins + M.losses) > 0 ? fmtUsdS(M.lastPnl) : "—", M.lastPnl >= 0 ? BULL_TEXT : BEAR_TEXT)
