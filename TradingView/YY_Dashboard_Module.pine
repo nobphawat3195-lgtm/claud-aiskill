@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// YY ทดลองเงิน · Dashboard Module v1.2  (Pine Script v6)
+// YY ทดลองเงิน · Dashboard Module v2.0  (Pine Script v6)
 // ────────────────────────────────────────────────────────────────
 // วิธีใช้:
 //   1) copy ทั้งไฟล์นี้ไปวาง "ต่อท้ายสุด" ของ indicator ที่ต้องการ (ต้องเป็น //@version=6)
@@ -17,83 +17,124 @@ bool yySell = false    // ← สัญญาณขายของ indicator
 // ▲▲▲ แก้ 2 บรรทัดนี้ ▲▲▲
 
 const string YYG1 = "💰 YY ทดลองเงิน"
+const string YYG3 = "📐 YY SL / TP"
 const string YYG2 = "📊 YY แผง"
-const string YYG3 = "📐 YY SL / TP แบบ ATR หรือ R"
+const string YYM_SW  = "Swing · TP เป็น R"
+const string YYM_ATR = "ATR"
+const string YYM_AR  = "SL ATR · TP เป็น R"
+const string YYM_FIX = "คงที่ ($/Points)"
+
 yyCapital  = input.float(300.0, "เงินทุน ($)", minval = 1.0, step = 50.0, group = YYG1, display = display.none)
 yyLotMode  = input.string("Lot คงที่", "ขนาดไม้", options = ["Lot คงที่", "Risk %"], group = YYG1, display = display.none, tooltip = "Lot คงที่: ใช้ lot ที่เลือกทุกไม้\nRisk %: คำนวณ lot ให้เสียไม่เกิน x% ถ้าโดน SL")
 yyLot      = input.float(0.01, "Lot", options = [0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0], group = YYG1, display = display.none)
 yyRisk     = input.float(1.0, "Risk %", options = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0], group = YYG1, display = display.none)
-yyMode     = input.string("คงที่ ($/Points)", "รูปแบบ SL / TP", options = ["คงที่ ($/Points)", "ATR", "SL ATR · TP เป็น R"], group = YYG1, display = display.none, tooltip = "คงที่: ระยะเท่ากันทุกไม้ (ตั้งด้านล่าง)\nATR: ระยะยืด/หดตามความผันผวน (ตั้งในกลุ่ม 📐)\nSL ATR · TP เป็น R: SL ตาม ATR · TP = กี่เท่าของ SL")
-yyUnit     = input.string("$ ราคา", "หน่วยของ SL / TP", options = ["$ ราคา", "Points"], group = YYG1, display = display.none, tooltip = "$ ราคา: ใส่ 5 = ราคาห่าง $5 (ทอง 0.01 lot = เสีย/ได้ $5)\nPoints: ใช้ point ของโบรก เช่น ทองทศนิยม 3 ตำแหน่ง 500 points = $0.50")
-yySL       = input.float(5.0, "SL", minval = 0.001, step = 0.5, group = YYG1, display = display.none)
-yyTP1      = input.float(5.0, "TP1", minval = 0.001, step = 0.5, group = YYG1, display = display.none)
-yyTP2      = input.float(10.0, "TP2", minval = 0.001, step = 0.5, group = YYG1, display = display.none)
-yyTP3      = input.float(15.0, "TP3", minval = 0.001, step = 0.5, group = YYG1, display = display.none)
-yyAtrLen   = input.int(14, "ATR ยาว", minval = 1, group = YYG3, display = display.none)
-yySLatr    = input.float(1.0, "SL × ATR", minval = 0.1, step = 0.1, group = YYG3, display = display.none)
-yyTP1atr   = input.float(1.0, "TP1 × ATR", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "ya")
-yyTP2atr   = input.float(2.0, "TP2", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "ya")
-yyTP3atr   = input.float(3.0, "TP3", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "ya")
-yyTP1r     = input.float(1.0, "TP1 (R)", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "yr")
-yyTP2r     = input.float(2.0, "TP2", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "yr")
-yyTP3r     = input.float(3.0, "TP3", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "yr")
-yyExit     = input.string("ปิดหมดที่ TP1", "ปิดไม้แบบ", options = ["ปิดหมดที่ TP1", "ปิดหมดที่ TP2", "ปิดหมดที่ TP3", "แบ่งปิด 1/3"], group = YYG1, display = display.none)
+yyExit     = input.string("ปิดหมดที่ TP2", "ปิดไม้แบบ", options = ["ปิดหมดที่ TP1", "ปิดหมดที่ TP2", "ปิดหมดที่ TP3", "แบ่งปิด 1/3"], group = YYG1, display = display.none)
 yyBE       = input.bool(true, "ถึง TP1 แล้วเลื่อน SL มาที่ทุน", group = YYG1, display = display.none)
 yyNewSig   = input.string("ถือไม้เดิม", "มีสัญญาณใหม่ระหว่างถือไม้", options = ["ถือไม้เดิม", "ปิดแล้วเข้าใหม่"], group = YYG1, display = display.none)
 yyContract = input.float(100.0, "1 lot = กี่ ounce", minval = 1.0, group = YYG1, display = display.none, tooltip = "ทองคำ XAUUSD มาตรฐาน = 100")
 yyComm     = input.float(7.0, "ค่าคอม ($ ต่อ 1 lot ไป-กลับ)", minval = 0.0, step = 0.5, group = YYG1, display = display.none)
 yySpread   = input.float(0.20, "Spread ($ ราคา)", minval = 0.0, step = 0.05, group = YYG1, display = display.none)
+
+yyMode     = input.string(YYM_SW, "รูปแบบ SL / TP", options = [YYM_SW, YYM_ATR, YYM_AR, YYM_FIX], group = YYG3, display = display.none, tooltip = "Swing: SL ใต้/เหนือ swing ของสัญญาณนั้น → กล่องเล็ก/ใหญ่ตามสัญญาณ · TP = กี่เท่าของ SL\nATR: SL/TP ตามความผันผวน\nSL ATR · TP เป็น R: SL ตาม ATR · TP = กี่เท่าของ SL\nคงที่: ระยะเท่ากันทุกไม้")
+yyTP1r     = input.float(1.0, "TP (R)  1", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "yr")
+yyTP2r     = input.float(2.0, "2", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "yr")
+yyTP3r     = input.float(3.0, "3", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "yr")
+yySwLen    = input.int(10, "Swing ย้อนหลัง (แท่ง)", minval = 2, group = YYG3, display = display.none)
+yySwBuf    = input.float(0.2, "เผื่อเลย swing (× ATR)", minval = 0.0, step = 0.05, group = YYG3, display = display.none)
+yySwMin    = input.float(0.5, "SL ต่ำสุด / สูงสุด (× ATR)", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "ym")
+yySwMax    = input.float(3.0, "", minval = 0.2, step = 0.1, group = YYG3, display = display.none, inline = "ym")
+yyAtrLen   = input.int(14, "ATR ยาว", minval = 1, group = YYG3, display = display.none)
+yySLatr    = input.float(1.0, "SL × ATR", minval = 0.1, step = 0.1, group = YYG3, display = display.none)
+yyTP1atr   = input.float(1.0, "TP × ATR  1", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "ya")
+yyTP2atr   = input.float(2.0, "2", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "ya")
+yyTP3atr   = input.float(3.0, "3", minval = 0.1, step = 0.1, group = YYG3, display = display.none, inline = "ya")
+yyUnit     = input.string("$ ราคา", "คงที่: หน่วย", options = ["$ ราคา", "Points"], group = YYG3, display = display.none, tooltip = "$ ราคา: ใส่ 5 = ราคาห่าง $5 (ทอง 0.01 lot = $5)\nPoints: point ของโบรก เช่น ทองทศนิยม 3 ตำแหน่ง 500 points = $0.50")
+yySL       = input.float(5.0, "คงที่: SL", minval = 0.001, step = 0.5, group = YYG3, display = display.none)
+yyTP1      = input.float(5.0, "คงที่: TP  1", minval = 0.001, step = 0.5, group = YYG3, display = display.none, inline = "yf")
+yyTP2      = input.float(10.0, "2", minval = 0.001, step = 0.5, group = YYG3, display = display.none, inline = "yf")
+yyTP3      = input.float(15.0, "3", minval = 0.001, step = 0.5, group = YYG3, display = display.none, inline = "yf")
+
 yyShow     = input.bool(true, "แสดงแผง", group = YYG2, display = display.none)
+yyLayout   = input.string("กว้าง (2 ฝั่ง)", "รูปแบบแผง", options = ["กว้าง (2 ฝั่ง)", "แคบ (มือถือ)"], group = YYG2, display = display.none)
 yySizeTx   = input.string("เล็กมาก", "ขนาดตัวอักษร", options = ["เล็กมาก", "เล็ก", "กลาง"], group = YYG2, display = display.none)
 yyPosTx    = input.string("ขวาบน", "ตำแหน่งแผง", options = ["ขวาบน", "ซ้ายบน", "ขวาล่าง", "ซ้ายล่าง"], group = YYG2, display = display.none)
 yyDays     = input.bool(false, "แสดงผล 3 วันล่าสุด", group = YYG2, display = display.none)
-yyLayout   = input.string("กว้าง (2 ฝั่ง)", "รูปแบบแผง", options = ["กว้าง (2 ฝั่ง)", "แคบ (มือถือ)"], group = YYG2, display = display.none)
-yySigLbl   = input.bool(true, "ป้าย ซื้อ / ขาย เล็ก", group = YYG2, display = display.none)
-yyBoxShow  = input.bool(true, "กล่อง TP / SL", group = YYG2, display = display.none)
-yyBoxN     = input.int(20, "เก็บกล่องย้อนหลัง (ไม้)", minval = 1, maxval = 200, group = YYG2, display = display.none, tooltip = "จำนวนไม้ล่าสุดที่แสดงกล่อง + ป้ายบนกราฟ")
+yySigLbl   = input.bool(true, "ป้าย ซื้อ / ขาย", group = YYG2, display = display.none)
+yyBoxShow  = input.bool(true, "กล่อง TP / SL + ป้ายราคา", group = YYG2, display = display.none)
+yyBoxN     = input.int(20, "เก็บกล่องย้อนหลัง (ไม้)", minval = 1, maxval = 120, group = YYG2, display = display.none, tooltip = "จำนวนไม้ล่าสุดที่แสดงกล่อง + ป้ายบนกราฟ")
+
+// ── palette
+const color YY_BG   = #0A0E1A
+const color YY_ALT  = #0E1424
+const color YY_HEAD = #182040
+const color YY_SEC  = #121A33
+const color YY_SXT  = #8FB4FF
+const color YY_BRD  = #1E2640
+const color YY_MUT  = #8A93B2
+const color YY_TXT  = #E6E9F2
+const color YY_UP   = #00E58F
+const color YY_DN   = #FF4D6D
+const color YY_WARN = #FFC107
+const color YY_TPC  = #26A69A
+const color YY_SLC  = #EF5350
 
 // ── state
 type YYTrade
-    int   dir    = 0
-    float entry  = na
-    float sl     = na
-    float tp1    = na
-    float tp2    = na
-    float tp3    = na
-    float risk   = na
-    float lot    = 0.0
-    float rem    = 1.0
-    float pnl    = 0.0
-    float rAcc   = 0.0
-    int   bar    = na
-    int   tp1Bar = na
-    bool  hit1   = false
-    bool  hit2   = false
-    bool  be     = false
-    box   bT1    = na
-    box   bT2    = na
-    box   bT3    = na
-    box   bSL    = na
+    int    dir    = 0
+    float  entry  = na
+    float  sl     = na
+    float  tp1    = na
+    float  tp2    = na
+    float  tp3    = na
+    float  risk   = na
+    float  lot    = 0.0
+    float  rem    = 1.0
+    float  pnl    = 0.0
+    float  rAcc   = 0.0
+    int    bar    = na
+    int    tp1Bar = na
+    bool   hit1   = false
+    bool   hit2   = false
+    bool   be     = false
+    box    bT1    = na
+    box    bT2    = na
+    box    bT3    = na
+    box    bSL    = na
+    label  lE     = na
+    label  lS     = na
+    label  l1     = na
+    label  l2     = na
+    label  l3     = na
 
 type YYStat
-    float eq    = 0.0
-    float peak  = 0.0
-    float dd    = 0.0
-    int   n     = 0
-    int   win   = 0
-    int   loss  = 0
-    float rSum  = 0.0
-    float gw    = 0.0
-    float gl    = 0.0
-    int   start = na
+    float eq     = 0.0
+    float peak   = 0.0
+    float dd     = 0.0
+    int   n      = 0
+    int   win    = 0
+    int   loss   = 0
+    int   streak = 0
+    int   maxL   = 0
+    float rSum   = 0.0
+    float gw     = 0.0
+    float gl     = 0.0
+    int   start  = na
 
 var YYTrade yt = YYTrade.new()
 var YYStat  ys = YYStat.new(eq = yyCapital, peak = yyCapital)
-var int[]   yyDayK = array.new_int()
-var float[] yyDayP = array.new_float()
-var int[]   yyDayN = array.new_int()
+var int[]   yyDayK  = array.new_int()
+var float[] yyDayP  = array.new_float()
+var int[]   yyDayN  = array.new_int()
 var box[]   yyBoxes = array.new_box()
 var label[] yyLbls  = array.new_label()
+
+int   yyLvl   = yyExit == "ปิดหมดที่ TP1" ? 1 : yyExit == "ปิดหมดที่ TP2" ? 2 : 3
+bool  yyScale = yyExit == "แบ่งปิด 1/3"
+bool  yyFix   = yyMode == YYM_FIX
+bool  yyUseR  = yyMode == YYM_SW or yyMode == YYM_AR
+float yyATR   = ta.atr(yyAtrLen)
+float yyLo    = ta.lowest(low, yySwLen)
+float yyHi    = ta.highest(high, yySwLen)
 
 yyDist(float v) =>
     yyUnit == "$ ราคา" ? v : v * syminfo.mintick
@@ -111,10 +152,18 @@ yyPct(float v) =>
     (v >= 0 ? "+" : "") + str.tostring(v, "0.0") + "%"
 
 yyCol(float v) =>
-    v > 0 ? #00E58F : v < 0 ? #FF4D6D : #E6E9F2
+    v > 0 ? YY_UP : v < 0 ? YY_DN : YY_TXT
+
+yyBar(float pct) =>
+    int k = int(math.round(math.max(0.0, math.min(100.0, pct)) / 10.0))
+    str.repeat("▰", k) + str.repeat("▱", 10 - k)
 
 yyDayKey(int t) =>
     year(t, syminfo.timezone) * 10000 + month(t, syminfo.timezone) * 100 + dayofmonth(t, syminfo.timezone)
+
+// ข้อความระดับ TP: ✓ = ถึงแล้ว · 🎯 = จุดปิดไม้
+yyTPtx(int k, float px, float entry, float lot, bool hit) =>
+    "TP" + str.tostring(k) + "  " + str.tostring(px, format.mintick) + "  +" + yyMoney(math.abs(px - entry) * yyContract * lot) + (hit ? "  ✓" : "") + (k == yyLvl ? "  🎯" : "")
 
 yyTake(YYTrade t, float frac, float px) =>
     float f = math.min(frac, t.rem)
@@ -124,16 +173,19 @@ yyTake(YYTrade t, float frac, float px) =>
         t.rem  := t.rem - f
     f
 
-yyClose(YYTrade t, YYStat s) =>
+yyClose(YYTrade t, YYStat s, string why) =>
     float y_net = t.pnl - yyCost(t.lot)
     s.n    := s.n + 1
     s.rSum := s.rSum + t.rAcc
     if y_net > 0
-        s.win := s.win + 1
-        s.gw  := s.gw + y_net
+        s.win    := s.win + 1
+        s.gw     := s.gw + y_net
+        s.streak := 0
     else
-        s.loss := s.loss + 1
-        s.gl   := s.gl - y_net
+        s.loss   := s.loss + 1
+        s.gl     := s.gl - y_net
+        s.streak := s.streak + 1
+        s.maxL   := math.max(s.maxL, s.streak)
     s.eq   := s.eq + y_net
     s.peak := math.max(s.peak, s.eq)
     s.dd   := math.max(s.dd, s.peak > 0 ? (s.peak - s.eq) / s.peak * 100.0 : 0.0)
@@ -149,30 +201,26 @@ yyClose(YYTrade t, YYStat s) =>
     int y_di = array.size(yyDayK) - 1
     array.set(yyDayP, y_di, array.get(yyDayP, y_di) + y_net)
     array.set(yyDayN, y_di, array.get(yyDayN, y_di) + 1)
+    // ปิดกล่อง: หยุดที่แท่งปิด + จางลง · ลบป้ายราคา · ใส่ป้ายผล
     if not na(t.bT1)
         for y_b in array.from(t.bT1, t.bT2, t.bT3, t.bSL)
             box.set_right(y_b, bar_index)
-            box.set_text(y_b, "")
-        box.set_bgcolor(t.bT1, color.new(#26A69A, 88))
-        box.set_bgcolor(t.bT2, color.new(#26A69A, 91))
-        box.set_bgcolor(t.bT3, color.new(#26A69A, 94))
-        box.set_bgcolor(t.bSL, color.new(#EF5350, 90))
+        box.set_bgcolor(t.bT1, color.new(YY_TPC, 86))
+        box.set_bgcolor(t.bT2, color.new(YY_TPC, 90))
+        box.set_bgcolor(t.bT3, color.new(YY_TPC, 94))
+        box.set_bgcolor(t.bSL, color.new(YY_SLC, 88))
+        for y_b in array.from(t.bT1, t.bT2, t.bT3, t.bSL)
+            box.set_border_color(y_b, color.new(#FFFFFF, 100))
+        for y_l in array.from(t.lE, t.lS, t.l1, t.l2, t.l3)
+            if not na(y_l)
+                label.delete(y_l)
         float y_xp = t.lot > 0 ? t.entry + t.dir * t.pnl / (yyContract * t.lot) : close
-        array.push(yyLbls, label.new(bar_index, y_xp, yyMoneyS(y_net), style = label.style_label_left, color = y_net >= 0 ? #0F6E56 : #A32D2D, textcolor = #FFFFFF, size = size.tiny, force_overlay = true))
+        array.push(yyLbls, label.new(bar_index, y_xp, (y_net > 0 ? "✓ " : "✗ ") + why + "  " + yyMoneyS(y_net), style = label.style_label_left, color = y_net > 0 ? color.new(#0F6E56, 10) : color.new(#A32D2D, 10), textcolor = #FFFFFF, size = size.tiny, force_overlay = true))
     t.dir := 0
     y_net
 
 // ── engine (confirmed bars only · SL checked before TP = worst case)
-bool  yyFix = yyMode == "คงที่ ($/Points)"
-float yyATR = ta.atr(yyAtrLen)
-
-// ข้อความในกล่อง TP: ✓ = ถึงแล้ว · 🎯 = จุดปิดไม้
-yyTPtx(int k, float px, float entry, float lot, bool hit, int lvl) =>
-    (hit ? "✓ " : "") + "TP" + str.tostring(k) + " " + str.tostring(px, format.mintick) + " · +" + yyMoney(math.abs(px - entry) * yyContract * lot) + (k == lvl ? " 🎯" : "")
-
-int  yyLvl   = yyExit == "ปิดหมดที่ TP1" ? 1 : yyExit == "ปิดหมดที่ TP2" ? 2 : 3
-bool yyScale = yyExit == "แบ่งปิด 1/3"
-int  yySig   = barstate.isconfirmed ? (yyBuy ? 1 : yySell ? -1 : 0) : 0
+int yySig = barstate.isconfirmed ? (yyBuy ? 1 : yySell ? -1 : 0) : 0
 if yySig != 0 and na(ys.start)
     ys.start := time
 
@@ -183,12 +231,18 @@ if yt.dir != 0 and bar_index > yt.bar
         if not na(yt.bSL)
             box.set_top(yt.bSL, yt.entry)
             box.set_bottom(yt.bSL, yt.entry)
-            box.set_text(yt.bSL, "")
             box.set_border_color(yt.bSL, #FFA726)
+        if not na(yt.lS)
+            label.set_y(yt.lS, yt.entry)
+            label.set_text(yt.lS, "SL → ที่ทุน  " + str.tostring(yt.entry, format.mintick))
+            label.set_color(yt.lS, color.new(#FFA726, 20))
+        if not na(yt.lE)
+            label.delete(yt.lE)
+            yt.lE := na
     bool y_slHit = yt.dir == 1 ? low <= yt.sl : high >= yt.sl
     if y_slHit
         yyTake(yt, yt.rem, yt.sl)
-        yyClose(yt, ys)
+        yyClose(yt, ys, yt.be ? "ที่ทุน" : "SL")
     else
         bool y_h1 = yt.dir == 1 ? high >= yt.tp1 : low <= yt.tp1
         bool y_h2 = yt.dir == 1 ? high >= yt.tp2 : low <= yt.tp2
@@ -198,28 +252,32 @@ if yt.dir != 0 and bar_index > yt.bar
             yt.tp1Bar := bar_index
             if yyLvl == 1
                 yyTake(yt, yt.rem, yt.tp1)
-                yyClose(yt, ys)
+                yyClose(yt, ys, "TP1")
             else if yyScale
                 yyTake(yt, 1.0 / 3.0, yt.tp1)
         if yt.dir != 0 and y_h2 and not yt.hit2
             yt.hit2 := true
-            if yyLvl == 2
+            if yyLvl == 2 and not yyScale
                 yyTake(yt, yt.rem, yt.tp2)
-                yyClose(yt, ys)
+                yyClose(yt, ys, "TP2")
             else if yyScale
                 yyTake(yt, 1.0 / 3.0, yt.tp2)
         if yt.dir != 0 and y_h3 and yyLvl == 3
             yyTake(yt, yt.rem, yt.tp3)
-            yyClose(yt, ys)
+            yyClose(yt, ys, "TP3")
 
-if yySig != 0 and (yt.dir == 0 or yyNewSig == "ปิดแล้วเข้าใหม่") and (yyFix or not na(yyATR))
+bool yyReady = yyFix or not na(yyATR)
+if yySig != 0 and (yt.dir == 0 or yyNewSig == "ปิดแล้วเข้าใหม่") and yyReady
     if yt.dir != 0
         yyTake(yt, yt.rem, close)
-        yyClose(yt, ys)
-    float y_rd = math.max(yyFix ? yyDist(yySL) : yySLatr * yyATR, syminfo.mintick)
-    float y_d1 = math.max(yyFix ? yyDist(yyTP1) : yyMode == "ATR" ? yyTP1atr * yyATR : yyTP1r * y_rd, syminfo.mintick)
-    float y_d2 = math.max(yyFix ? yyDist(yyTP2) : yyMode == "ATR" ? yyTP2atr * yyATR : yyTP2r * y_rd, y_d1 + syminfo.mintick)
-    float y_d3 = math.max(yyFix ? yyDist(yyTP3) : yyMode == "ATR" ? yyTP3atr * yyATR : yyTP3r * y_rd, y_d2 + syminfo.mintick)
+        yyClose(yt, ys, "สลับ")
+    // ระยะ SL ของสัญญาณนี้ → กล่องเล็ก/ใหญ่ตามสัญญาณ
+    float y_sw = yySig == 1 ? close - (yyLo - yySwBuf * yyATR) : (yyHi + yySwBuf * yyATR) - close
+    float y_rd = yyFix ? yyDist(yySL) : yyMode == YYM_SW ? math.min(math.max(y_sw, yySwMin * yyATR), yySwMax * yyATR) : yySLatr * yyATR
+    y_rd := math.max(y_rd, syminfo.mintick)
+    float y_d1 = math.max(yyFix ? yyDist(yyTP1) : yyUseR ? yyTP1r * y_rd : yyTP1atr * yyATR, syminfo.mintick)
+    float y_d2 = math.max(yyFix ? yyDist(yyTP2) : yyUseR ? yyTP2r * y_rd : yyTP2atr * yyATR, y_d1 + syminfo.mintick)
+    float y_d3 = math.max(yyFix ? yyDist(yyTP3) : yyUseR ? yyTP3r * y_rd : yyTP3atr * yyATR, y_d2 + syminfo.mintick)
     float y_lt = yyLotMode == "Lot คงที่" ? yyLot : math.max(0.01, math.floor((ys.eq * yyRisk / 100.0) / (y_rd * yyContract) / 0.01) * 0.01)
     yt.dir    := yySig
     yt.entry  := close
@@ -241,43 +299,53 @@ if yySig != 0 and (yt.dir == 0 or yyNewSig == "ปิดแล้วเข้า
     yt.bT2    := na
     yt.bT3    := na
     yt.bSL    := na
-    float y_tpX = yyLvl == 1 ? yt.tp1 : yyLvl == 2 ? yt.tp2 : yt.tp3
+    yt.lE     := na
+    yt.lS     := na
+    yt.l1     := na
+    yt.l2     := na
+    yt.l3     := na
     float y_vpp = yyContract * yt.lot
     if yyBoxShow
-        // กล่อง TP 3 ชั้น (เข้ม → จาง) + กล่อง SL · ขนาดตามระยะจริงของไม้นั้น
-        yt.bT1 := box.new(bar_index, math.max(close, yt.tp1), bar_index + 1, math.min(close, yt.tp1), border_color = color.new(#26A69A, 40), bgcolor = color.new(#26A69A, 76), text = yyTPtx(1, yt.tp1, close, yt.lot, false, yyLvl), text_size = size.tiny, text_color = #B9F6CA, text_halign = text.align_right, text_valign = text.align_center, force_overlay = true)
-        yt.bT2 := box.new(bar_index, math.max(yt.tp1, yt.tp2), bar_index + 1, math.min(yt.tp1, yt.tp2), border_color = color.new(#26A69A, 55), bgcolor = color.new(#26A69A, 84), text = yyTPtx(2, yt.tp2, close, yt.lot, false, yyLvl), text_size = size.tiny, text_color = #B9F6CA, text_halign = text.align_right, text_valign = text.align_center, force_overlay = true)
-        yt.bT3 := box.new(bar_index, math.max(yt.tp2, yt.tp3), bar_index + 1, math.min(yt.tp2, yt.tp3), border_color = color.new(#26A69A, 70), bgcolor = color.new(#26A69A, 90), text = yyTPtx(3, yt.tp3, close, yt.lot, false, yyLvl), text_size = size.tiny, text_color = #B9F6CA, text_halign = text.align_right, text_valign = text.align_center, force_overlay = true)
-        yt.bSL := box.new(bar_index, math.max(close, yt.sl), bar_index + 1, math.min(close, yt.sl), border_color = color.new(#EF5350, 40), bgcolor = color.new(#EF5350, 78), text = "SL " + str.tostring(yt.sl, format.mintick) + " · -" + yyMoney(y_rd * y_vpp), text_size = size.tiny, text_color = #FFCDD2, text_halign = text.align_right, text_valign = text.align_center, force_overlay = true)
-        array.push(yyBoxes, yt.bT1)
-        array.push(yyBoxes, yt.bT2)
-        array.push(yyBoxes, yt.bT3)
-        array.push(yyBoxes, yt.bSL)
+        // กล่อง TP 3 ชั้น (เข้ม → จาง) + กล่อง SL · สูงตามระยะจริงของสัญญาณนี้ · ยาวตามอายุไม้
+        yt.bT1 := box.new(bar_index, math.max(close, yt.tp1), bar_index + 1, math.min(close, yt.tp1), border_color = color.new(YY_TPC, 45), bgcolor = color.new(YY_TPC, 74), force_overlay = true)
+        yt.bT2 := box.new(bar_index, math.max(yt.tp1, yt.tp2), bar_index + 1, math.min(yt.tp1, yt.tp2), border_color = color.new(YY_TPC, 60), bgcolor = color.new(YY_TPC, 82), force_overlay = true)
+        yt.bT3 := box.new(bar_index, math.max(yt.tp2, yt.tp3), bar_index + 1, math.min(yt.tp2, yt.tp3), border_color = color.new(YY_TPC, 72), bgcolor = color.new(YY_TPC, 89), force_overlay = true)
+        yt.bSL := box.new(bar_index, math.max(close, yt.sl), bar_index + 1, math.min(close, yt.sl), border_color = color.new(YY_SLC, 45), bgcolor = color.new(YY_SLC, 76), force_overlay = true)
+        for y_b in array.from(yt.bT1, yt.bT2, yt.bT3, yt.bSL)
+            array.push(yyBoxes, y_b)
         while array.size(yyBoxes) > yyBoxN * 4
             box.delete(array.shift(yyBoxes))
+        // ป้ายราคาด้านขวาของกล่อง (เฉพาะไม้ที่ถืออยู่ ไม่บังแท่งเทียน)
+        yt.lE := label.new(bar_index + 1, close, "เข้า  " + str.tostring(close, format.mintick) + "  · " + str.tostring(yt.lot, "0.00") + " lot", style = label.style_label_left, color = color.new(#3D4A6B, 15), textcolor = #FFFFFF, size = size.tiny, force_overlay = true)
+        yt.lS := label.new(bar_index + 1, yt.sl, "SL  " + str.tostring(yt.sl, format.mintick) + "  -" + yyMoney(y_rd * y_vpp), style = label.style_label_left, color = color.new(YY_SLC, 25), textcolor = #FFFFFF, size = size.tiny, force_overlay = true)
+        yt.l1 := label.new(bar_index + 1, yt.tp1, yyTPtx(1, yt.tp1, close, yt.lot, false), style = label.style_label_left, color = color.new(YY_TPC, 25), textcolor = #FFFFFF, size = size.tiny, force_overlay = true)
+        yt.l2 := label.new(bar_index + 1, yt.tp2, yyTPtx(2, yt.tp2, close, yt.lot, false), style = label.style_label_left, color = color.new(YY_TPC, 40), textcolor = #FFFFFF, size = size.tiny, force_overlay = true)
+        yt.l3 := label.new(bar_index + 1, yt.tp3, yyTPtx(3, yt.tp3, close, yt.lot, false), style = label.style_label_left, color = color.new(YY_TPC, 55), textcolor = #FFFFFF, size = size.tiny, force_overlay = true)
     if yySigLbl
-        array.push(yyLbls, label.new(bar_index, yySig == 1 ? low : high, yySig == 1 ? "ซื้อ ▲" : "ขาย ▼", yloc = yySig == 1 ? yloc.belowbar : yloc.abovebar, style = yySig == 1 ? label.style_label_up : label.style_label_down, color = yySig == 1 ? #0F6E56 : #A32D2D, textcolor = #FFFFFF, size = size.tiny, force_overlay = true, tooltip = (yySig == 1 ? "ซื้อ " : "ขาย ") + str.tostring(close, format.mintick) + " · " + str.tostring(yt.lot, "0.00") + " lot\nSL " + str.tostring(yt.sl, format.mintick) + " · TP " + str.tostring(y_tpX, format.mintick)))
+        array.push(yyLbls, label.new(bar_index, yySig == 1 ? low : high, yySig == 1 ? "ซื้อ ▲" : "ขาย ▼", yloc = yySig == 1 ? yloc.belowbar : yloc.abovebar, style = yySig == 1 ? label.style_label_up : label.style_label_down, color = yySig == 1 ? #0F6E56 : #A32D2D, textcolor = #FFFFFF, size = size.tiny, force_overlay = true, tooltip = (yySig == 1 ? "ซื้อ " : "ขาย ") + str.tostring(close, format.mintick) + " · " + str.tostring(yt.lot, "0.00") + " lot\nSL " + str.tostring(yt.sl, format.mintick) + " · TP1 " + str.tostring(yt.tp1, format.mintick) + " · TP2 " + str.tostring(yt.tp2, format.mintick) + " · TP3 " + str.tostring(yt.tp3, format.mintick)))
 while array.size(yyLbls) > yyBoxN * 2
     label.delete(array.shift(yyLbls))
 
-// ── ยืดกล่องของไม้ที่ยังถืออยู่
+// ── ไม้ที่ถืออยู่: ยืดกล่องตามแท่ง + เลื่อนป้ายราคาตามขอบกล่อง
 if yt.dir != 0 and not na(yt.bT1)
-    int y_rt = barstate.islast ? bar_index + 6 : bar_index
+    int y_rt = barstate.islast ? bar_index + 4 : bar_index
     for y_b in array.from(yt.bT1, yt.bT2, yt.bT3, yt.bSL)
         box.set_right(y_b, y_rt)
-    box.set_text(yt.bT1, yyTPtx(1, yt.tp1, yt.entry, yt.lot, yt.hit1, yyLvl))
-    box.set_text(yt.bT2, yyTPtx(2, yt.tp2, yt.entry, yt.lot, yt.hit2, yyLvl))
+    for y_l in array.from(yt.lE, yt.lS, yt.l1, yt.l2, yt.l3)
+        if not na(y_l)
+            label.set_x(y_l, y_rt)
+    label.set_text(yt.l1, yyTPtx(1, yt.tp1, yt.entry, yt.lot, yt.hit1))
+    label.set_text(yt.l2, yyTPtx(2, yt.tp2, yt.entry, yt.lot, yt.hit2))
 
-// ── dashboard (Thai · 2 ฝั่ง)
+// ── dashboard
+yyCell(table tb, int c, int r, string tx, color tc, color bg, string sz, string ha) =>
+    table.cell(tb, c, r, tx, text_color = tc, bgcolor = bg, text_size = sz, text_halign = ha)
+
 var table yyTbl = na
 if barstate.islast and yyShow
-    y_sz  = yySizeTx == "กลาง" ? size.normal : yySizeTx == "เล็ก" ? size.small : size.tiny
+    string y_sz  = yySizeTx == "กลาง" ? size.normal : yySizeTx == "เล็ก" ? size.small : size.tiny
+    string y_szB = yySizeTx == "กลาง" ? size.large : yySizeTx == "เล็ก" ? size.normal : size.small
     y_pos = yyPosTx == "ซ้ายบน" ? position.top_left : yyPosTx == "ขวาล่าง" ? position.bottom_right : yyPosTx == "ซ้ายล่าง" ? position.bottom_left : position.top_right
-    color y_BG  = #0B0F1C
-    color y_SEC = #16203D
-    color y_SXT = #7FA8FF
-    color y_MUT = #8A93B2
-    color y_TXT = #E6E9F2
     float y_net    = ys.eq - yyCapital
     float y_netPct = yyCapital > 0 ? y_net / yyCapital * 100.0 : 0.0
     float y_days   = na(ys.start) ? 1.0 : math.max(1.0, (time - ys.start) / 86400000.0 * 5.0 / 7.0)
@@ -286,26 +354,27 @@ if barstate.islast and yyShow
     float y_wr     = ys.n > 0 ? 100.0 * ys.win / ys.n : 0.0
     float y_avgR   = ys.n > 0 ? ys.rSum / ys.n : 0.0
     float y_pf     = ys.gl > 0 ? ys.gw / ys.gl : ys.gw > 0 ? 99.0 : 0.0
-    int   y_todayK = yyDayKey(time)
     int   y_nD     = array.size(yyDayK)
-    bool  y_hasT   = y_nD > 0 and array.get(yyDayK, y_nD - 1) == y_todayK
+    bool  y_hasT   = y_nD > 0 and array.get(yyDayK, y_nD - 1) == yyDayKey(time)
     float y_todayP = y_hasT ? array.get(yyDayP, y_nD - 1) : 0.0
     int   y_todayN = y_hasT ? array.get(yyDayN, y_nD - 1) : 0
-    float y_floatP = yt.dir != 0 ? yt.pnl + yt.rem * (close - yt.entry) * yt.dir * yyContract * yt.lot - yyCost(yt.lot) : 0.0
-    float y_tpX    = yyLvl == 1 ? yt.tp1 : yyLvl == 2 ? yt.tp2 : yt.tp3
+    bool  y_open   = yt.dir != 0
+    float y_floatP = y_open ? yt.pnl + yt.rem * (close - yt.entry) * yt.dir * yyContract * yt.lot - yyCost(yt.lot) : 0.0
     float y_vpp    = yyContract * yt.lot
 
-    string y_verdict = ys.n < 20 ? "⏳ ไม้ยังน้อย (" + str.tostring(ys.n) + " ไม้) ยังสรุปไม่ได้" : ys.eq <= 0 ? "💥 พอร์ตแตก" : y_avgR <= 0 ? "❌ ไม่คุ้ม · สัญญาณยังไม่ได้เปรียบ" : y_net <= 0 ? "❌ ไม่คุ้ม · ค่าคอม/spread กินกำไร" : y_pf < 1.1 ? "⚠️ พอใช้ · กำไรบาง" : ys.dd >= 20 ? "⚠️ พอใช้ · ขาดทุนสะสมลึก" : "✅ คุ้ม · ใช้ได้"
-    color  y_vCol = ys.n < 20 ? y_MUT : str.startswith(y_verdict, "✅") ? #00E58F : str.startswith(y_verdict, "⚠") ? #FFC107 : #FF4D6D
-    string y_lotTx  = yyLotMode == "Lot คงที่" ? str.tostring(yyLot, "0.00") + " lot" : str.tostring(yyRisk, "0.0#") + "% ต่อไม้"
-    string y_unitTx = yyUnit == "$ ราคา" ? "$" : " pt"
-    string y_setTx  = yyFix ? str.tostring(yySL, "0.###") + " / " + str.tostring(yyTP1, "0.###") + "·" + str.tostring(yyTP2, "0.###") + "·" + str.tostring(yyTP3, "0.###") + y_unitTx : yyMode == "ATR" ? str.tostring(yySLatr, "0.0#") + " / " + str.tostring(yyTP1atr, "0.0#") + "·" + str.tostring(yyTP2atr, "0.0#") + "·" + str.tostring(yyTP3atr, "0.0#") + " ATR" : str.tostring(yySLatr, "0.0#") + " ATR / " + str.tostring(yyTP1r, "0.0#") + "·" + str.tostring(yyTP2r, "0.0#") + "·" + str.tostring(yyTP3r, "0.0#") + "R"
-    float  y_avgT   = ys.n > 0 ? y_net / ys.n : 0.0
+    // ผลสรุป: ชิปสั้นบนหัว + เหตุผลเต็มด้านล่าง
+    string y_chip = ys.n < 20 ? "⏳ รอข้อมูล" : ys.eq <= 0 ? "💥 พอร์ตแตก" : y_avgR <= 0 or y_net <= 0 ? "❌ ไม่คุ้ม" : y_pf < 1.1 or ys.dd >= 20 ? "⚠️ พอใช้" : "✅ คุ้ม"
+    string y_why  = ys.n < 20 ? "ไม้ยังน้อย (" + str.tostring(ys.n) + "/20) ยังสรุปไม่ได้" : ys.eq <= 0 ? "เงินทุนหมด" : y_avgR <= 0 ? "สัญญาณยังไม่ได้เปรียบ" : y_net <= 0 ? "ค่าคอม/spread กินกำไร" : y_pf < 1.1 ? "กำไรบาง" : ys.dd >= 20 ? "ขาดทุนสะสมลึก" : "ได้เปรียบหลังหักค่าคอม/spread"
+    color  y_vCol = ys.n < 20 ? YY_MUT : str.startswith(y_chip, "✅") ? YY_UP : str.startswith(y_chip, "⚠") ? YY_WARN : YY_DN
+    string y_lotTx = yyLotMode == "Lot คงที่" ? str.tostring(yyLot, "0.00") + " lot" : str.tostring(yyRisk, "0.0#") + "% ต่อไม้"
+    string y_uTx   = yyUnit == "$ ราคา" ? "$" : " pt"
+    string y_rTx   = str.tostring(yyTP1r, "0.#") + "·" + str.tostring(yyTP2r, "0.#") + "·" + str.tostring(yyTP3r, "0.#") + "R"
+    string y_setTx = yyMode == YYM_SW ? "Swing " + str.tostring(yySwLen) + " · " + y_rTx : yyMode == YYM_AR ? str.tostring(yySLatr, "0.0#") + " ATR · " + y_rTx : yyMode == YYM_ATR ? str.tostring(yySLatr, "0.0#") + " / " + str.tostring(yyTP1atr, "0.#") + "·" + str.tostring(yyTP2atr, "0.#") + "·" + str.tostring(yyTP3atr, "0.#") + " ATR" : str.tostring(yySL, "0.###") + " / " + str.tostring(yyTP1, "0.###") + "·" + str.tostring(yyTP2, "0.###") + "·" + str.tostring(yyTP3, "0.###") + y_uTx
 
     // ซ้าย = เงิน + สถิติ · ขวา = ไม้ปัจจุบัน + ตั้งค่า   ("§" = หัวข้อ)
-    string[] y_lk = array.from("§💰 ผลเงิน", "ยอดเงิน", "วันนี้", "เฉลี่ย/วัน", "ต่อเดือน", "§📊 สถิติ", "ชนะ", "ลดลงสูงสุด", "Profit Factor", "เฉลี่ยต่อไม้")
-    string[] y_lv = array.from("", yyMoney(ys.eq) + " (" + yyPct(y_netPct) + ")", yyMoneyS(y_todayP) + " · " + str.tostring(y_todayN) + " ไม้", yyMoneyS(y_perDay), yyMoneyS(y_perMon) + " (" + yyPct(yyCapital > 0 ? y_perMon / yyCapital * 100.0 : 0.0) + ")", "", str.tostring(math.round(y_wr)) + "% · " + str.tostring(ys.win) + "/" + str.tostring(ys.n) + " ไม้", "-" + str.tostring(ys.dd, "0.0") + "%", str.tostring(y_pf, "0.00"), yyMoneyS(y_avgT))
-    color[]  y_lc = array.from(y_SXT, yyCol(y_net), yyCol(y_todayP), yyCol(y_perDay), yyCol(y_perMon), y_SXT, y_TXT, ys.dd >= 20 ? #FF4D6D : y_TXT, y_pf >= 1.1 ? #00E58F : y_pf >= 1.0 ? #FFC107 : #FF4D6D, yyCol(y_avgT))
+    string[] y_lk = array.from("§💰 ผลเงิน", "วันนี้", "เฉลี่ย/วัน", "ต่อเดือน", "§📊 สถิติ", "ชนะ", "ไม้ทั้งหมด", "ลดลงสูงสุด", "แพ้ติดกันสูงสุด", "Profit Factor")
+    string[] y_lv = array.from("", yyMoneyS(y_todayP) + " · " + str.tostring(y_todayN) + " ไม้", yyMoneyS(y_perDay), yyMoneyS(y_perMon) + " (" + yyPct(yyCapital > 0 ? y_perMon / yyCapital * 100.0 : 0.0) + ")", "", str.tostring(math.round(y_wr)) + "%  " + yyBar(y_wr), str.tostring(ys.n) + "  (ชนะ " + str.tostring(ys.win) + " · แพ้ " + str.tostring(ys.loss) + ")", "-" + str.tostring(ys.dd, "0.0") + "%", str.tostring(ys.maxL) + " ไม้", str.tostring(y_pf, "0.00"))
+    color[]  y_lc = array.from(YY_SXT, yyCol(y_todayP), yyCol(y_perDay), yyCol(y_perMon), YY_SXT, y_wr >= 50 ? YY_UP : YY_TXT, YY_TXT, ys.dd >= 20 ? YY_DN : YY_TXT, ys.maxL >= 6 ? YY_WARN : YY_TXT, y_pf >= 1.1 ? YY_UP : y_pf >= 1.0 ? YY_WARN : YY_DN)
     if yyDays and y_nD > 0
         for y_k = math.max(0, y_nD - 3) to y_nD - 1
             int y_key = array.get(yyDayK, y_k)
@@ -315,42 +384,58 @@ if barstate.islast and yyShow
             array.push(y_lk, str.format_time(timestamp(syminfo.timezone, y_yy, y_mm, y_dd, 12, 0), "EEE dd MMM", syminfo.timezone))
             array.push(y_lv, yyMoneyS(array.get(yyDayP, y_k)) + " · " + str.tostring(array.get(yyDayN, y_k)) + " ไม้")
             array.push(y_lc, yyCol(array.get(yyDayP, y_k)))
-    bool y_open = yt.dir != 0
+    string y_t1 = y_open ? (yt.hit1 ? "✓ " : "") + str.tostring(yt.tp1, format.mintick) + " · +" + yyMoney(math.abs(yt.tp1 - yt.entry) * y_vpp) + (yyLvl == 1 ? " 🎯" : "") : "—"
+    string y_t2 = y_open ? (yt.hit2 ? "✓ " : "") + str.tostring(yt.tp2, format.mintick) + " · +" + yyMoney(math.abs(yt.tp2 - yt.entry) * y_vpp) + (yyLvl == 2 and not yyScale ? " 🎯" : "") : "—"
+    string y_t3 = y_open ? str.tostring(yt.tp3, format.mintick) + " · +" + yyMoney(math.abs(yt.tp3 - yt.entry) * y_vpp) + (yyLvl == 3 ? " 🎯" : "") : "—"
     string[] y_rk = array.from("§📍 ไม้ปัจจุบัน", "สถานะ", "เข้า", "SL", "TP1", "TP2", "TP3", "§⚙️ ตั้งค่า", "SL / TP", "ปิดไม้")
-    string[] y_rv = array.from("", y_open ? (yt.dir == 1 ? "🟢 ซื้อ · " : "🔴 ขาย · ") + "ลอย " + yyMoneyS(y_floatP) : "⏳ รอสัญญาณ", y_open ? str.tostring(yt.entry, format.mintick) : "—", y_open ? str.tostring(yt.sl, format.mintick) + (yt.be ? " · ที่ทุน" : " · -" + yyMoney(math.abs(yt.entry - yt.sl) * y_vpp)) : "—", y_open ? yyTPtx(1, yt.tp1, yt.entry, yt.lot, yt.hit1, yyLvl) : "—", y_open ? yyTPtx(2, yt.tp2, yt.entry, yt.lot, yt.hit2, yyLvl) : "—", y_open ? yyTPtx(3, yt.tp3, yt.entry, yt.lot, false, yyLvl) : "—", "", y_setTx, yyExit)
-    color[]  y_rc = array.from(y_SXT, y_open ? yyCol(y_floatP) : y_MUT, y_TXT, yt.be ? #FFA726 : #FF8A9B, #6FF0B5, #6FF0B5, #6FF0B5, y_SXT, y_TXT, y_TXT)
+    string[] y_rv = array.from("", y_open ? (yt.dir == 1 ? "🟢 ซื้อ · " : "🔴 ขาย · ") + "ลอย " + yyMoneyS(y_floatP) : "⏳ รอสัญญาณ", y_open ? str.tostring(yt.entry, format.mintick) + " · " + str.tostring(yt.lot, "0.00") + " lot" : "—", y_open ? str.tostring(yt.sl, format.mintick) + (yt.be ? " · ที่ทุน" : " · -" + yyMoney(math.abs(yt.entry - yt.sl) * y_vpp)) : "—", y_t1, y_t2, y_t3, "", y_setTx, yyExit)
+    color[]  y_rc = array.from(YY_SXT, y_open ? yyCol(y_floatP) : YY_MUT, YY_TXT, yt.be ? #FFA726 : #FF8A9B, #6FF0B5, #6FF0B5, #6FF0B5, YY_SXT, YY_TXT, YY_TXT)
 
     bool y_wide = yyLayout == "กว้าง (2 ฝั่ง)"
     int  y_nL   = array.size(y_lk)
     int  y_nR   = array.size(y_rk)
+    int  y_nMax = math.max(y_nL, y_nR)
     int  y_cols = y_wide ? 4 : 2
-    int  y_rows = y_wide ? 2 + math.max(y_nL, y_nR) : 2 + y_nL + y_nR
+    int  y_rows = y_wide ? 3 + y_nMax : 3 + y_nL + y_nR
     if not na(yyTbl)
         table.delete(yyTbl)
-    yyTbl := table.new(y_pos, y_cols, y_rows, bgcolor = y_BG, border_color = #232B45, border_width = 1, frame_color = #232B45, frame_width = 1, force_overlay = true)
-    table.cell(yyTbl, 0, 0, "YY ทดลองเงิน · ทุน " + yyMoney(yyCapital) + " · " + y_lotTx, text_color = #FFFFFF, bgcolor = #2F3654, text_size = y_sz)
-    table.merge_cells(yyTbl, 0, 0, y_cols - 1, 0)
+    yyTbl := table.new(y_pos, y_cols, y_rows, bgcolor = YY_BG, border_color = YY_BRD, border_width = 1, frame_color = YY_BRD, frame_width = 1, force_overlay = true)
+    // หัว: ชื่อ + ทุน | ชิปผลสรุป
+    yyCell(yyTbl, 0, 0, "YY ทดลองเงิน  ·  ทุน " + yyMoney(yyCapital) + "  ·  " + y_lotTx, #FFFFFF, YY_HEAD, y_sz, text.align_left)
+    if y_wide
+        table.merge_cells(yyTbl, 0, 0, 2, 0)
+    yyCell(yyTbl, y_cols - 1, 0, y_chip, y_vCol, color.new(y_vCol, 78), y_sz, text.align_center)
+    // ยอดเงินตัวใหญ่ | กำไรสุทธิ
+    yyCell(yyTbl, 0, 1, yyMoney(ys.eq), yyCol(y_net), YY_BG, y_szB, text.align_left)
+    yyCell(yyTbl, y_wide ? 2 : 1, 1, yyMoneyS(y_net) + "  (" + yyPct(y_netPct) + ")", yyCol(y_net), YY_BG, y_szB, text.align_right)
+    if y_wide
+        table.merge_cells(yyTbl, 0, 1, 1, 1)
+        table.merge_cells(yyTbl, 2, 1, 3, 1)
     for y_side = 0 to 1
         int y_n  = y_side == 0 ? y_nL : y_nR
         int y_c0 = y_wide ? y_side * 2 : 0
-        int y_r0 = y_wide ? 1 : (y_side == 0 ? 1 : 1 + y_nL)
-        for y_i = 0 to y_n - 1
-            string y_k = y_side == 0 ? array.get(y_lk, y_i) : array.get(y_rk, y_i)
-            string y_v = y_side == 0 ? array.get(y_lv, y_i) : array.get(y_rv, y_i)
-            color  y_c = y_side == 0 ? array.get(y_lc, y_i) : array.get(y_rc, y_i)
-            int    y_r = y_r0 + y_i
-            if str.startswith(y_k, "§")
-                table.cell(yyTbl, y_c0, y_r, str.substring(y_k, 1), text_color = y_c, bgcolor = y_SEC, text_size = y_sz, text_halign = text.align_left)
-                table.cell(yyTbl, y_c0 + 1, y_r, "", bgcolor = y_SEC, text_size = y_sz)
-                table.merge_cells(yyTbl, y_c0, y_r, y_c0 + 1, y_r)
+        int y_r0 = y_wide ? 2 : (y_side == 0 ? 2 : 2 + y_nL)
+        int y_alt = 0
+        for y_i = 0 to (y_wide ? y_nMax : y_n) - 1
+            int y_r = y_r0 + y_i
+            if y_i >= y_n
+                yyCell(yyTbl, y_c0, y_r, "", YY_TXT, YY_BG, y_sz, text.align_left)
+                yyCell(yyTbl, y_c0 + 1, y_r, "", YY_TXT, YY_BG, y_sz, text.align_left)
             else
-                table.cell(yyTbl, y_c0, y_r, y_k, text_color = y_MUT, bgcolor = y_BG, text_size = y_sz, text_halign = text.align_left)
-                table.cell(yyTbl, y_c0 + 1, y_r, y_v, text_color = y_c, bgcolor = y_BG, text_size = y_sz, text_halign = text.align_right)
-        if y_wide and y_n < math.max(y_nL, y_nR)
-            for y_i = y_n to math.max(y_nL, y_nR) - 1
-                table.cell(yyTbl, y_c0, 1 + y_i, "", bgcolor = y_BG, text_size = y_sz)
-                table.cell(yyTbl, y_c0 + 1, 1 + y_i, "", bgcolor = y_BG, text_size = y_sz)
-    table.cell(yyTbl, 0, y_rows - 1, y_verdict + " · จำลองจากกราฟ", text_color = y_vCol, bgcolor = #121829, text_size = y_sz, text_halign = text.align_left)
+                string y_k = y_side == 0 ? array.get(y_lk, y_i) : array.get(y_rk, y_i)
+                string y_v = y_side == 0 ? array.get(y_lv, y_i) : array.get(y_rv, y_i)
+                color  y_c = y_side == 0 ? array.get(y_lc, y_i) : array.get(y_rc, y_i)
+                if str.startswith(y_k, "§")
+                    yyCell(yyTbl, y_c0, y_r, str.substring(y_k, 1), y_c, YY_SEC, y_sz, text.align_left)
+                    yyCell(yyTbl, y_c0 + 1, y_r, "", y_c, YY_SEC, y_sz, text.align_left)
+                    table.merge_cells(yyTbl, y_c0, y_r, y_c0 + 1, y_r)
+                    y_alt := 0
+                else
+                    color y_bg = y_alt % 2 == 1 ? YY_ALT : YY_BG
+                    yyCell(yyTbl, y_c0, y_r, y_k, YY_MUT, y_bg, y_sz, text.align_left)
+                    yyCell(yyTbl, y_c0 + 1, y_r, y_v, y_c, y_bg, y_sz, text.align_right)
+                    y_alt += 1
+    yyCell(yyTbl, 0, y_rows - 1, y_why + "  ·  จำลองจากกราฟ ไม่ใช่ผลเทรดจริง", y_vCol, YY_ALT, y_sz, text.align_left)
     table.merge_cells(yyTbl, 0, y_rows - 1, y_cols - 1, y_rows - 1)
 else if barstate.islast and not yyShow and not na(yyTbl)
     table.delete(yyTbl)
