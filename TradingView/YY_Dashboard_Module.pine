@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// YOUNGYUU ทดลองเงิน · Dashboard Module v3.1  (Pine Script v6)
+// YOUNGYUU ทดลองเงิน · Dashboard Module v3.2  (Pine Script v6)
 // ────────────────────────────────────────────────────────────────
 // วิธีใช้:
 //   1) copy ทั้งไฟล์นี้ไปวาง "ต่อท้ายสุด" ของ indicator ที่ต้องการ (ต้องเป็น //@version=6)
@@ -15,6 +15,7 @@
 // ▼▼▼ แก้ 2 บรรทัดนี้ ▼▼▼
 bool yyBuy  = false    // ← สัญญาณซื้อของ indicator (true เฉพาะแท่งที่เกิดสัญญาณ)
 bool yySell = false    // ← สัญญาณขายของ indicator
+string yyTitle = "YOUNGYUU"   // ← ชื่อที่แสดงบนหัวแผง (ใส่ชื่อ indicator ที่ทดสอบ)
 // ▲▲▲ แก้ 2 บรรทัดนี้ ▲▲▲
 
 const string YYG1 = "💰 YY ทดลองเงิน"
@@ -465,7 +466,7 @@ if barstate.islast and yyShow
         table.delete(yyTbl)
     yyTbl := table.new(y_pos, y_cols, y_rows, bgcolor = YY_BG, border_color = YY_BRD, border_width = 1, frame_color = YY_BRD, frame_width = 1, force_overlay = true)
     // หัว: YOUNGYUU · สัญลักษณ์ · TF | สถานะ
-    yyCell(yyTbl, 0, 0, "YOUNGYUU  ·  " + syminfo.ticker + " · " + timeframe.period, yyAccent, YY_HEAD, y_sz, text.align_left)
+    yyCell(yyTbl, 0, 0, yyTitle + "  ·  " + syminfo.ticker + " · " + timeframe.period, yyAccent, YY_HEAD, y_sz, text.align_left)
     if y_cols > 2
         table.merge_cells(yyTbl, 0, 0, y_cols - 2, 0)
     yyCell(yyTbl, y_cols - 1, 0, y_open ? (yt.dir == 1 ? "● ถือ BUY" : "● ถือ SELL") : "○ รอสัญญาณ", y_open ? (yt.dir == 1 ? YY_UP : YY_DN) : YY_MUT, y_open ? color.new(yt.dir == 1 ? YY_TPC : YY_SLC, 80) : YY_HEAD, y_sz, text.align_center)
