@@ -1,6 +1,6 @@
 //@version=6
 // ══════════════════════════════════════════════════════════════
-// YOUNGYUU PULSE PRO — Gold Edition · v1.4
+// YOUNGYUU PULSE PRO — Gold Edition · v1.5
 // © YOUNGYUU Systems — publish as Protected / Invite-only to keep
 // the source private.
 // ══════════════════════════════════════════════════════════════
@@ -24,7 +24,7 @@ GRP_MONEY = "💰 Money Simulator"
 GRP_COL   = "🎨 Colors"
 GRP_ALERT = "🔔 Alerts"
 
-VERSION   = "v1.4"
+VERSION   = "v1.5"
 LINE_FWD  = 15
 LINE_UPD  = 5
 LBL_OFF   = 1
@@ -110,10 +110,10 @@ signalSizeInput   = input.string("Small", "Signal Label Size", options = ["Tiny"
 
 // ── SL / TP (v4)
 showTPSLInput   = input.bool(true, "Show TP/SL Lines", group = GRP_TPSL, display = display.none)
-slModeInput     = input.string("Swing", "SL Mode", options = ["Swing", "ATR", "Fixed Points"], group = GRP_TPSL, display = display.none)
+slModeInput     = input.string("ATR", "SL Mode", options = ["Swing", "ATR", "Fixed Points"], group = GRP_TPSL, display = display.none)
 swingLenInput   = input.int(10, "Swing Lookback", minval = 2, maxval = 100, group = GRP_TPSL, display = display.none)
 slBufferInput   = input.float(0.3, "Swing Buffer (x ATR)", minval = 0.0, maxval = 3.0, step = 0.1, group = GRP_TPSL, display = display.none)
-slAtrInput      = input.float(1.5, "ATR SL (x ATR)", minval = 0.3, maxval = 10.0, step = 0.1, group = GRP_TPSL, display = display.none)
+slAtrInput      = input.float(1.0, "ATR SL (x ATR)", minval = 0.3, maxval = 10.0, step = 0.1, group = GRP_TPSL, display = display.none)
 slPointsInput   = input.int(500, "Fixed SL (points)", minval = 10, group = GRP_TPSL, display = display.none)
 minSlAtrInput   = input.float(1.0, "Min SL Distance (x ATR)", minval = 0.3, maxval = 5.0, step = 0.1, group = GRP_TPSL, display = display.none)
 maxSlAtrInput   = input.float(3.0, "Max SL Distance (x ATR, 0=off)", minval = 0.0, maxval = 20.0, step = 0.5, group = GRP_TPSL, tooltip = "Signal is skipped when the stop would be wider than this.", display = display.none)
@@ -340,6 +340,9 @@ var Trade T = Trade.new()
 var Stats S = Stats.new()
 var Money M = Money.new(equity = capitalInput, peak = capitalInput)
 var int firstTradeTime = na
+var float riskActSum = 0.0
+var int   riskActN   = 0
+var float riskActLast = 0.0
 var Rec   R = Rec.new()
 
 // Close a fraction of the position at a price (R model + money model)
@@ -778,6 +781,11 @@ if (confirmedBuy or confirmedSell) and showTPSLInput and canOpen
     float eqB  = compoundInput ? M.equity : capitalInput
     float lot0 = M.bust ? 0.0 : calcLot(rd, eqB)
     openTrade(T, nd, close, sl0, rd, t1, t2, t3, lot0, scl ? "S" : gradeFor(nd))
+    // actual risk of this trade as % of the simulated balance (min-lot can exceed the target)
+    if lot0 > 0 and M.equity > 0
+        riskActLast := (rd * contractInput * lot0 + tradeCost(lot0)) / M.equity * 100.0
+        riskActSum  += riskActLast
+        riskActN    += 1
     if na(firstTradeTime)
         firstTradeTime := time
     if nd == 1
@@ -1291,6 +1299,11 @@ if showDashInput and barstate.islast
         rowSec("— 💰 ทุน " + fmtUsd(capitalInput) + " · " + (sizeModeInput == "Fixed Lot" ? str.tostring(fixLotInput, "0.00") + " lot" : str.tostring(riskPctInput, "0.0") + "% risk") + " —")
         rowKV("ยอดเงิน", fmtUsd(M.equity) + (M.bust ? " 💥" : ""), netAll >= 0 ? BULL_TEXT : BEAR_TEXT)
         rowKV("กำไรสุทธิ", fmtUsdS(netAll) + " (" + fmtPctS(netPct) + ")", netAll >= 0 ? BULL_TEXT : BEAR_TEXT)
+        float riskAvg = riskActN > 0 ? riskActSum / riskActN : 0.0
+        bool  riskHot = riskAvg > riskPctInput * 2.0 and sizeModeInput == "Risk %"
+        rowKV("ความเสี่ยงจริง/ไม้", "เฉลี่ย " + str.tostring(riskAvg, "0.0") + "% · ล่าสุด " + str.tostring(riskActLast, "0.0") + "%", riskHot ? BEAR_TEXT : riskAvg > riskPctInput * 1.3 ? NEU_TEXT : BULL_TEXT)
+        if riskHot
+            rowFull("⚠ ทุนน้อยเกิน lot ขั้นต่ำ — เสี่ยงจริงเกินที่ตั้ง " + str.tostring(riskAvg / riskPctInput, "0.0") + " เท่า", BEAR_TEXT, TABLE_BG)
         rowKV("เฉลี่ย / วัน", fmtUsdS(perDay) + " (" + fmtPctS(capitalInput > 0 ? perDay / capitalInput * 100.0 : 0.0) + ")", perDay >= 0 ? BULL_TEXT : BEAR_TEXT)
         rowKV("ประมาณ / เดือน", fmtUsdS(perMonth) + " (" + fmtPctS(capitalInput > 0 ? perMonth / capitalInput * 100.0 : 0.0) + ")", perMonth >= 0 ? BULL_TEXT : BEAR_TEXT)
         if not isMob
