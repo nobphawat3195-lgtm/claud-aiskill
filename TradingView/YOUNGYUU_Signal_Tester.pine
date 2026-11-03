@@ -84,10 +84,10 @@ yyTPf5     = input.float(2500, "5", minval = 0.001, group = YYG3, display = disp
 yyShow     = input.bool(true, "แสดงแผง", group = YYG2, display = display.none)
 yyDevice   = input.string("มือถือ (ย่อ)", "อุปกรณ์", options = ["มือถือ (ย่อ)", "PC", "iPad"], group = YYG2, display = display.none, tooltip = "PC: แผงแนวตั้งครบทุกแถว\niPad: 3 การ์ดเรียงแนวนอน (วางล่างกราฟ)\nมือถือ: แผงย่อ แถวน้อย")
 yySizeTx   = input.string("อัตโนมัติ", "ขนาดตัวอักษร", options = ["อัตโนมัติ", "เล็กมาก", "เล็ก", "กลาง"], group = YYG2, display = display.none)
-yyPosTx    = input.string("อัตโนมัติ", "ตำแหน่งแผง", options = ["อัตโนมัติ", "ขวาบน", "ซ้ายบน", "ขวาล่าง", "ซ้ายล่าง", "ล่างกลาง"], group = YYG2, display = display.none)
+yyPosTx    = input.string("ซ้ายล่าง", "ตำแหน่งแผง", options = ["อัตโนมัติ", "ขวาบน", "ซ้ายบน", "ขวาล่าง", "ซ้ายล่าง", "ล่างกลาง", "บนกลาง", "กลางซ้าย", "กลางขวา"], group = YYG2, display = display.none, tooltip = "ถ้าแผงของ indicator ที่ทดสอบซ้อนกับแผง YY ให้ย้ายไปมุมที่ว่าง")
 yyAccent   = input.color(#F5B841, "สีหลัก", group = YYG2, display = display.none)
 yySigLbl   = input.bool(true, "ป้าย BUY / SELL", group = YYG2, display = display.none)
-yyBoxShow  = input.bool(true, "กล่อง TP / SL + ป้ายราคา", group = YYG2, display = display.none)
+yyBoxShow  = input.bool(false, "กล่อง TP / SL + ป้ายราคา", group = YYG2, display = display.none)
 yyBoxMoney = input.bool(true, "ป้ายราคาแสดงเงิน (+$)", group = YYG2, display = display.none)
 yyBoxN     = input.int(30, "เก็บกล่องย้อนหลัง (ไม้)", minval = 1, maxval = 200, group = YYG2, display = display.none)
 
@@ -406,7 +406,7 @@ if barstate.islast and yyShow
     bool   y_mob = yyDevice == "มือถือ (ย่อ)"
     string y_sz  = yySizeTx == "กลาง" ? size.normal : yySizeTx == "เล็ก" ? size.small : yySizeTx == "เล็กมาก" ? size.tiny : y_mob ? size.tiny : size.small
     string y_szB = y_sz == size.normal ? size.large : y_sz == size.small ? size.normal : size.small
-    y_pos = yyPosTx == "ซ้ายบน" ? position.top_left : yyPosTx == "ขวาล่าง" ? position.bottom_right : yyPosTx == "ซ้ายล่าง" ? position.bottom_left : yyPosTx == "ล่างกลาง" ? position.bottom_center : yyPosTx == "ขวาบน" ? position.top_right : y_pad ? position.bottom_center : position.top_right
+    y_pos = yyPosTx == "ซ้ายบน" ? position.top_left : yyPosTx == "ขวาล่าง" ? position.bottom_right : yyPosTx == "ซ้ายล่าง" ? position.bottom_left : yyPosTx == "ล่างกลาง" ? position.bottom_center : yyPosTx == "ขวาบน" ? position.top_right : yyPosTx == "บนกลาง" ? position.top_center : yyPosTx == "กลางซ้าย" ? position.middle_left : yyPosTx == "กลางขวา" ? position.middle_right : y_pad ? position.bottom_center : position.top_right
     float y_net    = ys.eq - yyCapital
     float y_netPct = yyCapital > 0 ? y_net / yyCapital * 100.0 : 0.0
     float y_days   = na(ys.start) ? 1.0 : math.max(1.0, (time - ys.start) / 86400000.0 * 5.0 / 7.0)
