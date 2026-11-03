@@ -154,7 +154,7 @@ kzTzInput       = input.string("America/New_York", "Kill Zone Timezone", group =
 asiaKzInput     = input.session("2000-0000", "Asia KZ", group = GRP_DASH, display = display.none)
 londonKzInput   = input.session("0200-0500", "London KZ", group = GRP_DASH, display = display.none)
 nyKzInput       = input.session("0700-1000", "New York KZ", group = GRP_DASH, display = display.none)
-themeInput      = input.string("Auto", "Theme", options = ["Auto", "Dark", "Light"], group = GRP_DASH, display = display.none)
+themeInput      = input.string("Dark", "Theme", options = ["Auto", "Dark", "Light"], group = GRP_DASH, display = display.none)
 
 // ── Money Simulator
 moneyOnInput    = input.bool(true, "เปิดโหมดจำลองเงินทุน", group = GRP_MONEY, tooltip = "Simulates trading every signal on the loaded chart history.\nShown on the dashboard and on TP/SL labels.\n⚠ Simulation only — not a broker backtest, no slippage modelling.", display = display.none)
