@@ -1,6 +1,6 @@
 //@version=6
 // ══════════════════════════════════════════════════════════════
-// YOUNGYUU PULSE PRO — Gold Edition · v1.1
+// YOUNGYUU PULSE PRO — Gold Edition · v1.2 (CME Levels)
 // © YOUNGYUU Systems — publish as Protected / Invite-only to keep
 // the source private.
 // ══════════════════════════════════════════════════════════════
@@ -13,6 +13,7 @@ GRP_Pulse   = "📈 Pulse Engine"
 GRP_ADX   = "💪 ADX Filter"
 GRP_FILT  = "✅ Confirmations (v4)"
 GRP_CHOP  = "🛡️ Chop Shield (Sideways Filter)"
+GRP_CME   = "🏛️ CME Levels"
 GRP_SCALP = "📊 Sideways Scalp (v4)"
 GRP_SIG   = "📍 Signals"
 GRP_TPSL  = "🎯 SL / TP (v4)"
@@ -77,6 +78,22 @@ erMinInput      = input.float(0.30, "Efficiency Ratio Min", minval = 0.05, maxva
 chopAdxInput    = input.bool(true, "Use ADX < threshold as a vote", group = GRP_CHOP)
 chopVotesInput  = input.int(2, "Block when votes ≥", minval = 1, maxval = 3, group = GRP_CHOP, tooltip = "Votes: Whipsaw · Efficiency Ratio · ADX. Default 2 of 3.")
 chopInFiltInput = input.bool(true, "Also apply in Filtered mode", group = GRP_CHOP)
+
+// ── CME Levels (กรอกเองวันละครั้งจาก CME QuikStrike)
+useCmeInput    = input.bool(false, "เปิด CME Levels", group = GRP_CME, tooltip = "กรอก Strike จาก CME Gold Options (Weekly) + Basis.\nระบบแปลงเป็นราคาบนกราฟ = Strike − Basis แล้ววาดโซนและกรองสัญญาณ.\nใส่ 0 = ไม่ใช้ระดับนั้น")
+cmeBasisInput  = input.float(15.0, "Basis (Futures − Spot)", step = 0.5, group = GRP_CME, tooltip = "เช่น Futures 4,209.5 − ราคาโบรก 4,194.5 = 15")
+cmeC1Input     = input.float(0.0, "Call Wall หลัก (Strike)", step = 5.0, group = GRP_CME)
+cmeC2Input     = input.float(0.0, "Call Wall รอง (Strike)", step = 5.0, group = GRP_CME)
+cmeMInput      = input.float(0.0, "Magnet (Strike)", step = 5.0, group = GRP_CME, tooltip = "Strike ที่มีทั้ง Call และ Put หนาแน่น — ราคามักแกว่งวนรอบนี้")
+cmeP2Input     = input.float(0.0, "Put Wall รอง (Strike)", step = 5.0, group = GRP_CME)
+cmeP1Input     = input.float(0.0, "Put Wall หลัก (Strike)", step = 5.0, group = GRP_CME)
+cmeFilterInput = input.string("Avoid", "โหมดกรองสัญญาณ", options = ["Avoid", "Zone Only", "Off"], group = GRP_CME, tooltip = "Avoid: ไม่ BUY ใกล้ Call Wall · ไม่ SELL ใกล้ Put Wall · ไม่เทรดใน Magnet\nZone Only: BUY ได้เฉพาะใกล้ Put Wall · SELL ได้เฉพาะใกล้ Call Wall\nOff: วาดโซนอย่างเดียว ไม่กรอง")
+cmeZoneInput   = input.float(3.0, "ความกว้างโซน Wall (± $)", minval = 0.5, step = 0.5, group = GRP_CME)
+cmeNearInput   = input.float(5.0, "ระยะที่ถือว่า 'ใกล้ Wall' ($)", minval = 0.5, step = 0.5, group = GRP_CME)
+cmeMagBandInput = input.float(10.0, "ความกว้าง Magnet (± $)", minval = 1.0, step = 0.5, group = GRP_CME)
+cmeTpInput     = input.bool(true, "ตั้ง TP ที่ Wall ถัดไป", group = GRP_CME, tooltip = "TP1/TP2/TP3 = ระดับ CME ถัดไปตามทิศไม้ (ที่ห่างจาก Entry ≥ Min R). ถ้าระดับไม่พอ ใช้ TP แบบ ATR แทน")
+cmeFrontInput  = input.float(1.0, "ปิดก่อนถึง Wall ($)", minval = 0.0, step = 0.5, group = GRP_CME)
+cmeMinRInput   = input.float(0.8, "TP ต้องห่าง Entry อย่างน้อย (R)", minval = 0.3, step = 0.1, group = GRP_CME)
 
 // ── Sideways Scalp (v4)
 useScalpInput   = input.bool(false, "Sideways Scalp Mode", group = GRP_SCALP, tooltip = "In SIDEWAYS regime, take Pulse signals only from the edge of the range (mean reversion). ADX filter is bypassed for these.")
@@ -474,6 +491,28 @@ bool vAdx    = chopAdxInput and not adxOk
 int  chopVotes = (vWhip ? 1 : 0) + (vEr ? 1 : 0) + (vAdx ? 1 : 0)
 int  chopMax   = chopAdxInput ? 3 : 2
 bool isChop    = chopVotes >= chopVotesInput
+// ── CME levels → chart price (Strike − Basis)
+cmeLv(float strike) =>
+    useCmeInput and strike > 0 ? strike - cmeBasisInput : na
+
+float lvC1 = cmeLv(cmeC1Input)
+float lvC2 = cmeLv(cmeC2Input)
+float lvM  = cmeLv(cmeMInput)
+float lvP2 = cmeLv(cmeP2Input)
+float lvP1 = cmeLv(cmeP1Input)
+
+nearLv(float lv) =>
+    not na(lv) and math.abs(close - lv) <= cmeNearInput + cmeZoneInput
+
+bool inMagnet = not na(lvM) and math.abs(close - lvM) <= cmeMagBandInput
+bool nearCall = nearLv(lvC1) or nearLv(lvC2)
+bool nearPut  = nearLv(lvP1) or nearLv(lvP2)
+bool cmeBuyOk  = cmeFilterInput == "Zone Only" ? nearPut and not inMagnet : not inMagnet and not nearCall
+bool cmeSellOk = cmeFilterInput == "Zone Only" ? nearCall and not inMagnet : not inMagnet and not nearPut
+string cmeWhere = not useCmeInput ? "" : inMagnet ? "IN MAGNET" : nearCall ? "AT CALL WALL" : nearPut ? "AT PUT WALL" : "BETWEEN"
+string cmeReasonB = inMagnet ? "CME Magnet zone" : cmeFilterInput == "Zone Only" ? "CME: not at Put Wall" : "CME: at Call Wall"
+string cmeReasonS = inMagnet ? "CME Magnet zone" : cmeFilterInput == "Zone Only" ? "CME: not at Call Wall" : "CME: at Put Wall"
+
 string chopTxt = "Chop " + str.tostring(chopVotes) + "/" + str.tostring(chopMax) + ": whip " + str.tostring(crossCnt, "0") + "x · ER " + str.tostring(erVal, "0.00") + (chopAdxInput ? " · ADX " + str.tostring(adx, "0.0") : "")
 
 // ── Trend state (for dashboard / zones)
@@ -530,6 +569,7 @@ bool eSess   = modeFilt and useSessInput
 bool eScalp  = modeFilt and useScalpInput
 bool eMaxSL  = not modePure and maxSlAtrInput > 0
 bool eChop   = modeChop or (modeFilt and chopInFiltInput)
+bool eCme    = useCmeInput and cmeFilterInput != "Off" and not modePure
 string modeTag = modeChop ? "" : modeFilt ? " · FILTERED" : modeAdx ? " · ADX ONLY" : " · PURE"
 
 bool  sessOK   = not eSess or inSession(londonInput) or inSession(nyInput)
@@ -588,6 +628,14 @@ totalB += fChop >= 0 ? 1 : 0
 passS  += fChop == 1 ? 1 : 0
 totalS += fChop >= 0 ? 1 : 0
 
+// CME Levels counts as one more filter (direction-specific)
+int fCmeB = fstate(eCme, cmeBuyOk)
+int fCmeS = fstate(eCme, cmeSellOk)
+passB  += fCmeB == 1 ? 1 : 0
+totalB += fCmeB >= 0 ? 1 : 0
+passS  += fCmeS == 1 ? 1 : 0
+totalS += fCmeS >= 0 ? 1 : 0
+
 float bullScore = totalB > 0 ? 100.0 * passB / totalB : 100.0
 float bearScore = totalS > 0 ? 100.0 * passS / totalS : 100.0
 
@@ -630,8 +678,8 @@ bool confirmedSell = sellRaw and not wideSell and not confirmedBuy
 // blocked cross (for ✕ marker / dashboard)
 bool crossBlockedUp   = crossUp and barstate.isconfirmed and isWarmedUp and not confirmedBuy
 bool crossBlockedDown = crossDown and barstate.isconfirmed and isWarmedUp and not confirmedSell
-string reasonUp   = wideBuy and buyRaw ? "SL too wide" : fChop == 0 ? chopTxt : blockReason(fAdxB, fDiB, fRisB, fStrB, fStB, fRsiB, fBodyB, fMomB, fHtfB, fSesB, true)
-string reasonDown = wideSell and sellRaw ? "SL too wide" : fChop == 0 ? chopTxt : blockReason(fAdxS, fDiS, fRisS, fStrS, fStS, fRsiS, fBodyS, fMomS, fHtfS, fSesS, false)
+string reasonUp   = wideBuy and buyRaw ? "SL too wide" : fChop == 0 ? chopTxt : fCmeB == 0 ? cmeReasonB : blockReason(fAdxB, fDiB, fRisB, fStrB, fStB, fRsiB, fBodyB, fMomB, fHtfB, fSesB, true)
+string reasonDown = wideSell and sellRaw ? "SL too wide" : fChop == 0 ? chopTxt : fCmeS == 0 ? cmeReasonS : blockReason(fAdxS, fDiS, fRisS, fStrS, fStS, fRsiS, fBodyS, fMomS, fHtfS, fSesS, false)
 
 var string lastBlock = ""
 if crossBlockedUp
@@ -652,6 +700,21 @@ tpDistances(bool scalp, float slDist) =>
     [d1, d2, d3]
 
 float labelOffset = atrBase * 0.5
+
+// TP at the next CME levels in the trade direction (front-run by cmeFrontInput)
+cmeTargets(int d, float e, float rd, float d1, float d2, float d3) =>
+    float[] lv = array.from(lvC1, lvC2, lvM, lvP2, lvP1)
+    float[] c = array.new_float()
+    for v in lv
+        if not na(v)
+            float t = v - d * cmeFrontInput
+            if (t - e) * d >= rd * cmeMinRInput
+                array.push(c, t)
+    array.sort(c, d == 1 ? order.ascending : order.descending)
+    float t1 = array.size(c) > 0 ? array.get(c, 0) : e + d * d1
+    float t2 = array.size(c) > 1 ? array.get(c, 1) : t1 + d * math.max(d2 - d1, rd)
+    float t3 = array.size(c) > 2 ? array.get(c, 2) : t2 + d * math.max(d3 - d2, rd)
+    [t1, t2, t3]
 
 // Grade A / B / C (YY_SMC_PRO style): A = STRONG regime + ≥2 HTF agree · B = one of them · C = neither
 gradeFor(int d) =>
@@ -689,9 +752,17 @@ if (confirmedBuy or confirmedSell) and showTPSLInput and canOpen
     float sl0 = nd == 1 ? slBuyChk : slSellChk
     float rd  = math.max(math.abs(close - sl0), syminfo.mintick)
     [d1, d2, d3] = tpDistances(scl, rd)
+    float t1 = close + nd * d1
+    float t2 = close + nd * d2
+    float t3 = close + nd * d3
+    if useCmeInput and cmeTpInput
+        [c1, c2, c3] = cmeTargets(nd, close, rd, d1, d2, d3)
+        t1 := c1
+        t2 := c2
+        t3 := c3
     float eqB  = compoundInput ? M.equity : capitalInput
     float lot0 = M.bust ? 0.0 : calcLot(rd, eqB)
-    openTrade(T, nd, close, sl0, rd, close + nd * d1, close + nd * d2, close + nd * d3, lot0, scl ? "S" : gradeFor(nd))
+    openTrade(T, nd, close, sl0, rd, t1, t2, t3, lot0, scl ? "S" : gradeFor(nd))
     if nd == 1
         evBuyEntry := true
     else
@@ -942,6 +1013,36 @@ if array.size(zBox) > 0
                 array.set(zTest, i, true)
                 box.set_text(b, zoneText(d, ns, true))
 
+// ══════════════════════════════════════
+// CME LEVELS — drawing (rebuilt on the last bar)
+// ══════════════════════════════════════
+var line[]  cmeLines  = array.new_line()
+var label[] cmeLabels = array.new_label()
+var box[]   cmeBoxes  = array.new_box()
+
+cmeDraw(float lv, float strike, string name, color c, float halfW) =>
+    if not na(lv)
+        array.push(cmeBoxes, box.new(bar_index - 300, lv + halfW, bar_index + 20, lv - halfW, border_color = color.new(c, 70), bgcolor = color.new(c, 88)))
+        array.push(cmeLines, line.new(bar_index - 300, lv, bar_index + 20, lv, color = c, width = 1, style = line.style_dashed))
+        array.push(cmeLabels, label.new(bar_index + 20, lv, name + " " + str.tostring(lv, format.mintick) + "  (" + str.tostring(strike, "0") + ")", style = label.style_label_left, color = color.new(c, 15), textcolor = #FFFFFF, size = size.tiny))
+
+if barstate.islast
+    for l in cmeLines
+        line.delete(l)
+    for lb in cmeLabels
+        label.delete(lb)
+    for b in cmeBoxes
+        box.delete(b)
+    array.clear(cmeLines)
+    array.clear(cmeLabels)
+    array.clear(cmeBoxes)
+    if useCmeInput
+        cmeDraw(lvC1, cmeC1Input, "CALL WALL", #E53935, cmeZoneInput)
+        cmeDraw(lvC2, cmeC2Input, "CALL 2", #FB8C00, cmeZoneInput)
+        cmeDraw(lvM,  cmeMInput,  "MAGNET", #FDD835, cmeMagBandInput)
+        cmeDraw(lvP2, cmeP2Input, "PUT 2", #43A047, cmeZoneInput)
+        cmeDraw(lvP1, cmeP1Input, "PUT WALL", #00897B, cmeZoneInput)
+
 // Cleanup old signal labels
 if array.size(label.all) > 450
     label.delete(array.shift(label.all))
@@ -1086,7 +1187,7 @@ if showDashInput and barstate.islast
         msgBg := P_BULL_DK
         msgTx := P_BULL
     else
-        msg := eChop and isChop ? "⛔ ตลาด Sideways (Chop " + str.tostring(chopVotes) + "/" + str.tostring(chopMax) + ") · ห้ามเทรด รอตลาดมีทิศ" : not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอสัญญาณ Pulse"
+        msg := eCme and inMagnet ? "🟡 ราคาอยู่ในโซน Magnet CME · ห้ามเทรด รอราคาออกจากโซน" : eChop and isChop ? "⛔ ตลาด Sideways (Chop " + str.tostring(chopVotes) + "/" + str.tostring(chopMax) + ") · ห้ามเทรด รอตลาดมีทิศ" : not adxOk and eADX ? "⏳ ADX " + str.tostring(adx, "0.0") + " < " + str.tostring(adxThr, "0") + " · ตลาดยังไม่มีแรง รอก่อน" : "⏳ รอสัญญาณ Pulse"
         msgTx := P_MUTED
 
     // ── kill zones
@@ -1112,6 +1213,7 @@ if showDashInput and barstate.islast
     rows += isPC ? 2 : 0
     rows += moneyOnInput ? (isPC ? 2 : 1) : 0
     rows += showKzInput ? 1 : 0
+    rows += useCmeInput ? 1 : 0
 
     if not na(dashTable)
         table.delete(dashTable)
@@ -1185,6 +1287,14 @@ if showDashInput and barstate.islast
             table.cell(dashTable, 1, r, "DD -" + str.tostring(M.maxDD, "0.0") + "% · last " + (mTot > 0 ? fmtUsdS(M.lastPnl) : "—") + " · ⚠ จำลอง", text_color = P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_right)
             table.merge_cells(dashTable, 1, r, 2, r)
             r += 1
+    // CME levels row
+    if useCmeInput
+        string cmeTx = "C " + (na(lvC1) ? "—" : str.tostring(lvC1, "0")) + "/" + (na(lvC2) ? "—" : str.tostring(lvC2, "0")) + " · M " + (na(lvM) ? "—" : str.tostring(lvM, "0")) + " · P " + (na(lvP2) ? "—" : str.tostring(lvP2, "0")) + "/" + (na(lvP1) ? "—" : str.tostring(lvP1, "0"))
+        color cmeCol = inMagnet ? P_YELLOW : nearCall ? P_BEAR : nearPut ? P_BULL : P_TEXT
+        table.cell(dashTable, 0, r, "CME " + cmeWhere, text_color = cmeCol, bgcolor = P_CELL, text_size = fsz, text_halign = text.align_left)
+        table.cell(dashTable, 1, r, cmeTx, text_color = P_TEXT, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
+        table.merge_cells(dashTable, 1, r, 2, r)
+        r += 1
     // kill zone countdown
     if showKzInput
         table.cell(dashTable, 0, r, kzTx + barTx, text_color = inKz ? P_YELLOW : P_MUTED, bgcolor = P_BG, text_size = fsz, text_halign = text.align_left)
