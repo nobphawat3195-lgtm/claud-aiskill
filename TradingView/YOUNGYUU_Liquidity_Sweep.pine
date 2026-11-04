@@ -1,8 +1,8 @@
 //@version=6
 // ════════════════════════════════════════════════════════════════
-// YOUNGYUU Liquidity Sweep v1.0 — เขียนใหม่ทั้งหมดจากแนวคิด HTF bias + liquidity sweep + MSS
+// YOUNGYUU Liquidity Sweep v1.1 — เขียนใหม่ทั้งหมดจากแนวคิด HTF bias + liquidity sweep + MSS
 // (ไม่ใช่โค้ดของ Liquidity Master · ต้นฉบับเป็น Protected · ผลอาจต่างจากต้นฉบับ)
-// Bias:  โครงสร้าง H4 และ Daily ไปทางเดียวกัน (ไม่ตรงกัน = ยืนดู)
+// Bias:  โครงสร้าง H4 (ค่าเริ่มต้น) หรือ H4 + Daily ไปทางเดียวกัน · เลือกปิดได้
 // Sweep: ราคากวาด PDL / swing low (ฝั่ง BUY) แล้วปิดกลับเหนือระดับ
 // MSS:   ภายใน N แท่ง ปิดทะลุ swing high ย่อยล่าสุด → BUY · SL ใต้ไส้ที่กวาด
 // SELL กลับด้าน (กวาด PDH / swing high แล้วปิดหลุด swing low ย่อย)
@@ -10,7 +10,7 @@
 indicator("YOUNGYUU Liquidity Sweep", overlay = true, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
 
 const string LG = "💧 Liquidity Sweep"
-lBiasOn  = input.bool(true, "ต้องให้ H4 + Daily ไปทางเดียวกัน", group = LG)
+lBiasMd  = input.string("H4 อย่างเดียว", "กรองทิศ (Bias)", options = ["H4 อย่างเดียว", "H4 + Daily ตรงกัน", "ไม่กรอง"], group = LG, tooltip = "H4 + Daily ตรงกัน = เข้มสุด ไม้น้อยมาก\nH4 อย่างเดียว = สมดุล\nไม่กรอง = ไม้เยอะสุด")
 lHtfA    = input.timeframe("240", "TF โครงสร้าง 1", group = LG, inline = "lh")
 lHtfB    = input.timeframe("D", "2", group = LG, inline = "lh")
 lSwLen   = input.int(10, "Swing liquidity (แท่ง)", minval = 2, group = LG)
@@ -19,6 +19,7 @@ lWait    = input.int(20, "รอ MSS ไม่เกิน (แท่ง)", minv
 lBuf     = input.float(0.10, "SL เผื่อเลยไส้ (× ATR)", minval = 0.0, step = 0.05, group = LG)
 lUsePD   = input.bool(true, "ใช้ PDH / PDL เป็น liquidity", group = LG)
 lShow    = input.bool(true, "แสดง PDH/PDL + ป้าย Sweep / MSS", group = LG)
+lDebug   = input.bool(true, "แสดงตัวนับ (ดูว่าสัญญาณหายตรงไหน)", group = LG)
 
 float lAtr = ta.atr(14)
 
@@ -40,7 +41,7 @@ lStruct(int len) =>
 
 int lBA = request.security(syminfo.tickerid, lHtfA, lStruct(3)[1], lookahead = barmerge.lookahead_on)
 int lBB = request.security(syminfo.tickerid, lHtfB, lStruct(3)[1], lookahead = barmerge.lookahead_on)
-int lBias = lBiasOn ? (lBA == lBB ? lBA : 0) : 2   // 2 = ไม่กรอง
+int lBias = lBiasMd == "ไม่กรอง" ? 2 : lBiasMd == "H4 อย่างเดียว" ? (na(lBA) ? 0 : lBA) : (not na(lBA) and not na(lBB) and lBA == lBB ? lBA : 0)   // 2 = ไม่กรอง
 
 [lPDH, lPDL] = request.security(syminfo.tickerid, "D", [high[1], low[1]], lookahead = barmerge.lookahead_on)
 
@@ -76,26 +77,36 @@ var float lMssLv = na
 bool  lBuy  = false
 bool  lSell = false
 float lSL   = na
+var int lCSw = 0
+var int lCBias = 0
+var int lCMss = 0
+var int lCExp = 0
+float lHi5 = ta.highest(high, 5)
+float lLo5 = ta.lowest(low, 5)
 
 if barstate.isconfirmed
+    lCSw += (lSwBull or lSwBear) ? 1 : 0
     if lSwBull and (lBias == 1 or lBias == 2)
+        lCBias += 1
         lState := 1
         lSwX   := low
         lSwBar := bar_index
-        lMssLv := lMinorH
+        lMssLv := not na(lMinorH) and lMinorH > close ? lMinorH : lHi5
         if lShow
             label.new(bar_index, low, "$$$", style = label.style_label_up, color = color.new(#5AA9FF, 20), textcolor = #FFFFFF, size = size.tiny)
     else if lSwBear and (lBias == -1 or lBias == 2)
+        lCBias += 1
         lState := -1
         lSwX   := high
         lSwBar := bar_index
-        lMssLv := lMinorL
+        lMssLv := not na(lMinorL) and lMinorL < close ? lMinorL : lLo5
         if lShow
             label.new(bar_index, high, "$$$", style = label.style_label_down, color = color.new(#5AA9FF, 20), textcolor = #FFFFFF, size = size.tiny)
     else if lState != 0
         lSwX := lState == 1 ? math.min(lSwX, low) : math.max(lSwX, high)
         bool mss = not na(lMssLv) and (lState == 1 ? close > lMssLv : close < lMssLv)
         if mss
+            lCMss += 1
             lSL   := lState == 1 ? lSwX - lBuf * lAtr : lSwX + lBuf * lAtr
             lBuy  := lState == 1
             lSell := lState == -1
@@ -104,10 +115,18 @@ if barstate.isconfirmed
                 label.new(bar_index, lMssLv, "MSS", style = label.style_label_left, color = color.new(#374151, 10), textcolor = #FFFFFF, size = size.tiny)
             lState := 0
         else if bar_index - lSwBar > lWait or (lState == 1 ? lBias == -1 : lBias == 1)
+            lCExp += 1
             lState := 0
 
 plot(lShow and lUsePD ? lPDH : na, "PDH", color = color.new(#9CA3AF, 40), style = plot.style_stepline)
 plot(lShow and lUsePD ? lPDL : na, "PDL", color = color.new(#9CA3AF, 40), style = plot.style_stepline)
+
+// ── ตัวนับดีบัก: เห็นว่าสัญญาณหายไปขั้นไหน
+var label lDbg = na
+if lDebug and barstate.islast
+    label.delete(lDbg)
+    string bTx = lBias == 2 ? "ไม่กรอง" : lBias == 1 ? "ขึ้น ▲" : lBias == -1 ? "ลง ▼" : "ไม่ชัด (ยืนดู)"
+    lDbg := label.new(bar_index + 2, high, "Liquidity ตัวนับ\nกวาด (sweep): " + str.tostring(lCSw) + "\nผ่าน Bias: " + str.tostring(lCBias) + "\nเกิด MSS = สัญญาณ: " + str.tostring(lCMss) + "\nหมดเวลา/ยกเลิก: " + str.tostring(lCExp) + "\nBias ตอนนี้: " + bTx, style = label.style_label_left, color = color.new(#26324F, 10), textcolor = #FFFFFF, size = size.small, textalign = text.align_left)
 
 // ════════════════════════════════════════════════════════════════
 // YOUNGYUU ทดลองเงิน · Dashboard Module v4.3  (Pine Script v6)
