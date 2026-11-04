@@ -95,7 +95,7 @@ if (pState == 2 or pState == -2) and barstate.isconfirmed
         pState := 0
 
 // ════════════════════════════════════════════════════════════════
-// YOUNGYUU ทดลองเงิน · Dashboard Module v4.2  (Pine Script v6)
+// YOUNGYUU ทดลองเงิน · Dashboard Module v4.3  (Pine Script v6)
 // ────────────────────────────────────────────────────────────────
 // วิธีใช้:
 //   1) copy ทั้งไฟล์นี้ไปวาง "ต่อท้ายสุด" ของ indicator ที่ต้องการ (ต้องเป็น //@version=6)
@@ -167,6 +167,7 @@ yyTPf5     = input.float(2500, "5", minval = 0.001, group = YYG3, display = disp
 
 yyShow     = input.bool(true, "แสดงแผง", group = YYG2, display = display.none)
 yyTheme    = input.string("อัตโนมัติ", "ธีมแผง", options = ["อัตโนมัติ", "สว่าง", "มืด"], group = YYG2, display = display.none, tooltip = "อัตโนมัติ: ตามสีพื้นกราฟ")
+yyPanel    = input.string("ย่อ (มือถือ)", "ขนาดแผง", options = ["ย่อ (มือถือ)", "เต็ม"], group = YYG2, display = display.none, tooltip = "ย่อ: ~16 แถว เฉพาะผลลัพธ์ที่ใช้ตัดสิน + ไม้ปัจจุบัน\nเต็ม: ทุกแถว (Trade / Stats / ทุน / รายวัน-รายเดือน)")
 yyShowDM   = input.bool(true, "แสดงผลรายวัน / รายเดือน", group = YYG2, display = display.none)
 yyMonthsN  = input.int(3, "แสดงย้อนหลังกี่เดือน", minval = 0, maxval = 12, group = YYG2, display = display.none)
 yyShowTP45 = input.bool(true, "แสดง TP4 / TP5 ในแผง", group = YYG2, display = display.none)
@@ -610,7 +611,9 @@ if barstate.islast and yyShow
     float  y_tpX   = y_open ? array.get(yt.tp, math.min(yyLvl, 5) - 1) : na
     int    y_nTP   = yyShowTP45 ? 5 : 3
 
-    int y_rows = 2 + (1 + 3 + y_nTP + 1) + (1 + 7) + (1 + 6) + (yyShowDM ? 1 + 6 + math.min(yyMonthsN, array.size(yyMonK)) : 0) + 1
+    bool y_full = yyPanel == "เต็ม"
+    int  y_nmS  = math.min(yyMonthsN, array.size(yyMonK))
+    int y_rows = not y_full ? 2 + 7 + (y_open ? 5 : 2) + (y_nmS > 0 ? 1 : 0) + 1 : 2 + (1 + 3 + y_nTP + 1) + (1 + 7) + (1 + 6) + (yyShowDM ? 1 + 6 + math.min(yyMonthsN, array.size(yyMonK)) : 0) + 1
     if not na(yyTbl)
         table.delete(yyTbl)
     yyTbl := table.new(y_pos, 2, y_rows, bgcolor = y_cBG, border_color = y_cBRD, border_width = 1, frame_color = y_cBRD, frame_width = 1, force_overlay = true)
@@ -626,55 +629,86 @@ if barstate.islast and yyShow
     table.merge_cells(yyTbl, 0, y_row, 1, y_row)
     y_row += 1
 
-    // — Trade —
-    y_row := yySec(yyTbl, y_row, "Trade", y_cMUT, y_cSEC, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Entry", y_open ? y_side + " @ " + str.tostring(yt.entry, format.mintick) : "—", y_cMUT, y_open ? (yt.dir == 1 ? y_cUP : y_cDN) : y_cMUT, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "SL", y_open ? (yt.be ? "BE @ " : "") + str.tostring(yt.sl, format.mintick) : "—", y_cMUT, yt.be ? y_cWN : y_cDN, y_cBG, y_sz)
-    for y_i = 0 to y_nTP - 1
-        bool y_hit = y_open and yt.nHit > y_i
-        y_row := yyRow(yyTbl, y_row, "TP" + str.tostring(y_i + 1), y_open ? (y_hit ? "✓ " : "") + str.tostring(array.get(yt.tp, y_i), format.mintick) + (not yyScale and y_i + 1 == yyLvl ? "  ← ปิด" : "") : "—", y_cMUT, y_hit ? y_cUP : y_cOP, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "R:R", y_open ? (y_floatR >= 0 ? "+" : "") + str.tostring(y_floatR, "0.00") + "R" : "—", y_cMUT, y_open ? yyColT(y_floatR, y_lt) : y_cMUT, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "SL Dist", y_open ? str.tostring(math.round(yt.risk / yyPt)) + " จุด · " + str.tostring(yt.risk / yt.entry * 100.0, "0.00") + "%" : "—", y_cMUT, y_cOP, y_cBG, y_sz)
-
-    // — Stats · All-Time —
-    y_row := yySec(yyTbl, y_row, "Stats · All-Time", y_cMUT, y_cSEC, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Trades", str.tostring(ys.n), y_cMUT, y_cTXT, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Wins", str.tostring(ys.win), y_cMUT, y_cUP, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Losses", str.tostring(ys.loss), y_cMUT, y_cDN, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Win rate", str.tostring(y_wr, "0") + "%  " + y_wrBar, y_cMUT, y_cAC, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Avg R · PF", (y_avgR >= 0 ? "+" : "") + str.tostring(y_avgR, "0.00") + "R · " + str.tostring(y_pf, "0.00"), y_cMUT, y_pf >= 1.1 ? y_cUP : y_pf >= 1.0 ? y_cWN : y_cDN, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "แพ้ติดกันสูงสุด", str.tostring(ys.maxL) + " ไม้", y_cMUT, ys.maxL >= 6 ? y_cWN : y_cTXT, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Form", y_form == "" ? "—" : y_form, y_cMUT, y_cAC, y_cBG, y_sz)
-
-    // — 💰 ทุน —
-    y_row := yySec(yyTbl, y_row, "💰 ทุน " + yyMoney(yyCapital) + " · " + y_lotTx, y_cMUT, y_cSEC, y_sz)
-    y_row := yyRow(yyTbl, y_row, "ยอดเงิน", yyMoney(ys.eq), y_cMUT, yyColT(y_net, y_lt), y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "กำไรสุทธิ", yyMoneyS(y_net) + " (" + yyPct(y_netPct) + ")", y_cMUT, yyColT(y_net, y_lt), y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "Max DD", "-" + str.tostring(ys.dd, "0.0") + "%", y_cMUT, ys.dd >= 20 ? y_cDN : y_cWN, y_cBG, y_sz)
-    string y_pass = ys.eq <= 0 ? "❌ ไม่ผ่าน · พอร์ตแตก" : ys.n < yyPassN ? "⏳ ไม้ยังไม่ถึง " + str.tostring(yyPassN) + " (" + str.tostring(ys.n) + ")" : y_pf < yyPassPF ? "❌ ไม่ผ่าน · PF " + str.tostring(y_pf, "0.00") + " < " + str.tostring(yyPassPF, "0.0#") : ys.dd >= yyPassDD ? "❌ ไม่ผ่าน · DD " + str.tostring(ys.dd, "0") + "% ≥ " + str.tostring(yyPassDD, "0") + "%" : y_net <= 0 ? "❌ ไม่ผ่าน · ขาดทุน" : "✅ ผ่าน"
-    color  y_pCol = str.startswith(y_pass, "✅") ? y_cUP : str.startswith(y_pass, "⏳") ? y_cWN : y_cDN
-    y_row := yyRow(yyTbl, y_row, "ผ่านเกณฑ์?", y_pass, y_cMUT, y_pCol, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "ไม้นี้ · ลอย", y_open ? str.tostring(yt.lot, "0.00") + " lot · " + yyMoneyS(y_floatP) : "—", y_cMUT, y_open ? yyColT(y_floatP, y_lt) : y_cMUT, y_cBG, y_sz)
-    y_row := yyRow(yyTbl, y_row, "ถ้า SL / TP", y_open ? "-" + yyMoney(math.abs(yt.entry - yt.sl) * y_vpp) + " / +" + yyMoney(math.abs(y_tpX - yt.entry) * y_vpp) : "—", y_cMUT, y_cOP, y_cBG, y_sz)
-
-    // — 📅 รายวัน / รายเดือน —
-    if yyShowDM
-        y_row := yySec(yyTbl, y_row, "📅 รายวัน / รายเดือน", y_cMUT, y_cSEC, y_sz)
-        y_row := yyRow(yyTbl, y_row, "วันนี้", yyMoneyS(y_tdP) + " · " + str.tostring(y_tdN) + " ไม้", y_cMUT, yyColT(y_tdP, y_lt), y_cBG, y_sz)
-        y_row := yyRow(yyTbl, y_row, "เฉลี่ยต่อวัน", yyMoneyS(y_perDay) + " · วันบวก " + str.tostring(y_dAll > 0 ? 100.0 * y_dPos / y_dAll : 0.0, "0") + "%", y_cMUT, yyColT(y_perDay, y_lt), y_cBG, y_sz)
-        y_row := yyRow(yyTbl, y_row, "วันดีสุด / แย่สุด", na(y_dBest) ? "—" : yyMoneyS(y_dBest) + " / " + yyMoneyS(y_dWorst), y_cMUT, y_cOP, y_cBG, y_sz)
-        y_row := yyRow(yyTbl, y_row, "เดือนนี้", yyMoneyS(y_mP) + " · " + str.tostring(y_mN) + " ไม้", y_cMUT, yyColT(y_mP, y_lt), y_cBG, y_sz)
+    if not y_full
+        // — ผลลัพธ์ — (ใช้ตัดสิน)
+        string y_passC = ys.eq <= 0 ? "❌ ไม่ผ่าน · พอร์ตแตก" : ys.n < yyPassN ? "⏳ ไม้ยังไม่ถึง " + str.tostring(yyPassN) + " (" + str.tostring(ys.n) + ")" : y_pf < yyPassPF ? "❌ ไม่ผ่าน · PF " + str.tostring(y_pf, "0.00") : ys.dd >= yyPassDD ? "❌ ไม่ผ่าน · DD " + str.tostring(ys.dd, "0") + "%" : y_net <= 0 ? "❌ ไม่ผ่าน · ขาดทุน" : "✅ ผ่าน"
+        color  y_pColC = str.startswith(y_passC, "✅") ? y_cUP : str.startswith(y_passC, "⏳") ? y_cWN : y_cDN
+        y_row := yySec(yyTbl, y_row, "ผลลัพธ์ · ทุน " + yyMoney(yyCapital) + " · " + y_lotTx, y_cMUT, y_cSEC, y_sz)
+        y_row := yyRow(yyTbl, y_row, "ผ่านเกณฑ์?", y_passC, y_cMUT, y_pColC, y_cBG, y_sz)
         y_row := yyRow(yyTbl, y_row, "เฉลี่ยต่อเดือน", yyMoneyS(y_perMon) + " (" + yyPct(yyCapital > 0 ? y_perMon / yyCapital * 100.0 : 0.0) + ")", y_cMUT, yyColT(y_perMon, y_lt), y_cBG, y_sz)
-        y_row := yyRow(yyTbl, y_row, "เดือนบวก · ดี/แย่", str.tostring(y_mPos) + "/" + str.tostring(y_mAll) + " · " + (na(y_mBest) ? "—" : yyMoneyS(y_mBest) + " / " + yyMoneyS(y_mWorst)), y_cMUT, y_cOP, y_cBG, y_sz)
-        int y_nm = array.size(yyMonK)
-        int y_show = math.min(yyMonthsN, y_nm)
-        if y_show > 0
-            for y_q = y_nm - 1 to y_nm - y_show
-                float y_mp = array.get(yyMonP, y_q)
-                y_row := yyRow(yyTbl, y_row, "  " + yyMonthTx(array.get(yyMonK, y_q)), yyMoneyS(y_mp) + " · " + str.tostring(array.get(yyMonC, y_q)) + " ไม้", y_cMUT, yyColT(y_mp, y_lt), y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "เฉลี่ยต่อวัน", yyMoneyS(y_perDay) + " · วันบวก " + str.tostring(y_dAll > 0 ? 100.0 * y_dPos / y_dAll : 0.0, "0") + "%", y_cMUT, yyColT(y_perDay, y_lt), y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "กำไรสุทธิ · DD", yyMoneyS(y_net) + " (" + yyPct(y_netPct) + ") · -" + str.tostring(ys.dd, "0.0") + "%", y_cMUT, yyColT(y_net, y_lt), y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "ไม้ · ชนะ", str.tostring(ys.n) + " · " + str.tostring(y_wr, "0") + "%  " + y_wrBar, y_cMUT, y_cAC, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Avg R · PF", (y_avgR >= 0 ? "+" : "") + str.tostring(y_avgR, "0.00") + "R · " + str.tostring(y_pf, "0.00"), y_cMUT, y_pf >= 1.1 ? y_cUP : y_pf >= 1.0 ? y_cWN : y_cDN, y_cBG, y_sz)
+        // — ไม้ปัจจุบัน —
+        y_row := yySec(yyTbl, y_row, "ไม้ปัจจุบัน", y_cMUT, y_cSEC, y_sz)
+        if y_open
+            string y_tpc = ""
+            for y_i = 1 to 5
+                y_tpc += (yt.nHit >= y_i ? "✓" : "·") + str.tostring(y_i) + (y_i < 5 ? " " : "")
+            y_row := yyRow(yyTbl, y_row, "Entry", y_side + " @ " + str.tostring(yt.entry, format.mintick), y_cMUT, yt.dir == 1 ? y_cUP : y_cDN, y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "SL", (yt.be ? "BE @ " : "") + str.tostring(yt.sl, format.mintick) + " · " + str.tostring(math.round(yt.risk / yyPt)) + " จุด", y_cMUT, yt.be ? y_cWN : y_cDN, y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "TP", y_tpc, y_cMUT, yt.nHit > 0 ? y_cUP : y_cOP, y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "ลอย · R", yyMoneyS(y_floatP) + " · " + (y_floatR >= 0 ? "+" : "") + str.tostring(y_floatR, "0.00") + "R", y_cMUT, yyColT(y_floatP, y_lt), y_cBG, y_sz)
+        else
+            y_row := yyRow(yyTbl, y_row, "สถานะ", "⏳ รอสัญญาณ", y_cMUT, y_cMUT, y_cBG, y_sz)
+        if y_nmS > 0
+            string y_mtx = ""
+            int y_nm0 = array.size(yyMonK)
+            for y_q = y_nm0 - 1 to y_nm0 - y_nmS
+                float y_mp0 = array.get(yyMonP, y_q)
+                y_mtx += (y_q < y_nm0 - 1 ? " · " : "") + array.get(str.split(yyMonthTx(array.get(yyMonK, y_q)), " "), 0) + " " + (y_mp0 >= 0 ? "+" : "-") + "$" + str.tostring(math.abs(y_mp0), "0")
+            y_row := yyRow(yyTbl, y_row, "เดือนก่อนๆ", y_mtx, y_cMUT, y_cOP, y_cBG, y_sz)
+    else
+        // — Trade —
+        y_row := yySec(yyTbl, y_row, "Trade", y_cMUT, y_cSEC, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Entry", y_open ? y_side + " @ " + str.tostring(yt.entry, format.mintick) : "—", y_cMUT, y_open ? (yt.dir == 1 ? y_cUP : y_cDN) : y_cMUT, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "SL", y_open ? (yt.be ? "BE @ " : "") + str.tostring(yt.sl, format.mintick) : "—", y_cMUT, yt.be ? y_cWN : y_cDN, y_cBG, y_sz)
+        for y_i = 0 to y_nTP - 1
+            bool y_hit = y_open and yt.nHit > y_i
+            y_row := yyRow(yyTbl, y_row, "TP" + str.tostring(y_i + 1), y_open ? (y_hit ? "✓ " : "") + str.tostring(array.get(yt.tp, y_i), format.mintick) + (not yyScale and y_i + 1 == yyLvl ? "  ← ปิด" : "") : "—", y_cMUT, y_hit ? y_cUP : y_cOP, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "R:R", y_open ? (y_floatR >= 0 ? "+" : "") + str.tostring(y_floatR, "0.00") + "R" : "—", y_cMUT, y_open ? yyColT(y_floatR, y_lt) : y_cMUT, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "SL Dist", y_open ? str.tostring(math.round(yt.risk / yyPt)) + " จุด · " + str.tostring(yt.risk / yt.entry * 100.0, "0.00") + "%" : "—", y_cMUT, y_cOP, y_cBG, y_sz)
+
+        // — Stats · All-Time —
+        y_row := yySec(yyTbl, y_row, "Stats · All-Time", y_cMUT, y_cSEC, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Trades", str.tostring(ys.n), y_cMUT, y_cTXT, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Wins", str.tostring(ys.win), y_cMUT, y_cUP, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Losses", str.tostring(ys.loss), y_cMUT, y_cDN, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Win rate", str.tostring(y_wr, "0") + "%  " + y_wrBar, y_cMUT, y_cAC, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Avg R · PF", (y_avgR >= 0 ? "+" : "") + str.tostring(y_avgR, "0.00") + "R · " + str.tostring(y_pf, "0.00"), y_cMUT, y_pf >= 1.1 ? y_cUP : y_pf >= 1.0 ? y_cWN : y_cDN, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "แพ้ติดกันสูงสุด", str.tostring(ys.maxL) + " ไม้", y_cMUT, ys.maxL >= 6 ? y_cWN : y_cTXT, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Form", y_form == "" ? "—" : y_form, y_cMUT, y_cAC, y_cBG, y_sz)
+
+        // — 💰 ทุน —
+        y_row := yySec(yyTbl, y_row, "💰 ทุน " + yyMoney(yyCapital) + " · " + y_lotTx, y_cMUT, y_cSEC, y_sz)
+        y_row := yyRow(yyTbl, y_row, "ยอดเงิน", yyMoney(ys.eq), y_cMUT, yyColT(y_net, y_lt), y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "กำไรสุทธิ", yyMoneyS(y_net) + " (" + yyPct(y_netPct) + ")", y_cMUT, yyColT(y_net, y_lt), y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "Max DD", "-" + str.tostring(ys.dd, "0.0") + "%", y_cMUT, ys.dd >= 20 ? y_cDN : y_cWN, y_cBG, y_sz)
+        string y_pass = ys.eq <= 0 ? "❌ ไม่ผ่าน · พอร์ตแตก" : ys.n < yyPassN ? "⏳ ไม้ยังไม่ถึง " + str.tostring(yyPassN) + " (" + str.tostring(ys.n) + ")" : y_pf < yyPassPF ? "❌ ไม่ผ่าน · PF " + str.tostring(y_pf, "0.00") + " < " + str.tostring(yyPassPF, "0.0#") : ys.dd >= yyPassDD ? "❌ ไม่ผ่าน · DD " + str.tostring(ys.dd, "0") + "% ≥ " + str.tostring(yyPassDD, "0") + "%" : y_net <= 0 ? "❌ ไม่ผ่าน · ขาดทุน" : "✅ ผ่าน"
+        color  y_pCol = str.startswith(y_pass, "✅") ? y_cUP : str.startswith(y_pass, "⏳") ? y_cWN : y_cDN
+        y_row := yyRow(yyTbl, y_row, "ผ่านเกณฑ์?", y_pass, y_cMUT, y_pCol, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "ไม้นี้ · ลอย", y_open ? str.tostring(yt.lot, "0.00") + " lot · " + yyMoneyS(y_floatP) : "—", y_cMUT, y_open ? yyColT(y_floatP, y_lt) : y_cMUT, y_cBG, y_sz)
+        y_row := yyRow(yyTbl, y_row, "ถ้า SL / TP", y_open ? "-" + yyMoney(math.abs(yt.entry - yt.sl) * y_vpp) + " / +" + yyMoney(math.abs(y_tpX - yt.entry) * y_vpp) : "—", y_cMUT, y_cOP, y_cBG, y_sz)
+
+        // — 📅 รายวัน / รายเดือน —
+        if yyShowDM
+            y_row := yySec(yyTbl, y_row, "📅 รายวัน / รายเดือน", y_cMUT, y_cSEC, y_sz)
+            y_row := yyRow(yyTbl, y_row, "วันนี้", yyMoneyS(y_tdP) + " · " + str.tostring(y_tdN) + " ไม้", y_cMUT, yyColT(y_tdP, y_lt), y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "เฉลี่ยต่อวัน", yyMoneyS(y_perDay) + " · วันบวก " + str.tostring(y_dAll > 0 ? 100.0 * y_dPos / y_dAll : 0.0, "0") + "%", y_cMUT, yyColT(y_perDay, y_lt), y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "วันดีสุด / แย่สุด", na(y_dBest) ? "—" : yyMoneyS(y_dBest) + " / " + yyMoneyS(y_dWorst), y_cMUT, y_cOP, y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "เดือนนี้", yyMoneyS(y_mP) + " · " + str.tostring(y_mN) + " ไม้", y_cMUT, yyColT(y_mP, y_lt), y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "เฉลี่ยต่อเดือน", yyMoneyS(y_perMon) + " (" + yyPct(yyCapital > 0 ? y_perMon / yyCapital * 100.0 : 0.0) + ")", y_cMUT, yyColT(y_perMon, y_lt), y_cBG, y_sz)
+            y_row := yyRow(yyTbl, y_row, "เดือนบวก · ดี/แย่", str.tostring(y_mPos) + "/" + str.tostring(y_mAll) + " · " + (na(y_mBest) ? "—" : yyMoneyS(y_mBest) + " / " + yyMoneyS(y_mWorst)), y_cMUT, y_cOP, y_cBG, y_sz)
+            int y_nm = array.size(yyMonK)
+            int y_show = math.min(yyMonthsN, y_nm)
+            if y_show > 0
+                for y_q = y_nm - 1 to y_nm - y_show
+                    float y_mp = array.get(yyMonP, y_q)
+                    y_row := yyRow(yyTbl, y_row, "  " + yyMonthTx(array.get(yyMonK, y_q)), yyMoneyS(y_mp) + " · " + str.tostring(array.get(yyMonC, y_q)) + " ไม้", y_cMUT, yyColT(y_mp, y_lt), y_cBG, y_sz)
 
     // ท้าย
-    table.cell(yyTbl, 0, y_row, "YOUNGYUU Dashboard · v4.0 · " + y_why + " · จำลองจากประวัติกราฟ", text_color = y_cMUT, bgcolor = y_cBG, text_size = size.tiny, text_halign = text.align_center)
+    table.cell(yyTbl, 0, y_row, y_full ? "YOUNGYUU Dashboard · v4.3 · " + y_why + " · จำลองจากประวัติกราฟ" : "YOUNGYUU v4.3 · จำลองจากกราฟ", text_color = y_cMUT, bgcolor = y_cBG, text_size = size.tiny, text_halign = text.align_center)
     table.cell(yyTbl, 1, y_row, "", bgcolor = y_cBG, text_size = size.tiny)
     table.merge_cells(yyTbl, 0, y_row, 1, y_row)
 else if barstate.islast and not yyShow and not na(yyTbl)
