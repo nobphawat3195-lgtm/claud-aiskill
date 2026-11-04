@@ -37,6 +37,8 @@ float yyExtSL  = na    // ← (ไม่บังคับ) ราคา SL ข�
 float yyExtTP1 = na    // ← (ไม่บังคับ) TP1 / TP2 / TP3 ของ indicator · ไม่ใส่ = ใช้ TP เป็น R
 float yyExtTP2 = na
 float yyExtTP3 = na
+bool  yyExitL  = false // ← (ไม่บังคับ) สัญญาณปิด Buy ของ indicator · ใช้เมื่อเปิด "ปิดไม้ตามสัญญาณออก"
+bool  yyExitS  = false // ← (ไม่บังคับ) สัญญาณปิด Sell ของ indicator
 // ▲▲▲ แก้ 2 บรรทัดนี้ ▲▲▲
 
 const string YYG1 = "💰 YY ทดลองเงิน"
@@ -55,6 +57,7 @@ yyLot      = input.float(0.01, "Lot", options = [0.01, 0.02, 0.03, 0.05, 0.1, 0.
 yyRisk     = input.float(1.0, "Risk %", options = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0], group = YYG1, display = display.none)
 yyExit     = input.string("ปิดหมดที่ TP2", "ปิดไม้แบบ", options = ["ปิดหมดที่ TP1", "ปิดหมดที่ TP2", "ปิดหมดที่ TP3", "ปิดหมดที่ TP4", "ปิดหมดที่ TP5", YYX_SC], group = YYG1, display = display.none)
 yyBE       = input.bool(true, "ถึง TP1 แล้วเลื่อน SL มาที่ทุน", group = YYG1, display = display.none)
+yyUseExit  = input.bool(false, "ปิดไม้ตามสัญญาณออกของ indicator (ถ้ามี)", group = YYG1, display = display.none, tooltip = "ปิดที่ราคาปิดแท่ง เมื่อ indicator ส่งสัญญาณออก · SL/TP ยังทำงานตามปกติ")
 yyNewSig   = input.string("ถือไม้เดิม", "มีสัญญาณใหม่ระหว่างถือไม้", options = ["ถือไม้เดิม", "ปิดแล้วเข้าใหม่"], group = YYG1, display = display.none)
 yyContract = input.float(100.0, "1 lot = กี่ ounce", minval = 1.0, group = YYG1, display = display.none, tooltip = "ทองคำ XAUUSD มาตรฐาน = 100")
 yyComm     = input.float(7.0, "ค่าคอม ($ ต่อ 1 lot ไป-กลับ)", minval = 0.0, step = 0.5, group = YYG1, display = display.none)
@@ -371,6 +374,11 @@ if yt.dir != 0 and bar_index > yt.bar
                 yyTake(yt, yt.rem, y_p)
                 yyClose(yt, ys, "TP" + str.tostring(y_k + 1))
                 break
+
+// ปิดไม้ตามสัญญาณออกของ indicator
+if yyUseExit and yt.dir != 0 and bar_index > yt.bar and barstate.isconfirmed and ((yt.dir == 1 and yyExitL) or (yt.dir == -1 and yyExitS))
+    yyTake(yt, yt.rem, close)
+    yyClose(yt, ys, "ออกตามสัญญาณ")
 
 bool yyReady = yyFix or not na(yyATR)
 if yySig != 0 and (yt.dir == 0 or yyNewSig == "ปิดแล้วเข้าใหม่") and yyReady and ys.eq > 0
