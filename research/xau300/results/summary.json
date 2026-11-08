@@ -1,0 +1,281 @@
+{
+ "period": [
+  "2025-10-31 00:00:00",
+  "2026-10-31 00:00:00"
+ ],
+ "bars": 485280,
+ "first_bar": "2025-10-01 00:00:00",
+ "last_bar": "2026-10-30 23:59:00",
+ "missing_days": [
+  "2026-10-11",
+  "2026-10-25"
+ ],
+ "configs": {
+  "E0_edge_fixed001": {
+   "trades": 261,
+   "wins": 92,
+   "losses": 115,
+   "breakeven": 54,
+   "net": 930.0550000000185,
+   "pf": 1.3000909253998791,
+   "gross_profit": 4029.2990000000027,
+   "gross_loss": 3099.243999999984,
+   "eq_dd_pct": 194.6207787224271,
+   "bal_dd_pct": 213.4713724319719,
+   "exp_r": 0.20173855523750867,
+   "t_r": 2.6520669519646827,
+   "best_trade": 111.15999999999985,
+   "best_share_pct": 11.951981334436958,
+   "halted": false,
+   "halt_time": null,
+   "signals": 261,
+   "skips": {},
+   "exits": {
+    "BE": 54,
+    "SL": 102,
+    "TP": 70,
+    "time": 35
+   },
+   "monthly": {
+    "2025-11": [
+     26,
+     28.38
+    ],
+    "2025-12": [
+     6,
+     -43.1
+    ],
+    "2026-01": [
+     20,
+     -51.04
+    ],
+    "2026-02": [
+     24,
+     -225.36
+    ],
+    "2026-03": [
+     29,
+     -174.91
+    ],
+    "2026-04": [
+     24,
+     315.6
+    ],
+    "2026-05": [
+     21,
+     246.4
+    ],
+    "2026-06": [
+     25,
+     218.25
+    ],
+    "2026-07": [
+     27,
+     248.05
+    ],
+    "2026-08": [
+     24,
+     97.8
+    ],
+    "2026-09": [
+     27,
+     292.2
+    ],
+    "2026-10": [
+     8,
+     -22.22
+    ]
+   },
+   "spread_cost": 73.08000000000001,
+   "halves": {
+    "H1_Nov25-Apr26": {
+     "trades": 129,
+     "net": -150.4219999999891,
+     "pf": 0.9247183481697625,
+     "eq_dd_pct": 194.6207787224271,
+     "exp_r": 0.08671726203589612,
+     "t_r": 0.8061663647776729,
+     "halted": false
+    },
+    "H2_May26-Oct26": {
+     "trades": 132,
+     "net": 1080.4770000000076,
+     "pf": 1.981251833358927,
+     "eq_dd_pct": 16.018959425950545,
+     "exp_r": 0.31414572813908453,
+     "t_r": 2.9340265926454405,
+     "halted": false
+    }
+   },
+   "config": {
+    "fixed_lot": 0.01,
+    "daily_loss_pct": 0.0,
+    "max_dd_pct": 0.0
+   }
+  },
+  "P1_safe_1pct": {
+   "trades": 0,
+   "wins": 0,
+   "losses": 0,
+   "breakeven": 0,
+   "net": 0.0,
+   "pf": null,
+   "gross_profit": 0,
+   "gross_loss": 0,
+   "eq_dd_pct": 0.0,
+   "bal_dd_pct": 0.0,
+   "exp_r": 0.0,
+   "t_r": 0.0,
+   "best_trade": 0.0,
+   "best_share_pct": null,
+   "halted": false,
+   "halt_time": null,
+   "signals": 261,
+   "skips": {
+    "below_min_volume": 261
+   },
+   "exits": {},
+   "monthly": {},
+   "spread_cost": 0,
+   "halves": {
+    "H1_Nov25-Apr26": {
+     "trades": 0,
+     "net": 0.0,
+     "pf": null,
+     "eq_dd_pct": 0.0,
+     "exp_r": 0.0,
+     "t_r": 0.0,
+     "halted": false
+    },
+    "H2_May26-Oct26": {
+     "trades": 0,
+     "net": 0.0,
+     "pf": null,
+     "eq_dd_pct": 0.0,
+     "exp_r": 0.0,
+     "t_r": 0.0,
+     "halted": false
+    }
+   },
+   "config": {
+    "risk_pct": 1.0
+   }
+  },
+  "P2_balanced_2pct": {
+   "trades": 0,
+   "wins": 0,
+   "losses": 0,
+   "breakeven": 0,
+   "net": 0.0,
+   "pf": null,
+   "gross_profit": 0,
+   "gross_loss": 0,
+   "eq_dd_pct": 0.0,
+   "bal_dd_pct": 0.0,
+   "exp_r": 0.0,
+   "t_r": 0.0,
+   "best_trade": 0.0,
+   "best_share_pct": null,
+   "halted": false,
+   "halt_time": null,
+   "signals": 261,
+   "skips": {
+    "below_min_volume": 261
+   },
+   "exits": {},
+   "monthly": {},
+   "spread_cost": 0,
+   "halves": {
+    "H1_Nov25-Apr26": {
+     "trades": 0,
+     "net": 0.0,
+     "pf": null,
+     "eq_dd_pct": 0.0,
+     "exp_r": 0.0,
+     "t_r": 0.0,
+     "halted": false
+    },
+    "H2_May26-Oct26": {
+     "trades": 0,
+     "net": 0.0,
+     "pf": null,
+     "eq_dd_pct": 0.0,
+     "exp_r": 0.0,
+     "t_r": 0.0,
+     "halted": false
+    }
+   },
+   "config": {
+    "risk_pct": 2.0
+   }
+  },
+  "P3_aggressive_5pct_research": {
+   "trades": 21,
+   "wins": 6,
+   "losses": 9,
+   "breakeven": 6,
+   "net": 39.491200000001754,
+   "pf": 1.3050389764473025,
+   "gross_profit": 168.95400000000154,
+   "gross_loss": 129.4627999999998,
+   "eq_dd_pct": 21.560028654645492,
+   "bal_dd_pct": 17.15362239618917,
+   "exp_r": 0.16362524862524472,
+   "t_r": 0.5950644984495738,
+   "best_trade": 32.600000000000364,
+   "best_share_pct": 82.55003646381704,
+   "halted": true,
+   "halt_time": "2026-01-15 01:09:00",
+   "signals": 261,
+   "skips": {
+    "below_min_volume": 15,
+    "daily_loss": 3,
+    "dd_halted": 222
+   },
+   "exits": {
+    "BE": 6,
+    "DD_halt": 1,
+    "SL": 8,
+    "TP": 6
+   },
+   "monthly": {
+    "2025-11": [
+     14,
+     96.76
+    ],
+    "2025-12": [
+     5,
+     -31.83
+    ],
+    "2026-01": [
+     2,
+     -25.44
+    ]
+   },
+   "spread_cost": 7.000000000000001,
+   "halves": {
+    "H1_Nov25-Apr26": {
+     "trades": 21,
+     "net": 39.491200000001754,
+     "pf": 1.3050389764473025,
+     "eq_dd_pct": 21.560028654645492,
+     "exp_r": 0.16362524862524472,
+     "t_r": 0.5950644984495738,
+     "halted": true
+    },
+    "H2_May26-Oct26": {
+     "trades": 25,
+     "net": 133.72000000000298,
+     "pf": 1.8612095060217955,
+     "eq_dd_pct": 19.67567024801682,
+     "exp_r": 0.35353603603603634,
+     "t_r": 1.3118209295980476,
+     "halted": false
+    }
+   },
+   "config": {
+    "risk_pct": 5.0
+   }
+  }
+ }
+}

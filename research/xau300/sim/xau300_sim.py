@@ -251,7 +251,7 @@ def summarize(res, spread=0.28):
         k = t["close"].strftime("%Y-%m"); m = mon.setdefault(k, [0, 0.0]); m[0] += 1; m[1] += t["pl"]
     best = max(pl) if pl else 0.0
     return dict(trades=len(tr), wins=wins, losses=losses, breakeven=len(tr) - wins - losses,
-                net=res["net"], pf=(gp/gl if gl > 0 else float("inf")), gross_profit=gp, gross_loss=gl,
+                net=res["net"], pf=(gp/gl if gl > 0 else None), gross_profit=gp, gross_loss=gl,
                 eq_dd_pct=res["eq_dd"], bal_dd_pct=res["bal_dd"], exp_r=(statistics.mean(R) if R else 0.0), t_r=tR,
                 best_trade=best, best_share_pct=(100*best/res["net"] if res["net"] > 0 else None),
                 halted=res["halted"], halt_time=str(res["halt_time"]) if res["halt_time"] else None,
