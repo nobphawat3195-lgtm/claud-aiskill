@@ -23,7 +23,8 @@ import argparse, json, os, re, shutil, subprocess, sys, time, uuid, datetime as 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 EXPERTS = os.path.join(REPO, "MQL5", "Experts")
-KNOWN_EAS = {"XAU_300_Research_v1": "XAU300", "XAU300_ORB_Research": "XAU300ORB"}   # name -> log prefix
+KNOWN_EAS = {"XAU_300_Research_v1": "XAU300", "XAU300_ORB_Research": "XAU300ORB",
+             "XAU300_ORB_CappedRecovery_Research": "XAU300ORBCR"}   # name -> log prefix
 EA_SUBDIR = "XAU300"
 
 

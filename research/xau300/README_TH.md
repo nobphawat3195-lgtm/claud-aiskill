@@ -5,6 +5,7 @@
 | EA | logic | สถานะ |
 |---|---|---|
 | `MQL5/Experts/XAU_300_Research_v1.mq5` (v1.01) | Asia ORB 60 นาที, M5 close, SL อีกฝั่งของกรอบ | MT5 v1.00: P1/P2 ไม่มีไม้, P3 halt (ดู [RESULTS_TH.md](RESULTS_TH.md)) |
+| `MQL5/Experts/XAU300_ORB_CappedRecovery_Research.mq5` (v1.00, magic 300335) | ORB เดียวกับข้างล่าง (costaware) + capped loss-progression ตาม risk % (ไม่เกิน 3 ระดับ, cap 8%, MaxLot 0.10, DD 30%) **เสี่ยงสูง** | presets R0–R3 ล็อกแล้ว ยังไม่มีผล MT5 (ดู [../xau300_orb15/CAPPED_RECOVERY_TH.md](../xau300_orb15/CAPPED_RECOVERY_TH.md)) |
 | `MQL5/Experts/XAU300_ORB_Research.mq5` (v1.00) | Asia ORB 15 นาที, M1 close, SL ที่จุดกึ่งกลาง (สเปกจาก anas1412/orb-mt5 @0301b3e, MIT) | มีแค่ผล Python ยังไม่มีผล MT5 (ดู [../xau300_orb15/RESULTS_TH.md](../xau300_orb15/RESULTS_TH.md)) |
 
 **ระบบ risk ที่ทั้งสองตัวใช้เหมือนกัน:**
@@ -35,14 +36,14 @@
 ## คำสั่ง (runner ใช้ได้กับทั้งสอง EA)
 ```bash
 cd research/xau300
-python3 -m unittest discover -s tests -v          # 36 tests, stdlib only, ไม่ต้องใช้ MT5
+python3 -m unittest discover -s tests -v          # 44 tests, stdlib only, ไม่ต้องใช้ MT5
 
 MT5="$HOME/.wine/drive_c/MT5_research"            # โฟลเดอร์ portable เฉพาะงานนี้
-EA=XAU300_ORB_Research                            # หรือ XAU_300_Research_v1
+EA=XAU300_ORB_Research                            # หรือ XAU_300_Research_v1 / XAU300_ORB_CappedRecovery_Research
 
 python3 mt5_runner.py compile  --ea $EA --terminal-dir "$MT5" --wine wine --dry-run
 python3 mt5_runner.py compile  --ea $EA --terminal-dir "$MT5" --wine wine
-for p in safe1 balanced2 aggressive5_RESEARCH_ONLY; do
+for p in safe1 balanced2 aggressive5_RESEARCH_ONLY; do   # CappedRecovery: R0_autolot5 R1_marti2x_base2 R2_marti1p5_base2 R3_marti1p5_base3
   python3 mt5_runner.py backtest --ea $EA --terminal-dir "$MT5" --wine wine --symbol XAUUSD_DUKA \
           --preset ../../MQL5/Presets/${EA}_$p.set --from 2025.10.31 --to 2026.10.31 --timeout 5400
 done

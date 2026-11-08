@@ -11,10 +11,15 @@ import mt5_runner as MR
 import xau300_sim as S
 import orb15_sim as O
 import make_fixture as FX
+sys.path.insert(0, os.path.join(REPO, "research", "xau300_orb15"))
+import recovery_ref as RR
 
 EXPERTS = os.path.join(REPO, "MQL5", "Experts")
 PRESET_DIR = os.path.join(REPO, "MQL5", "Presets")
-EAS = {"XAU_300_Research_v1": "XAU_300_Research_v1_", "XAU300_ORB_Research": "XAU300_ORB_Research_"}
+EAS = {"XAU_300_Research_v1": "XAU_300_Research_v1_", "XAU300_ORB_Research": "XAU300_ORB_Research_"}   # 3-preset EAs
+CR = "XAU300_ORB_CappedRecovery_Research"
+ALL_EAS = list(EAS) + [CR]
+DEFAULT_DD = {"XAU_300_Research_v1": 20.0, "XAU300_ORB_Research": 20.0, CR: 30.0}
 
 
 def presets_for(ea):
@@ -288,8 +293,9 @@ def func_body(code, name):
 
 class StaticEA(unittest.TestCase):
     def each(self):
-        for ea in EAS:
-            src = open(os.path.join(EXPERTS, ea + ".mq5"), encoding="utf-8").read()
+        for ea in ALL_EAS:
+            with open(os.path.join(EXPERTS, ea + ".mq5"), encoding="utf-8") as fh:
+                src = fh.read()
             yield ea, src, strip_mql(src), dict(re.findall(r"^\s*input\s+\w+\s+(Inp\w+)\s*=\s*([^;]+);", src, re.M))
 
     def test_balanced(self):
@@ -302,7 +308,7 @@ class StaticEA(unittest.TestCase):
             for bad in ("#import", "WebRequest", "SocketCreate", "SendFTP", "SendMail", "SendNotification", "ShellExecute",
                         "password", "Password", "OrderSendAsync", "BuyLimit", "SellLimit", "BuyStop", "SellStop"):
                 self.assertNotIn(bad, code, (ea, bad))
-            self.assertNotRegex(code, r"lots\s*\*=", ea)                      # no lot multiplication (martingale)
+            self.assertNotRegex(code, r"lots\s*\*=", ea)                      # no lot multiplication (risk % is scaled instead)
 
     def test_file_io_is_tester_only_equity_csv(self):
         for ea, _s, code, _i in self.each():
@@ -319,7 +325,7 @@ class StaticEA(unittest.TestCase):
             self.assertEqual(i["InpAllowRealAccount"].strip(), "false", ea)
             self.assertEqual(float(i["InpRiskPercent"]), 1.0, ea)
             self.assertEqual(float(i["InpDailyLossPct"]), 3.0, ea)
-            self.assertEqual(float(i["InpMaxDDPct"]), 20.0, ea)
+            self.assertEqual(float(i["InpMaxDDPct"]), DEFAULT_DD[ea], ea)
             self.assertEqual(i["InpEquityCsv"].strip(), "false", ea)
 
     def test_broker_checks_and_guards(self):
@@ -362,6 +368,7 @@ class StaticEA(unittest.TestCase):
 
     def test_presets_match_inputs(self):
         for ea, _s, _c, inputs in self.each():
+            if ea not in EAS: continue
             ps = presets_for(ea)
             self.assertEqual(len(ps), 3, ea)
             risks = {}
@@ -397,6 +404,101 @@ class StaticEA(unittest.TestCase):
         self.assertEqual(code, 0); self.assertIn("InpMaxSpreadPrice=0", json.loads(out)["backtest"]["ini"])
         orb = dict(MR.read_set(presets_for("XAU300_ORB_Research")[0]))
         self.assertEqual(orb["InpMaxSpreadPrice"], "0.60"); self.assertEqual(orb["InpServerOffsetMinutes"], "0")
+
+
+# ============================================================================ capped recovery
+def deal(pid, entry, vol, profit=0.0, swap=0.0, commission=0.0, fee=0.0):
+    return dict(position_id=pid, entry=entry, volume=vol, profit=profit, swap=swap, commission=commission, fee=fee)
+
+
+class CappedRecovery(unittest.TestCase):
+    # position 7: entry fee + commission, partial close, final close with swap/commission/fee -> net -6.00
+    P7 = [deal(7, "in", 0.05, commission=-0.35, fee=-0.05),
+          deal(7, "out", 0.02, profit=4.0, commission=-0.14),
+          deal(7, "out", 0.03, profit=-9.0, swap=-0.2, commission=-0.21, fee=-0.05)]
+
+    def test_closed_net_includes_entry_fees_swap_commission(self):
+        net, vin, vout, closed = RR.position_net(self.P7, 7)
+        self.assertAlmostEqual(net, -6.0, places=9); self.assertTrue(closed)
+        self.assertFalse(RR.position_net(self.P7[:2], 7)[3])                     # partial close is not closed
+
+    def test_partial_close_waits_and_no_double_count(self):
+        st = RR.RecoveryState(on=True)
+        st.process([7], []); self.assertEqual(st.track, 7)                     # track on open
+        st.process([7], self.P7[:2]); self.assertEqual(st.level, 0)            # partial: still open
+        st.process([], self.P7[:2]); self.assertEqual(st.level, 0)             # gone but history incomplete: retry
+        st.process([], self.P7); self.assertEqual((st.level, st.last_processed, st.track), (1, 7, 0))
+        for _ in range(3): st.process([], self.P7)                             # retries / repeated ticks
+        self.assertEqual(st.level, 1); self.assertEqual(len(st.events), 1)
+        st2 = RR.RecoveryState(on=True, level=1, track=7, last_processed=7)    # restart with stale track
+        st2.process([], self.P7); self.assertEqual((st2.level, st2.track), (1, 0))
+
+    def test_ladder_three_levels_and_cycle_end(self):
+        lv, seq = 0, []
+        for net in (-5, -5, -5, -5, 3):
+            lv, ev = RR.next_level(lv, net); seq.append((lv, ev))
+        self.assertEqual(seq, [(1, "level_up"), (2, "level_up"), (0, "cycle_end"), (1, "level_up"), (0, "reset_win")])
+        self.assertEqual(RR.next_level(2, -0.005), (0, "reset_win"))           # breakeven within tolerance resets
+        self.assertEqual(RR.next_level(1, -3, on=False), (0, "off"))
+        self.assertEqual(RR.RecoveryState(on=True, level=5).level, 0)          # never resume above the ladder
+
+    def test_effective_risk_and_cap(self):
+        self.assertEqual([RR.effective_risk(2, 2, l, 8) for l in range(3)], [2, 4, 8])
+        self.assertEqual([round(RR.effective_risk(3, 1.5, l, 8), 4) for l in range(3)], [3, 4.5, 6.75])
+        self.assertEqual(RR.effective_risk(3, 2, 2, 8), 8)
+        self.assertEqual(RR.effective_risk(5, 1.5, 2, 8, on=False), 5)
+
+    def test_lots_maxlot_floor_never_forced(self):
+        # loss_per_lot is per 1.0 lot (OrderCalcProfit with volume 1.0): $711 per lot = $7.11 per 0.01 lot
+        self.assertEqual(RR.lots_for_risk(300, 8, 20.0), 0.1)                  # 1.2 lots wanted -> MaxLot 0.10
+        self.assertEqual(RR.lots_for_risk(300, 2, 711.0), 0.0)                 # $6 < $7.11 -> skip, not 0.01
+        self.assertEqual(RR.lots_for_risk(300, 5, 711.0), 0.02)                # $15 / 711 = 0.0211 -> 0.02
+
+    def test_ea_mirrors_reference_and_keeps_orb_rules(self):
+        with open(os.path.join(EXPERTS, CR + ".mq5")) as fh: cr = fh.read()
+        with open(os.path.join(EXPERTS, "XAU300_ORB_Research.mq5")) as fh: orb = fh.read()
+        crc, orbc = strip_mql(cr), strip_mql(orb)
+        for fn in ("bool RangeOf", "double RollingMedianPct", "void NewDay", "void EndDay", "bool StopsOK",
+                   "void ManagePosition", "bool FlattenMine", "bool AnyPositionOnSymbol", "double VolumeFloor", "bool DayAllowed"):
+            self.assertEqual(func_body(crc, fn), func_body(orbc, fn), fn)          # entry/exit/one-shot/rolling unchanged
+        t_cr = func_body(crc, "void OnTick").replace("   ProcessClosedPosition();                    \n", "")
+        self.assertEqual(t_cr, func_body(orbc, "void OnTick"))
+        for need in ("HistorySelectByPosition", "DEAL_POSITION_ID", "DEAL_PROFIT", "DEAL_SWAP", "DEAL_COMMISSION",
+                     "DEAL_FEE", "DEAL_ENTRY_IN", "POSITION_IDENTIFIER", "MathPow(InpRecoveryMultiplier, g_level)",
+                     "MathMin(r, InpRiskCapPercent)", "InpMaxLot", "g_trackPos == g_lastProcessed", "vout < vin - 1e-8"):
+            self.assertIn(need, crc, need)
+        for gv in ('"level"', '"track"', '"lastpos"'): self.assertIn(gv, cr)
+        i = dict(re.findall(r"^\s*input\s+\w+\s+(Inp\w+)\s*=\s*([^;]+);", cr, re.M))
+        self.assertEqual((i["InpMagic"].strip(), float(i["InpMaxLot"]), float(i["InpRiskCapPercent"]), int(i["InpRecoveryMaxLevel"]),
+                          i["InpRecoveryOn"].strip(), float(i["InpMaxSpreadPrice"]), float(i["InpDailyLossPct"])),
+                         ("300335", 0.10, 8.0, 2, "false", 0.0, 3.0))
+        self.assertIn("InpRiskCapPercent > 8.0", crc); self.assertIn("InpRecoveryMaxLevel > 2", crc)
+        self.assertIn("0301b3ed4ba3aa53d00459e0e6e565aa3e71d5a9", cr)
+
+    def test_presets_r0_r3(self):
+        names = sorted(f for f in os.listdir(PRESET_DIR) if f.startswith(CR + "_"))
+        self.assertEqual(names, [f"{CR}_{n}.set" for n in ("R0_autolot5", "R1_marti2x_base2", "R2_marti1p5_base2", "R3_marti1p5_base3")])
+        with open(os.path.join(EXPERTS, CR + ".mq5")) as fh:
+            inputs = dict(re.findall(r"^\s*input\s+\w+\s+(Inp\w+)\s*=\s*([^;]+);", fh.read(), re.M))
+        want = {"R0_autolot5": ("false", "5.0", None), "R1_marti2x_base2": ("true", "2.0", "2.0"),
+                "R2_marti1p5_base2": ("true", "2.0", "1.5"), "R3_marti1p5_base3": ("true", "3.0", "1.5")}
+        knobs = {"InpRecoveryOn", "InpRiskPercent", "InpRecoveryMultiplier"}
+        others = []
+        for n, (on, risk, mult) in want.items():
+            d = dict(MR.read_set(os.path.join(PRESET_DIR, f"{CR}_{n}.set")))
+            self.assertEqual(set(d), set(inputs), n)
+            self.assertEqual((d["InpRecoveryOn"], d["InpRiskPercent"]), (on, risk), n)
+            if mult: self.assertEqual(d["InpRecoveryMultiplier"], mult, n)
+            for k, v in {"InpMaxDDPct": "30.0", "InpDailyLossPct": "3.0", "InpMaxSpreadPrice": "0.0", "InpRecoveryMaxLevel": "2",
+                         "InpRiskCapPercent": "8.0", "InpMaxLot": "0.10", "InpAllowRealAccount": "false", "InpMagic": "300335",
+                         "InpEquityCsv": "true", "InpRunTag": ""}.items():
+                self.assertEqual(d[k], v, (n, k))
+            others.append({k: v for k, v in d.items() if k not in knobs})
+        self.assertTrue(all(o == others[0] for o in others))                    # everything else identical
+        code, out = Runner.run_cli(self, "backtest", "--ea", CR, "--terminal-dir", tempfile.mkdtemp(),
+                                   "--preset", os.path.join(PRESET_DIR, f"{CR}_R1_marti2x_base2.set"), "--dry-run")
+        ini = json.loads(out)["backtest"]["ini"]
+        self.assertEqual(code, 0); self.assertIn(f"Expert=XAU300\\{CR}", ini); self.assertIn("InpRecoveryOn=true", ini)
 
 
 if __name__ == "__main__":
