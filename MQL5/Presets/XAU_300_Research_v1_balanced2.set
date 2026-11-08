@@ -1,9 +1,11 @@
-; XAU_300_Research_v1 preset: BALANCED 2% risk
+; XAU_300_Research_v1 (v1.01) preset: BALANCED 2% risk
 ; Entry rules identical across presets; only RiskPercent differs (sizing study, not an entry change).
-; Python reference (Dukascopy M1, $300): see research/xau300/RESULTS_TH.md. MT5 real-tick result: pending (user local run).
+; MT5 real-tick results of v1.00 (commit 2848133) and Python reference: research/xau300/RESULTS_TH.md
+; v1.01 changes risk plumbing only (daily stop now flattens): v1.00 results are not v1.01 results.
 InpAllowRealAccount=false
 InpMagic=300301
 InpComment=XAU300v1
+InpRunTag=
 InpRangeStartHour=0
 InpRangeMinutes=60
 InpSignalTF=5
@@ -29,3 +31,5 @@ InpResetDDState=false
 InpMaxMarginUsePct=50.0
 InpDeviationPoints=30
 InpVerbose=true
+InpEquityCsv=true
+InpEquityFileName=

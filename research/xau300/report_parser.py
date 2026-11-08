@@ -100,27 +100,39 @@ def _summary(rows):
     return out
 
 
-def _table(rows, title, must_have):
-    """Return (header, data_rows) of the table whose header row contains all `must_have` columns,
-    searching after a row whose first non-empty cell equals `title`."""
-    start = 0
+SECTION_TITLES = {"orders", "deals", "results", "settings", "inputs", "positions"}
+
+
+def _is_title(r):
+    ne = [c.strip() for c in r if c and c.strip()]
+    return len(ne) == 1 and ne[0].lower() in SECTION_TITLES
+
+
+def _table(rows, title, must_have, id_col):
+    """Rows of ONE section only. The section starts at the row whose single non-empty cell is `title`
+    and ends at the next section title. Data rows must carry a numeric `id_col` (Order / Deal number),
+    so headers, balance-less totals and rows of other sections are never counted."""
+    start = None
     for i, r in enumerate(rows):
-        ne = [c for c in r if c]
-        if ne and ne[0].strip().lower() == title.lower():
+        if _is_title(r) and [c for c in r if c.strip()][0].strip().lower() == title.lower():
             start = i + 1; break
+    if start is None:
+        return None, []
+    end = len(rows)
     for i in range(start, len(rows)):
-        hdr = [c.strip() for c in rows[i]]
-        if all(any(h.lower() == m.lower() for h in hdr) for m in must_have):
-            data = []
-            for r in rows[i + 1:]:
-                ne = [c for c in r if c]
-                if not ne:
-                    if data: break
-                    continue
-                if len(ne) <= 2 and data: break      # section title / totals row
-                data.append(r)
-            return hdr, data
-    return None, []
+        if _is_title(rows[i]):
+            end = i; break
+    hdr = None; data = []
+    for i in range(start, end):
+        cells = [c.strip() for c in rows[i]]
+        if hdr is None:
+            if all(any(h.lower() == m.lower() for h in cells) for m in must_have):
+                hdr = cells
+            continue
+        d = {h.lower(): (rows[i][k] if k < len(rows[i]) else "") for k, h in enumerate(hdr) if h}
+        if re.fullmatch(r"\d+", (d.get(id_col.lower()) or "").strip()):
+            data.append(rows[i])
+    return hdr, data
 
 
 def _rowdict(hdr, r):
@@ -227,12 +239,14 @@ def stats_from(trades, deals, initial=None):
 def parse_report(path):
     rows = load_rows(path)
     summ = _summary(rows)
-    dh, drows = _table(rows, "Deals", ["Deal", "Direction"])
-    oh, orows = _table(rows, "Orders", ["Order", "State"])
+    dh, drows = _table(rows, "Deals", ["Deal", "Direction"], "Deal")
+    oh, orows = _table(rows, "Orders", ["Order", "State"], "Order")
     deals = parse_deals(dh, drows) if dh else []
     trades = build_trades(deals)
     st = stats_from(trades, deals, num(summ.get("Initial Deposit")))
+    out_deals = len([d for d in deals if d["kind"] == "trade" and d["direction"] in ("out", "inout")])
     rep = dict(file=path, summary=dict(summ), orders=len(orows), deals=len([d for d in deals if d["kind"] == "trade"]),
+               out_deals=out_deals, deals_table_found=dh is not None, orders_table_found=oh is not None,
                balance_deals=len([d for d in deals if d["kind"] == "balance"]), stats=st,
                report_equity_dd=summ.get("Equity Drawdown Maximal"), report_balance_dd=summ.get("Balance Drawdown Maximal"),
                report_net=num(summ.get("Total Net Profit")), report_pf=num(summ.get("Profit Factor")),
@@ -244,9 +258,10 @@ def parse_report(path):
     return rep
 
 
-def validate(rep, expect_symbol=None, expect_deposit=None, expect_leverage=None, expect_model_text=None):
-    """Return list of problems (empty = ok)."""
-    p = []; s = rep["summary"]; flat = " ".join(f"{k}: {v}" for k, v in s.items())
+def validate(rep, expect_symbol=None, expect_deposit=None, expect_leverage=None, require_real_ticks=True):
+    """Return list of problems (empty = ok). MT5 HTML reports do not print the model name; real-tick runs show
+    'History Quality: 100% real ticks'. The requested Model=4 is recorded from the INI by the runner."""
+    p = []; s = rep["summary"]
     if expect_symbol and expect_symbol.lower() not in (s.get("Symbol", "") or "").lower():
         p.append(f"symbol in report {s.get('Symbol')!r} != {expect_symbol}")
     if expect_deposit is not None:
@@ -254,16 +269,23 @@ def validate(rep, expect_symbol=None, expect_deposit=None, expect_leverage=None,
         if dep is None or abs(dep - expect_deposit) > 0.01: p.append(f"initial deposit {dep} != {expect_deposit}")
     if expect_leverage and expect_leverage not in (s.get("Leverage", "") or ""):
         p.append(f"leverage {s.get('Leverage')!r} != {expect_leverage}")
-    if expect_model_text and expect_model_text.lower() not in flat.lower():
-        p.append(f"model text {expect_model_text!r} not found in report header")
     hq = s.get("History Quality")
-    if hq is not None and (pct_in(hq) or 0) < 99.0:
-        p.append(f"history quality {hq} < 99%")
+    if require_real_ticks:
+        if hq is None:
+            p.append("History Quality missing from report")
+        elif "real ticks" not in hq.lower() or (pct_in(hq) or 0) < 99.0:
+            p.append(f"History Quality {hq!r} is not >= 99% real ticks")
     st = rep["stats"]
+    if not rep.get("deals_table_found"):
+        p.append("Deals table not found")
     if rep["report_net"] is not None and abs(rep["report_net"] - st["net"]) > 0.05:
         p.append(f"net from deals {st['net']:.2f} != report Total Net Profit {rep['report_net']:.2f}")
-    if rep["report_trades"] is not None and st["trades"] and int(rep["report_trades"]) < st["trades"]:
-        p.append(f"report Total Trades {rep['report_trades']} < round trips rebuilt {st['trades']}")
+    if rep["report_trades"] is None:
+        p.append("Total Trades missing from report")
+    elif int(rep["report_trades"]) != rep["out_deals"]:
+        p.append(f"report Total Trades {int(rep['report_trades'])} != closing deals parsed {rep['out_deals']}")
+    if rep["report_trades"] and rep["deals"] == 0:
+        p.append("report has trades but 0 deals were parsed")
     if st["open_trades"]:
         p.append(f"{st['open_trades']} trade(s) still open at report end")
     return p
@@ -275,7 +297,7 @@ def print_human(rep):
     print(f"report: {rep['file']}")
     for k in ("Expert", "Symbol", "Period", "Model", "Initial Deposit", "Leverage", "History Quality", "Bars", "Ticks"):
         if k in rep["summary"]: print(f"  {k}: {rep['summary'][k]}")
-    print(f"orders {rep['orders']} | deals {rep['deals']} (+{rep['balance_deals']} balance) | trades {st['trades']} "
+    print(f"orders {rep['orders']} | deals {rep['deals']} (+{rep['balance_deals']} balance, {rep['out_deals']} closing) | trades {st['trades']} "
           f"(win {st['wins']} / loss {st['losses']} / BE {st['breakeven']}, partial-close trades {st['partial_close_trades']})")
     print(f"net {st['net']:+.2f} | PF {pf} | balance DD {st['balance_dd_pct']:.2f}% (${st['balance_dd_money']:.2f}) | "
           f"equity DD (report) {rep['report_equity_dd']} | commission {st['commission']:.2f} | swap {st['swap']:.2f}")

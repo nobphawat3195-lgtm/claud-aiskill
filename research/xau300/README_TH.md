@@ -1,69 +1,74 @@
-# XAU_300_Research_v1 — คู่มือย่อ (research only)
+# XAU300 research EAs — คู่มือย่อ (research only)
 
-EA ตัวนี้ใช้ทดสอบเท่านั้น ยังไม่พิสูจน์ว่ามี edge (ดู [RESULTS_TH.md](RESULTS_TH.md)) ห้ามใช้กับเงินจริง
-ค่าเริ่มต้น `InpAllowRealAccount=false` ทำให้ EA ปฏิเสธบัญชี REAL ส่วน Strategy Tester และบัญชีเดโมใช้งานได้ปกติ
+มี EA สองตัว ทั้งคู่**ใช้วิจัยเท่านั้น** และค่าเริ่มต้น `InpAllowRealAccount=false` ทำให้ปฏิเสธบัญชี REAL ส่วน Strategy Tester และบัญชีเดโมใช้ได้
 
-## ไฟล์
-| path | หน้าที่ |
-|---|---|
-| `MQL5/Experts/XAU_300_Research_v1.mq5` | EA: Asia ORB แบบ closed-bar, sizing ด้วย OrderCalcProfit, เช็ก margin/stops/freeze/filling, SL/TP ฝั่ง server, เปิดได้ครั้งละ 1 ไม้, daily loss 3%, peak-equity DD 20% (เก็บค่าข้ามการรีสตาร์ท), risk 1% |
-| `MQL5/Presets/XAU_300_Research_v1_safe1.set` | risk 1% |
-| `MQL5/Presets/XAU_300_Research_v1_balanced2.set` | risk 2% |
-| `MQL5/Presets/XAU_300_Research_v1_aggressive5_RESEARCH_ONLY.set` | risk 5% **เสี่ยงสูง ใช้วิจัยเท่านั้น ไม่แนะนำ live** |
-| `research/xau300/mt5_runner.py` | สั่ง compile และ backtest จาก command line, ตรวจรายงาน |
-| `research/xau300/report_parser.py` | อ่านรายงาน MT5 (.htm UTF-16/UTF-8 หรือ .xml) แยก orders/deals/trades และคำนวณสถิติ |
-| `research/xau300/sim/` | simulator Python ที่ใช้นิยามกฎของ EA และผลบน Dukascopy M1 |
-| `research/xau300/tests/` | unit tests และ static checks |
+| EA | logic | สถานะ |
+|---|---|---|
+| `MQL5/Experts/XAU_300_Research_v1.mq5` (v1.01) | Asia ORB 60 นาที, M5 close, SL อีกฝั่งของกรอบ | MT5 v1.00: P1/P2 ไม่มีไม้, P3 halt (ดู [RESULTS_TH.md](RESULTS_TH.md)) |
+| `MQL5/Experts/XAU300_ORB_Research.mq5` (v1.00) | Asia ORB 15 นาที, M1 close, SL ที่จุดกึ่งกลาง (สเปกจาก anas1412/orb-mt5 @0301b3e, MIT) | มีแค่ผล Python ยังไม่มีผล MT5 (ดู [../xau300_orb15/RESULTS_TH.md](../xau300_orb15/RESULTS_TH.md)) |
 
-## สิ่งที่ต้องระบุก่อนรัน
-1. **โฟลเดอร์ MT5 แบบ portable ที่ใช้เฉพาะงานนี้** (`--terminal-dir`): ติดตั้ง/คัดลอก MT5 ไปไว้โฟลเดอร์ใหม่ แล้วเปิดด้วย `/portable` อย่างน้อยหนึ่งครั้ง ไม่ต้องล็อกอินบัญชีจริง
-2. **ชื่อ symbol** (`--symbol`): เช่น `XAUUSD` หรือชื่อ custom symbol ที่ใส่ Dukascopy real ticks ไว้ ต้องมี tick ครบช่วง 2025-10-01 → 2026-10-31
-3. **เวลา server:** กฎใช้เวลา server ถ้า symbol เป็น GMT+0 ใช้ค่าเริ่มต้นได้เลย ถ้าเป็น GMT+2/+3 ต้องแก้ `InpRangeStartHour`, `InpEntryEndHour`, `InpExitHour` ใน .set
-4. **Wine** (`--wine wine`): ใส่เฉพาะเมื่อรันบน Linux/macOS บน Windows ไม่ต้องใส่
+**ระบบ risk ที่ทั้งสองตัวใช้เหมือนกัน:**
+- คำนวณ lot ด้วย `OrderCalcProfit` ปัดลงเป็นจำนวนเต็มของ volume step แล้วตรวจความเสี่ยงซ้ำ ถ้า lot ขั้นต่ำเกิน budget จะข้าม (ไม่บังคับ 0.01)
+- ตรวจ margin, stops level, freeze level และ filling mode ส่ง SL/TP ไปกับ order ฝั่ง server
+- บล็อกการเข้าไม้ถ้ามี position ใดๆ บน symbol นี้อยู่แล้ว แม้จะเป็นของ EA อื่น
+- **Daily hard stop 3%:** ปิดสถานะ (ลองปิดใหม่ทุก tick) และห้ามเข้าไม้จนจบวัน
+- **Peak-equity DD stop 20%:** ปิดสถานะ, retry ทุก tick และหยุดถาวรจนกว่าจะ reset
+- เก็บ state ข้ามการรีสตาร์ท ได้แก่ peak, halt, วัน, ยอดต้นวัน, daily halt และตัวนับสัญญาณ โดยแยกตาม account, magic และ symbol
+- ไม่มี grid, martingale, DLL หรือ network
+- **ข้อควรรู้:** เกณฑ์ daily/DD เป็นจุด**สั่งปิด** ไม่ได้รับประกันว่าจะขาดทุนไม่เกินนั้น ถ้าราคากระโดด (gap) หรือ slippage จะเสียเกินได้
 
-## คำสั่ง
+**Presets:** มีชุดละ 3 แบบ คือ `safe1` (1%), `balanced2` (2%) และ `aggressive5_RESEARCH_ONLY` (5% เสี่ยงสูง ไม่แนะนำใช้จริง) ทั้งสามต่างกันแค่ RiskPercent และเปิด `InpEquityCsv=true` ไว้
+- ORB preset กำหนด spread เป็นหน่วยราคา `InpMaxSpreadPrice=0.60` (USD ต่อ oz) และ `InpServerOffsetMinutes=0` สำหรับ DUKA ที่เป็น UTC ถ้าใช้โบรกเกอร์จริงต้องตั้ง offset เอง
+- ที่ 5% ไม้ที่ขาดทุนมักโดน daily stop 3% ปิดก่อนถึง SL
+
+## Equity CSV (เฉพาะใน tester)
+- ไฟล์ `server_datetime,balance,equity` บันทึกที่ **tick แรกของทุกนาที** รวมวันที่ halt ด้วย และบังคับเขียนแถวสุดท้ายตอนจบ
+- เขียนลง `MQL5/Files` ของ agent จากนั้น runner จะคัดลอกไฟล์ที่เพิ่งสร้างมาไว้เป็น `<report>.equity_m1.csv`
+- ตอนพล็อตให้ระบุว่าเป็นค่าที่ sample ทุก M1 ส่วน DD ที่แม่นระดับ tick ให้อ่านจากสรุปในรายงาน MT5
+- **ห้ามเรียกกราฟ Balance หรือกราฟจาก Python ว่า Equity**
+
+## คำสั่ง (runner ใช้ได้กับทั้งสอง EA)
 ```bash
 cd research/xau300
-python3 -m unittest discover -s tests -v                 # tests (ไม่ต้องใช้ MT5)
+python3 -m unittest discover -s tests -v          # 36 tests, stdlib only, ไม่ต้องใช้ MT5
 
-# ดูไฟล์และคำสั่งที่จะใช้ก่อน โดยยังไม่รันอะไร
-python3 mt5_runner.py compile  --terminal-dir "$MT5" --wine wine --dry-run
-python3 mt5_runner.py backtest --terminal-dir "$MT5" --wine wine --dry-run \
-        --preset ../../MQL5/Presets/XAU_300_Research_v1_safe1.set
+MT5="$HOME/.wine/drive_c/MT5_research"            # โฟลเดอร์ portable เฉพาะงานนี้
+EA=XAU300_ORB_Research                            # หรือ XAU_300_Research_v1
 
-# รันจริง
-python3 mt5_runner.py compile  --terminal-dir "$MT5" --wine wine
+python3 mt5_runner.py compile  --ea $EA --terminal-dir "$MT5" --wine wine --dry-run
+python3 mt5_runner.py compile  --ea $EA --terminal-dir "$MT5" --wine wine
 for p in safe1 balanced2 aggressive5_RESEARCH_ONLY; do
-  python3 mt5_runner.py backtest --terminal-dir "$MT5" --wine wine --symbol XAUUSD \
-          --preset ../../MQL5/Presets/XAU_300_Research_v1_$p.set \
-          --from 2025.10.31 --to 2026.10.31 --timeout 5400
+  python3 mt5_runner.py backtest --ea $EA --terminal-dir "$MT5" --wine wine --symbol XAUUSD_DUKA \
+          --preset ../../MQL5/Presets/${EA}_$p.set --from 2025.10.31 --to 2026.10.31 --timeout 5400
 done
-
-# อ่านรายงานที่มีอยู่แล้ว
-python3 mt5_runner.py parse --report "$MT5/reports/<ชื่อ>.htm" --json out.json
-
-# simulator Python (ต้องมีไฟล์ Dukascopy YYYYMMDD.bi5)
-python3 sim/run_preregistered.py --data /path/to/raw_m1
+python3 mt5_runner.py parse --report "$MT5/reports/<name>.htm"
 ```
-บน Windows ให้ใช้ `python` และ `--terminal-dir "C:\MT5_research"` โดยไม่ใส่ `--wine`
+- ถ้าใช้ไฟล์ .mq5 อื่น ใส่ `--source path/Other.mq5` แทน `--ea` (ชื่อไฟล์ห้ามมี space)
+- บน Windows ไม่ต้องใส่ `--wine` และใช้ `python`
 
-## สิ่งที่ runner ทำและไม่ทำ
-- เขียนไฟล์ ini ที่ระบุค่าชัดเจน: `Model=4` (real ticks), `Deposit=300`, `Currency=USD`, `Leverage=1:500`, `UseLocal=1`, `UseRemote=0`, `UseCloud=0`, `[Experts] AllowLiveTrading=0`, `AllowDllImport=0` **ไม่มี Login/Password/Server**
-- ถ้าสั่ง Model อื่นที่ไม่ใช่ 4 จะปฏิเสธ ยกเว้นใส่ `--allow-non-real-ticks` ซึ่งใช้วิเคราะห์เท่านั้น
-- ถ้า preset ตั้ง `InpAllowRealAccount=true` จะปฏิเสธ
-- ถ้ามี terminal จากโฟลเดอร์เดียวกันรันอยู่แล้ว จะ**ไม่ปิดให้** แต่แจ้ง error แทน เมื่อหมดเวลา (timeout) จะปิดเฉพาะ process ที่ runner เปิดเองเท่านั้น
-- หลังรัน จะหารายงาน `reports/<preset>_<เวลา>.htm|.xml` แล้วตรวจว่า symbol, deposit, leverage, ข้อความ "Every tick based on real ticks" และ History Quality ≥ 99% ถูกต้อง รวมทั้ง net จาก deals ต้องตรงกับ Total Net Profit ในรายงาน ถ้ามีข้อใดไม่ผ่านจะ exit code 3
-- อ่านบรรทัด `XAU300|SUMMARY|...` จาก tester log เพื่อนับสัญญาณที่ถูกข้าม เช่น `skip_min_volume`
+**Compile (ตามวิธีที่ยืนยันแล้วว่าใช้ได้บน Wine ในเครื่องผู้ใช้):**
+- คัดลอก source ไปไว้ที่ staging ที่ไม่มี space (ค่าเริ่มต้น `C:\MT5stage` คำนวณจาก `.../drive_c/` หรือกำหนดเองด้วย `--stage-dir`)
+- ลบ .ex5 และ .log เก่าออกก่อน แล้วรัน `MetaEditor64.exe /portable /compile:C:\MT5stage\Name.mq5 /log:C:\MT5stage\Name.log` โดยไม่มี embedded quotes และใช้ cwd เป็นโฟลเดอร์ terminal
+- **ถือว่าสำเร็จเมื่อ** log ใหม่แสดง 0 errors **และ**ได้ .ex5 ใหม่ที่ไม่ว่าง (ไม่ดู exit code เพราะอาจเป็น 1 แม้สำเร็จ) จากนั้นคัดลอก .ex5 ไปที่ `MQL5/Experts/XAU300/`
 
-## ข้อจำกัดที่รู้แล้ว
-- สภาพแวดล้อม cloud ที่ใช้เขียนโค้ดนี้ **ไม่มี MetaEditor/MT5** จึงยังไม่เคย compile หรือ backtest จริง ทดสอบได้แค่ static checks ของไฟล์ .mq5 และ unit tests ของ runner/parser/simulator ผล compile และ backtest จริงต้องได้จากเครื่องของผู้ใช้
-- ไม่สามารถเปิดเอกสารออนไลน์ของ MT5 ได้ (network บล็อก) รูปแบบ `[Tester]` ใน ini จึงอิงจากรูปแบบที่ MT5 ใช้ทั่วไป ถ้า terminal ไม่สร้างรายงาน ให้ดู `Tester/logs` แล้วส่งกลับมา
-- รายงานแบบ .htm ไม่มีคอลัมน์ position id runner จึงประกอบ trade จาก deals แบบ FIFO ต่อ symbol ซึ่งถูกต้องเมื่อ EA เปิดได้ครั้งละ 1 ไม้ตามที่ออกแบบไว้
-- ค่า equity DD อ่านจากสรุปในรายงาน MT5 ได้อย่างเดียว ส่วน balance DD คำนวณใหม่จาก deals
+**Backtest:**
+- INI ระบุ `Model=4`, `Deposit=300`, `Currency=USD`, `Leverage=1:500`, `UseLocal=1`, `UseRemote=0`, `UseCloud=0`, `[Experts] AllowLiveTrading=0`, `AllowDllImport=0`
+- preset ใส่ใน `[TesterInputs]` พร้อม `InpRunTag` และชื่อ equity CSV ที่ไม่ซ้ำ **ไม่มี Login/Password/Server**
+- ถ้ามี terminal จากโฟลเดอร์เดียวกันรันอยู่ จะไม่เริ่มและไม่ปิดให้ เมื่อ timeout จะปิดเฉพาะ process ที่ runner เปิดเอง
+- **ตรวจผลหลังรัน:**
+  - รายงานต้องสร้างหลังเวลาเริ่มรัน
+  - `History Quality` ≥ 99% real ticks (รายงาน HTML ไม่แสดงชื่อ model จึงบันทึก Model=4 จาก INI ไว้ใน json แทน)
+  - symbol, deposit และ leverage ตรง
+  - `Total Trades` == จำนวน closing deals ที่อ่านได้ และ net จาก deals == Total Net Profit
+  - ถ้ารายงานบอกว่ามีไม้แต่อ่าน deals ได้ 0 ถือว่าผิด
+  - ต้องมีบรรทัด SUMMARY ที่มี run tag ของรอบนี้ จาก log ที่เพิ่งเขียน และมี equity CSV ใหม่
+  - ถ้าข้อใดไม่ผ่าน exit code = 3
 
-## ส่งอะไรกลับมาให้ตรวจ
-ไฟล์ `*.summary.json`, รายงาน `.htm`, และ `Tester/logs/*.log` ของแต่ละ preset รวมทั้ง log การ compile (`MQL5/Experts/XAU300/XAU_300_Research_v1.compile.log`)
+## Report parser
+แยก orders, deals และ trades ออกจากกัน โดยอ่านแต่ละ section แยกกัน และนับเฉพาะแถวที่หมายเลข Order/Deal เป็นตัวเลข จึงนับ 0 order ได้ถูกต้อง trade ประกอบจาก deals แบบ FIFO รวม partial close, commission, swap และ in/out reversal ส่วน balance DD คำนวณจาก deals และ equity DD อ่านจากรายงาน
 
 ## Provenance
-- กฎ ORB มาจากงานวิจัยในโปรเจกต์ (สรุป YY19 / Doc ภายใน) โค้ด EA และ simulator เขียนขึ้นใหม่ ไม่ได้คัดลอก source เดิม
-- อ้างอิงแนวทาง MQL5 (filling, margin, OrderCalcProfit) จาก [thomaspraun/mql-developer](https://github.com/thomaspraun/mql-developer) (MIT, commit 3b5e358) แต่ไม่ใช้คำแนะนำทั่วไปที่ว่า generated ticks เทียบเท่า real ticks
+- กฎของ v1 มาจากงานวิจัย YY19 family ภายในโปรเจกต์ (เขียนโค้ดใหม่ ไม่คัดลอก source เดิม)
+- กฎของ ORB มาจาก [anas1412/orb-mt5](https://github.com/anas1412/orb-mt5) @`0301b3ed4ba3aa53d00459e0e6e565aa3e71d5a9` (MIT) แต่เขียนโค้ดใหม่
+- แนวทาง MQL5 อ้างอิง [thomaspraun/mql-developer](https://github.com/thomaspraun/mql-developer) (MIT, @3b5e358) โดยไม่ใช้คำแนะนำที่ว่า generated ticks เทียบเท่า real ticks
+- **ยังไม่ได้ compile v1.01 และ ORB ใน MT5 จริง** ต้องรอผลจากเครื่องผู้ใช้ เพราะ cloud ไม่มี MetaEditor

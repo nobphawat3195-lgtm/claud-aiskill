@@ -22,6 +22,10 @@ class Cfg:
         self.roll_sessions = 20; self.roll_min_pct = 0.18; self.roll_strict = True
         self.days = (0, 1, 2, 3)              # Mon-Thu (python weekday)
         self.max_spread_price = 0.60
+        # parity-only switches (upstream original behaviour); the EA has none of these
+        self.today_min_pct = 0.0             # upstream InpMinRangePercent (per-day range filter)
+        self.lot_round = "floor"             # "nearest" = upstream-style rounding (can over-risk)
+        self.daily_mode = "flatten"          # "block" = upstream: only blocks new entries
         self.__dict__.update(kw)
 
 
@@ -31,7 +35,8 @@ def lots_for(equity, sl_dist, cfg):
     loss = sl_dist * CONTRACT
     if loss <= 0:
         return 0.0, "bad_sl"
-    lots = math.floor(equity * cfg.risk_pct / 100.0 / loss / cfg.vol_step + 1e-9) * cfg.vol_step
+    raw = equity * cfg.risk_pct / 100.0 / loss / cfg.vol_step
+    lots = (round(raw) if cfg.lot_round == "nearest" else math.floor(raw + 1e-9)) * cfg.vol_step
     lots = round(min(lots, cfg.vol_max), 8)
     if lots < cfg.vol_min - 1e-12:
         return 0.0, "below_min_volume"
@@ -145,7 +150,7 @@ def run(m1, cfg, t_from, t_to):
         else:
             e_low = e_close = bal
         max_eq_dd = max(max_eq_dd, (peak_eq - e_low) / peak_eq * 100.0)
-        if pos and cfg.daily_loss_pct > 0 and e_low <= day_bal * (1 - cfg.daily_loss_pct / 100.0):
+        if pos and cfg.daily_mode == "flatten" and cfg.daily_loss_pct > 0 and e_low <= day_bal * (1 - cfg.daily_loss_pct / 100.0):
             thr = day_bal * (1 - cfg.daily_loss_pct / 100.0)                 # trigger price; gaps fill at open
             px = pos["entry"] + (thr - bal) / (pos["dir"] * pos["lots"] * CONTRACT)
             if pos["dir"] > 0: px = min(px, O)
@@ -171,6 +176,8 @@ def run(m1, cfg, t_from, t_to):
                 r = ranges.get(st.date())
                 if not r or r["hi"] <= r["lo"]:
                     dstate.update(done=True, reason="no_range")
+                elif cfg.today_min_pct > 0 and 100.0 * (r["hi"] - r["lo"]) / r["last_close"] < cfg.today_min_pct:
+                    dstate.update(done=True, reason="today_min_pct")
                 elif C > r["hi"] or C < r["lo"]:
                     d = 1 if C > r["hi"] else -1
                     cp = (r["last_close"] - r["lo"]) / (r["hi"] - r["lo"])

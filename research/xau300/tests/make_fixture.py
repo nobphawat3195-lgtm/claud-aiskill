@@ -4,8 +4,8 @@ a commission-only loser, a plain loser and an in/out reversal."""
 import os
 
 HEAD = [("Expert:", "XAU_300_Research_v1"), ("Symbol:", "XAUUSD"), ("Period:", "M1 (2025.10.31 - 2026.10.31)"),
-        ("Model:", "Every tick based on real ticks"), ("Initial Deposit:", "300.00"), ("Leverage:", "1:500"),
-        ("History Quality:", "100%"), ("Total Net Profit:", "13.28"), ("Profit Factor:", "3.17"),
+        ("Initial Deposit:", "300.00"), ("Leverage:", "1:500"),
+        ("History Quality:", "100% real ticks"), ("Total Net Profit:", "13.28"), ("Profit Factor:", "3.17"),
         ("Total Trades:", "7"), ("Balance Drawdown Maximal:", "6.14 (1.95%)"), ("Equity Drawdown Maximal:", "9.50 (3.01%)")]
 
 ORDERS = [
@@ -61,9 +61,24 @@ def build_html():
     return "\n".join(h)
 
 
-def write(path):
+def build_zero_orders_html():
+    """Like a real P1/P2 run: Orders section present but empty, only the initial balance deal."""
+    h = ["<html><body><table>"]
+    h += [row([k, v]) for k, v in HEAD if k not in ("Total Net Profit:", "Profit Factor:", "Total Trades:")]
+    h += [row(["Total Net Profit:", "0.00"]), row(["Total Trades:", "0"])]
+    h.append(row(["Orders"], "th"))
+    h.append(row(["Open Time", "Order", "Symbol", "Type", "Volume", "Price", "S / L", "T / P", "Time", "State", "Comment"]))
+    h.append(row(["Deals"], "th"))
+    h.append(row(["Time", "Deal", "Symbol", "Type", "Direction", "Volume", "Price", "Order", "Commission", "Swap", "Profit", "Balance", "Comment"]))
+    h.append(row(list(DEALS[0])))
+    h.append(row(["", "", "", "", "", "", "", "", "0.00", "0.00", "0.00", "300.00", ""]))
+    h.append("</table></body></html>")
+    return "\n".join(h)
+
+
+def write(path, html=None):
     with open(path, "w", encoding="utf-16") as f:
-        f.write(build_html())
+        f.write(html if html is not None else build_html())
     return path
 
 

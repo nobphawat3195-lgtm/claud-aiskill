@@ -1,4 +1,21 @@
-# XAU_300_Research_v1 — ผลรอบที่ 1 (Python reference, ยังไม่ใช่ MT5)
+# XAU_300_Research_v1 — ผลรอบที่ 1
+
+## ผล MT5 real tick ของ v1.00 (commit `2848133`) ผู้ใช้รันในเครื่องตัวเอง (user-reported)
+- **ข้อมูล:** XAUUSD_DUKA (digits 3, tick size 0.001, contract 100, volume step 0.01, เวลา UTC), real ticks 100%, ทุน $300, leverage 1:500, ช่วง 2025.10.31–2026.10.31
+- **compile:** 0 errors 0 warnings ได้ไฟล์ .ex5 ขนาด 54,776 bytes
+
+| preset | ไม้ | ชนะ/แพ้ | net | PF | equity DD | หมายเหตุ |
+|---|---|---|---|---|---|---|
+| safe 1% | 0 | – | $0 | – | 0% | ไม่มีไม้ |
+| balanced 2% | 0 | – | $0 | – | 0% | ไม่มีไม้ |
+| aggressive 5% | 16 | 5/11 | +$29.06 | 1.28 | 20.01% | halt 15 ม.ค. 2026, peak equity $412.88 · รายเดือน พ.ย. +71.92 / ธ.ค. −8.13 / ม.ค. −34.73 |
+
+- **สอดคล้องกับ Python:** P1/P2 ไม่มีไม้ และ P3 ชน halt วันที่ 15 ม.ค. เหมือนกัน ตัวเลขต่างกันเล็กน้อย (Python ได้ 21 ไม้ / +$39) เพราะ MT5 ใช้ spread ที่เปลี่ยนตาม tick และมี delay
+- **v1.00 ไม่มีกฎ timezone แบบ EU/US** ใช้เวลา server ตรงๆ ผลชุดนี้จึงไม่โดนปัญหา DST
+- **บั๊ก parser ที่พบในรอบนี้:** ใน P1/P2 ไม่มี order เลย แต่ parser เดิมนับ orders=4 เพราะอ่านเลยเข้าไปใน section Deals แก้แล้วในรอบ v1.01 พร้อม test
+- **สถานะ:** v1.01 แก้เฉพาะระบบ risk (daily stop ปิดสถานะ, retry, persist state, ปัด volume) entry rules เหมือนเดิม **ผลของ v1.00 ไม่ใช่ผลของ v1.01** ต้องรันใหม่
+
+## Python reference (ยังไม่ใช่ MT5)
 
 **สถานะ: RESEARCH-ONLY** ยังไม่มี positive edge ที่ผ่านเกณฑ์ ห้ามเรียกว่า ready หรือทำกำไรได้จริง
 ตัวเลขทั้งหมดในไฟล์นี้มาจาก simulator Python (`sim/xau300_sim.py`) บน Dukascopy M1 BID ซึ่งเป็นค่าประมาณเชิงเปรียบเทียบเท่านั้น
