@@ -1,0 +1,46 @@
+; XAU300_ORB_CappedRecovery_Research preset R3_marti1p5_base3: recovery ON, base 3%, x1.5 per level (3% / 4.5% / 6.75%)
+; RESEARCH ONLY - HIGH RISK - NOT A LIVE RECOMMENDATION. Pre-registered 2026-11-08 before any MT5 run (4 presets max).
+; Identical across R0-R3 except InpRiskPercent / InpRecoveryOn / InpRecoveryMultiplier.
+; Common: DD stop 30% (buffer below the user's 35% backtest limit), daily hard stop 3%, spread gate 0 (real spread paid),
+;         max level 2 (levels 0,1,2), risk cap 8%, max lot 0.10, never forced to the minimum lot.
+; Effective risk above 3% means a losing trade is normally closed by the daily stop before its full SL.
+; DD stop is a trigger, not a guarantee: gaps/slippage can exceed it. Nothing here guarantees DD <= 35%.
+InpAllowRealAccount=false
+InpMagic=300335
+InpComment=XAU300ORBCR
+InpRunTag=
+InpServerOffsetMinutes=0
+InpSessionStartHourUTC=0
+InpSessionStartMinUTC=0
+InpRangeMinutes=15
+InpEntryWindowMin=15
+InpMaxHoldMinutes=90
+InpTradeMon=true
+InpTradeTue=true
+InpTradeWed=true
+InpTradeThu=true
+InpTradeFri=false
+InpHalfFilter=0.5
+InpRollSessions=20
+InpRollMinPct=0.18
+InpRollStrict=true
+InpMaxSpreadPrice=0.0
+InpSLPctOfRange=50.0
+InpRR=2.0
+InpStopMoveAtR=0.5
+InpStopMoveToR=-0.5
+InpRiskPercent=3.0
+InpDailyLossPct=3.0
+InpMaxDDPct=30.0
+InpResetState=false
+InpMaxMarginUsePct=50.0
+InpDeviationPoints=30
+InpVerbose=true
+InpRecoveryOn=true
+InpRecoveryMultiplier=1.5
+InpRecoveryMaxLevel=2
+InpRiskCapPercent=8.0
+InpMaxLot=0.10
+InpBETolerance=0.01
+InpEquityCsv=true
+InpEquityFileName=

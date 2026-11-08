@@ -1,0 +1,35 @@
+; XAU_300_Research_v1 (v1.01) preset: BALANCED 2% risk
+; Entry rules identical across presets; only RiskPercent differs (sizing study, not an entry change).
+; MT5 real-tick results of v1.00 (commit 2848133) and Python reference: research/xau300/RESULTS_TH.md
+; v1.01 changes risk plumbing only (daily stop now flattens): v1.00 results are not v1.01 results.
+InpAllowRealAccount=false
+InpMagic=300301
+InpComment=XAU300v1
+InpRunTag=
+InpRangeStartHour=0
+InpRangeMinutes=60
+InpSignalTF=5
+InpEntryEndHour=20
+InpExitHour=21
+InpTradeFriday=false
+InpMaxSignalsPerDir=1
+InpSLRangePct=100.0
+InpTP_R=2.0
+InpBE_TriggerR=1.0
+InpBE_LockR=0.0
+InpKillMedianRangePct=1.5
+InpKillLookbackDays=20
+InpMaxSpreadPctSL=10.0
+InpMaxSpreadPrice=1.00
+InpMinRangeATR=0.0
+InpMaxRangeATR=0.0
+InpATRPeriodD1=14
+InpRiskPercent=2.0
+InpDailyLossPct=3.0
+InpMaxDDPct=20.0
+InpResetDDState=false
+InpMaxMarginUsePct=50.0
+InpDeviationPoints=30
+InpVerbose=true
+InpEquityCsv=true
+InpEquityFileName=

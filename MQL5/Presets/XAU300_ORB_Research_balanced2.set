@@ -1,0 +1,37 @@
+; XAU300_ORB_Research preset: BALANCED 2% risk
+; Entry rules identical across presets; only InpRiskPercent differs. Spread limit is in PRICE units (USD/oz).
+; Daily hard stop 3%: flattens and blocks entries for the rest of the server day. 
+; Rule spec: anas1412/orb-mt5 @ 0301b3e (MIT). Results: research/xau300_orb15/RESULTS_TH.md
+InpAllowRealAccount=false
+InpMagic=300315
+InpComment=XAU300ORB
+InpRunTag=
+InpServerOffsetMinutes=0
+InpSessionStartHourUTC=0
+InpSessionStartMinUTC=0
+InpRangeMinutes=15
+InpEntryWindowMin=15
+InpMaxHoldMinutes=90
+InpTradeMon=true
+InpTradeTue=true
+InpTradeWed=true
+InpTradeThu=true
+InpTradeFri=false
+InpHalfFilter=0.5
+InpRollSessions=20
+InpRollMinPct=0.18
+InpRollStrict=true
+InpMaxSpreadPrice=0.60
+InpSLPctOfRange=50.0
+InpRR=2.0
+InpStopMoveAtR=0.5
+InpStopMoveToR=-0.5
+InpRiskPercent=2.0
+InpDailyLossPct=3.0
+InpMaxDDPct=20.0
+InpResetState=false
+InpMaxMarginUsePct=50.0
+InpDeviationPoints=30
+InpVerbose=true
+InpEquityCsv=true
+InpEquityFileName=
