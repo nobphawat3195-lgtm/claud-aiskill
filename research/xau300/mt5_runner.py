@@ -24,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 EXPERTS = os.path.join(REPO, "MQL5", "Experts")
 KNOWN_EAS = {"XAU_300_Research_v1": "XAU300", "XAU300_ORB_Research": "XAU300ORB",
-             "XAU300_ORB_CappedRecovery_Research": "XAU300ORBCR"}   # name -> log prefix
+             "XAU300_ORB_CappedRecovery_Research": "XAU300ORBCR", "XAU300_ORB_LogicLab_v2": "XAU300LL2"}   # name -> log prefix
 EA_SUBDIR = "XAU300"
 
 

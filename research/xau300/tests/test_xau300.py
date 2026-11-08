@@ -13,13 +13,16 @@ import orb15_sim as O
 import make_fixture as FX
 sys.path.insert(0, os.path.join(REPO, "research", "xau300_orb15"))
 import recovery_ref as RR
+sys.path.insert(0, os.path.join(REPO, "research", "xau300_logiclab"))
+import logic_ref as LR
 
 EXPERTS = os.path.join(REPO, "MQL5", "Experts")
 PRESET_DIR = os.path.join(REPO, "MQL5", "Presets")
 EAS = {"XAU_300_Research_v1": "XAU_300_Research_v1_", "XAU300_ORB_Research": "XAU300_ORB_Research_"}   # 3-preset EAs
 CR = "XAU300_ORB_CappedRecovery_Research"
-ALL_EAS = list(EAS) + [CR]
-DEFAULT_DD = {"XAU_300_Research_v1": 20.0, "XAU300_ORB_Research": 20.0, CR: 30.0}
+LL = "XAU300_ORB_LogicLab_v2"
+ALL_EAS = list(EAS) + [CR, LL]
+DEFAULT_DD = {"XAU_300_Research_v1": 20.0, "XAU300_ORB_Research": 20.0, CR: 30.0, LL: 30.0}
 
 
 def presets_for(ea):
@@ -499,6 +502,126 @@ class CappedRecovery(unittest.TestCase):
                                    "--preset", os.path.join(PRESET_DIR, f"{CR}_R1_marti2x_base2.set"), "--dry-run")
         ini = json.loads(out)["backtest"]["ini"]
         self.assertEqual(code, 0); self.assertIn(f"Expert=XAU300\\{CR}", ini); self.assertIn("InpRecoveryOn=true", ini)
+
+
+# ============================================================================ logic lab v2
+def m1(minute, o, h, l, c, day=dt.datetime(2026, 1, 6)):
+    return (day + dt.timedelta(minutes=minute), o, h, l, c)
+
+
+class LogicLab(unittest.TestCase):
+    HI, LO, LAST = 101.0, 99.0, 100.8                          # range 99-101, closed in the top half
+    REND = dt.datetime(2026, 1, 6, 0, 15)
+
+    def day(self, bars, mode, **kw):
+        return LR.run_day(bars, self.HI, self.LO, self.LAST, self.REND, mode=mode, **kw)
+
+    def test_close_location_boundary_symmetry_zero_range(self):
+        t = dt.datetime(2026, 1, 6, 0, 15)
+        self.assertTrue(LR.close_location_ok((t, 0, 102.0, 98.0, 101.0), 1))      # (101-98)/4 = 0.75 exactly
+        self.assertFalse(LR.close_location_ok((t, 0, 102.0, 98.0, 100.9996), 1))  # 0.7499
+        self.assertTrue(LR.close_location_ok((t, 0, 102.0, 98.0, 99.0), -1))      # short mirror: (102-99)/4
+        self.assertFalse(LR.close_location_ok((t, 0, 102.0, 98.0, 99.0004), -1))
+        self.assertFalse(LR.close_location_ok((t, 0, 101.5, 101.5, 101.5), 1))    # zero range rejected
+        self.assertFalse(LR.close_location_ok((t, 0, 101.5, 101.5, 101.5), -1))
+
+    def test_mode0_enters_on_first_break_bar(self):
+        r = self.day([m1(15, 100.5, 101.3, 100.4, 101.2)], 0)
+        self.assertEqual((r["result"], r["dir"], r["entry_bar"]), ("enter", 1, self.REND))
+
+    def test_mode1_reject_still_ends_day(self):
+        bars = [m1(15, 100.5, 102.0, 100.0, 101.2),                 # break, close location 0.6 -> rejected
+                m1(16, 101.2, 103.0, 101.1, 102.9)]                 # a strong later bar must NOT trade
+        r = self.day(bars, 1)
+        self.assertEqual(r["result"], "close_location")
+        self.assertEqual(self.day(bars, 0)["result"], "enter")      # control enters on the same first bar
+
+    def test_mode2_needs_a_later_bar_and_touch(self):
+        arm = m1(15, 100.5, 101.6, 100.9, 101.5)                    # touches 101 on the arming bar itself: ignored
+        bars = [arm, m1(16, 101.5, 101.9, 101.2, 101.8), m1(17, 101.8, 101.9, 100.95, 101.4)]
+        r = self.day(bars, 2)
+        self.assertEqual((r["result"], r["dir"], r["signal_bar"], r["entry_bar"]),
+                         ("enter", 1, self.REND, self.REND + dt.timedelta(minutes=2)))
+
+    def test_mode2_close_inside_invalidates(self):
+        bars = [m1(15, 100.5, 101.6, 100.9, 101.5), m1(16, 101.5, 101.6, 100.7, 100.9),   # closes back inside
+                m1(17, 100.9, 101.5, 100.8, 101.4)]                                         # later touch+close: too late
+        self.assertEqual(self.day(bars, 2)["result"], "retest_invalidated")
+
+    def test_mode2_short_and_expiry(self):
+        last_bottom = LR.run_day([m1(15, 99.5, 99.6, 98.5, 98.6), m1(16, 98.6, 99.05, 98.4, 98.7)],
+                                 self.HI, self.LO, 99.2, self.REND, mode=2)
+        self.assertEqual((last_bottom["result"], last_bottom["dir"]), ("enter", -1))
+        bars = [m1(15, 100.5, 101.6, 100.9, 101.5)] + [m1(k, 101.6, 101.9, 101.3, 101.7) for k in range(16, 31)]
+        self.assertEqual(self.day(bars, 2)["result"], "retest_expired")                 # 00:30 bar is outside
+
+    def test_mode2_one_shot_and_restart(self):
+        bars = [m1(15, 100.5, 101.6, 100.9, 101.5), m1(16, 101.5, 101.6, 100.7, 100.9),
+                m1(17, 100.9, 101.0, 98.0, 98.5)]                   # invalidated, then a downside break: no 2nd trade
+        self.assertEqual(self.day(bars, 2)["result"], "retest_invalidated")
+        ok = [m1(15, 100.5, 101.6, 100.9, 101.5), m1(16, 101.5, 101.9, 101.2, 101.8), m1(17, 101.8, 101.9, 100.95, 101.4)]
+        self.assertEqual(self.day(ok, 2, restart_before=1)["result"], "restart_cancelled")   # pending lost, no duplicate
+
+    def test_half_filter_applies_before_modes(self):
+        bars = [m1(15, 100.5, 101.6, 100.9, 101.5)]
+        for mode in (0, 1, 2):
+            r = LR.run_day(bars, self.HI, self.LO, 99.5, self.REND, mode=mode)     # range closed in the bottom half
+            self.assertEqual(r["result"], "half_filter", mode)
+
+    def test_ea_source_guard_against_baseline(self):
+        with open(os.path.join(EXPERTS, CR + ".mq5")) as fh: base = fh.read()
+        with open(os.path.join(EXPERTS, LL + ".mq5")) as fh: lab = fh.read()
+        bc, lc = strip_mql(base), strip_mql(lab)
+        for fn in ("bool RangeOf", "double RollingMedianPct", "void EndDay", "bool StopsOK", "void ManagePosition",
+                   "bool FlattenMine", "bool AnyPositionOnSymbol", "double VolumeFloor", "bool DayAllowed", "void TryEnter",
+                   "double LotsForRisk", "double EffectiveRiskPct", "void UpdateLevel", "void ProcessClosedPosition",
+                   "void SaveDay", "void LoadState", "void EquitySample", "void EquityClose"):
+            self.assertEqual(func_body(lc, fn), func_body(bc, fn), fn)
+        nb, nl = func_body(bc, "void NewDay"), func_body(lc, "void NewDay")
+        self.assertEqual(nl.replace("   g_pendDir = 0; g_pendTime = 0;            \n", "", 1), nb)
+        self.assertLess(nl.index("g_pendDir = 0"), nl.index("GVGet("))          # pending cleared before restore
+        import difflib
+        tb, tl = func_body(bc, "void OnTick").splitlines(), func_body(lc, "void OnTick").splitlines()
+        changed = [l for l in difflib.ndiff(tb, tl) if l[:2] in ("- ", "+ ")]
+        allowed = ("if(g_dayDone || now < g_rangeEnd) return;", "if((g_dayDone && g_pendDir == 0) || now < g_rangeEnd) return;",
+                   "if(g_pendDir != 0) { ProcessRetest(b[0]); return; }", "if(InpEntryLogic == 1 && !CloseLocationOK(b[0], dir))",
+                   "{ c_closeLocReject++;", "if(InpEntryLogic == 2)", "{ g_pendDir = dir; g_pendTime = b[0].time; c_retestArmed++;")
+        for l in changed:
+            self.assertTrue(any(a in l for a in allowed), l)                          # mode-0 path unchanged otherwise
+        self.assertEqual(len(changed), 7)                                             # 1 replaced guard + 6 added lines
+        for need in ("bar.time <= g_pendTime", "bar.time >= g_rangeEnd + InpEntryWindowMin * 60", "bar.close <= g_hi",
+                     "bar.close >= g_lo", "bar.low <= g_hi", "bar.high >= g_lo", "loc >= InpBreakCloseLocationMin",
+                     "if(rng <= 0.0) return false;"):
+            self.assertIn(need, lc, need)
+        self.assertNotIn("BuyLimit", lc); self.assertNotIn("SellLimit", lc)
+        self.assertNotIn('"pend', lab)                                                  # pending state is not persisted
+        i = dict(re.findall(r"^\s*input\s+\w+\s+(Inp\w+)\s*=\s*([^;]+);", lab, re.M))
+        self.assertEqual((i["InpMagic"].strip(), i["InpEntryLogic"].strip(), float(i["InpBreakCloseLocationMin"]),
+                          i["InpAllowRealAccount"].strip()), ("300336", "0", 0.75, "false"))
+        self.assertIn("0301b3ed4ba3aa53d00459e0e6e565aa3e71d5a9", lab)
+
+    def test_presets_q0_q2_copy_r0(self):
+        names = sorted(f for f in os.listdir(PRESET_DIR) if f.startswith(LL + "_"))
+        self.assertEqual(names, [f"{LL}_{n}.set" for n in ("Q0_direct_control", "Q1_close75", "Q2_retest")])
+        r0 = dict(MR.read_set(os.path.join(PRESET_DIR, f"{CR}_R0_autolot5.set")))
+        with open(os.path.join(EXPERTS, LL + ".mq5")) as fh:
+            inputs = dict(re.findall(r"^\s*input\s+\w+\s+(Inp\w+)\s*=\s*([^;]+);", fh.read(), re.M))
+        for n, mode in (("Q0_direct_control", "0"), ("Q1_close75", "1"), ("Q2_retest", "2")):
+            q = dict(MR.read_set(os.path.join(PRESET_DIR, f"{LL}_{n}.set")))
+            self.assertEqual(set(q), set(inputs), n)
+            for k, v in r0.items():
+                if k in ("InpMagic", "InpComment"): continue
+                self.assertEqual(q[k], v, (n, k))                                       # everything else = R0
+            self.assertEqual((q["InpEntryLogic"], q["InpBreakCloseLocationMin"], q["InpMagic"], q["InpAllowRealAccount"]),
+                             (mode, "0.75", "300336", "false"), n)
+            self.assertEqual((q["InpRiskPercent"], q["InpRecoveryOn"], q["InpMaxDDPct"], q["InpDailyLossPct"], q["InpMaxLot"]),
+                             ("5.0", "false", "30.0", "3.0", "0.10"), n)
+        code, out = Runner.run_cli(self, "backtest", "--ea", LL, "--terminal-dir", tempfile.mkdtemp(),
+                                   "--preset", os.path.join(PRESET_DIR, f"{LL}_Q2_retest.set"), "--dry-run")
+        self.assertEqual(code, 0); self.assertIn("InpEntryLogic=2", json.loads(out)["backtest"]["ini"])
+        code, _ = Runner.run_cli(self, "backtest", "--source", os.path.join(EXPERTS, LL + ".mq5"), "--terminal-dir",
+                                 tempfile.mkdtemp(), "--preset", os.path.join(PRESET_DIR, f"{LL}_Q1_close75.set"), "--dry-run")
+        self.assertEqual(code, 0)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,46 @@
+; XAU300_ORB_LogicLab_v2 preset Q0_direct_control: mode 0 direct breakout (control = R0 logic)
+; RESEARCH ONLY - NOT A LIVE RECOMMENDATION. Pre-registered (research/xau300_logiclab/PREREGISTRATION.md, commit 570b0f2).
+; All values copied from XAU300_ORB_CappedRecovery_Research_R0_autolot5.set except InpMagic/InpComment (new EA)
+;   and InpEntryLogic. InpBreakCloseLocationMin=0.75 in all three, active only in mode 1.
+; Risk 5% recovery OFF, daily hard stop 3% (a loser is normally cut before its full SL), DD stop 30% (trigger, not a guarantee).
+InpAllowRealAccount=false
+InpMagic=300336
+InpComment=XAU300LL2
+InpRunTag=
+InpServerOffsetMinutes=0
+InpSessionStartHourUTC=0
+InpSessionStartMinUTC=0
+InpRangeMinutes=15
+InpEntryWindowMin=15
+InpMaxHoldMinutes=90
+InpTradeMon=true
+InpTradeTue=true
+InpTradeWed=true
+InpTradeThu=true
+InpTradeFri=false
+InpHalfFilter=0.5
+InpRollSessions=20
+InpRollMinPct=0.18
+InpRollStrict=true
+InpMaxSpreadPrice=0.0
+InpSLPctOfRange=50.0
+InpRR=2.0
+InpStopMoveAtR=0.5
+InpStopMoveToR=-0.5
+InpRiskPercent=5.0
+InpDailyLossPct=3.0
+InpMaxDDPct=30.0
+InpResetState=false
+InpMaxMarginUsePct=50.0
+InpDeviationPoints=30
+InpVerbose=true
+InpEntryLogic=0
+InpBreakCloseLocationMin=0.75
+InpRecoveryOn=false
+InpRecoveryMultiplier=1.5
+InpRecoveryMaxLevel=2
+InpRiskCapPercent=8.0
+InpMaxLot=0.10
+InpBETolerance=0.01
+InpEquityCsv=true
+InpEquityFileName=
