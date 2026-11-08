@@ -21,6 +21,11 @@
 - ORB preset กำหนด spread เป็นหน่วยราคา `InpMaxSpreadPrice=0.60` (USD ต่อ oz) และ `InpServerOffsetMinutes=0` สำหรับ DUKA ที่เป็น UTC ถ้าใช้โบรกเกอร์จริงต้องตั้ง offset เอง
 - ที่ 5% ไม้ที่ขาดทุนมักโดน daily stop 3% ปิดก่อนถึง SL
 
+**Presets สำหรับวินิจฉัยการ execute (ORB เท่านั้น):** `XAU300_ORB_Research_costaware2.set` และ `XAU300_ORB_Research_costaware5_RESEARCH_ONLY.set`
+- ต่างจาก `balanced2` และ `aggressive5` **แค่** `InpMaxSpreadPrice=0` คือปิดตัวกรอง spread ส่วนต้นทุน bid/ask จริงยังโดนหักทุกไม้เหมือนเดิม
+- ทำขึ้นหลังเห็นผล MT5 ว่า gate 0.60 ตัดเกือบทุก break (ORB 2%: breaks 116, skip_spread 76, opened 2) จึงเป็นการทดลองแบบ adaptive/exploratory ไม่ใช่ out-of-sample และไม่ได้อ้างว่าดีกว่า
+- test ตรวจว่ามี diff เพียงบรรทัดเดียว
+
 ## Equity CSV (เฉพาะใน tester)
 - ไฟล์ `server_datetime,balance,equity` บันทึกที่ **tick แรกของทุกนาที** รวมวันที่ halt ด้วย และบังคับเขียนแถวสุดท้ายตอนจบ
 - เขียนลง `MQL5/Files` ของ agent จากนั้น runner จะคัดลอกไฟล์ที่เพิ่งสร้างมาไว้เป็น `<report>.equity_m1.csv`

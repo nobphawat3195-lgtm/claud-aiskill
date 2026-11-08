@@ -53,6 +53,13 @@
 2. **E0 edge:** t(R) 3.84, PF 2.36, บวกทั้งสองครึ่ง จึงผ่านเกณฑ์ใน Python แต่ช่วง พ.ย.–ธ.ค. 2025 ที่อยู่นอกช่วงของ upstream ติดลบ (มีเพียง 5 ไม้)
 3. **Acceptance Doc §2 สำหรับ P2:** PF, DD, t และครึ่งช่วงผ่าน แต่ **มีแค่ 45 ไม้ ต่ำกว่าเกณฑ์ 100** จึงไม่ผ่าน
 
+## MT5 real tick ของ EA ตัวนี้ (ผู้ใช้รัน commit `d0c74f4`, กำลังรันอยู่)
+- **ORB balanced2 (gate spread 0.60):** 2 ไม้ ชนะ 2/แพ้ 0, +$21.10, DD 1.13%
+  - EA SUMMARY: breaks 116, half_filter 32, **skip_spread 76**, skip_min_volume 6, opened 2, ไม่ halt
+  - gate 0.60 ตัดเกือบทุกไม้ จึงเพิ่ม preset วินิจฉัย `costaware2` และ `costaware5` (เปิดรับทุกสเปรด แต่ต้นทุนจริงยังอยู่) เป็นการทดลองแบบ adaptive ไม่ใช่ out-of-sample
+- **Baseline upstream ที่ตั้ง timezone ถูก** (TZ_BROKER, server 00:00 = UTC, user-reported): 57 ไม้ ชนะ 24/แพ้ 33, +$123.60, PF 1.64, DD 11.70%, 114 orders เป็น EA ต้นฉบับ ไม่ใช่ EA ตัวนี้
+- **ตัวที่ถูกตัดทิ้งก่อนเขียนโค้ด:** trend pullback (H1 EMA + M15 pullback + M5 break) ถูก research screen ปฏิเสธ 4 configs PF 0.58–0.76 จึงไม่ได้ implement
+
 ## ตัวเลขอ้างอิง MT5 ที่ต้องอ่านอย่างระวัง
 - **ORB upstream ต้นฉบับ** บน XAUUSD_DUKA real tick (ผู้ใช้รันเอง ไม่ใช่ EA ตัวนี้) ได้ 42 ไม้, +$1.77, PF 1.01, equity DD 19.50%
 - ผลชุดนี้ **ตั้ง timezone ผิด** คือใช้ `InpWinterOffset=0` กับ `InpFollowsUSDST=false` ซึ่งทำให้ใช้กติกา EU DST กรอบจึงเลื่อนไป +1 ชั่วโมงในฤดูร้อน ไม่ได้อยู่ที่ 00:00 UTC ตลอดปี **ห้ามใช้ตัวเลขนี้ตัดสิน logic** ผู้ใช้กำลังรันใหม่ด้วย `InpTimeZone=TZ_BROKER`

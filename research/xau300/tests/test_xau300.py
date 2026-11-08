@@ -18,7 +18,9 @@ EAS = {"XAU_300_Research_v1": "XAU_300_Research_v1_", "XAU300_ORB_Research": "XA
 
 
 def presets_for(ea):
-    return sorted(os.path.join(PRESET_DIR, f) for f in os.listdir(PRESET_DIR) if f.startswith(EAS[ea]) and f.endswith(".set"))
+    """The 3 default presets per EA (execution-diagnostic 'costaware' presets are checked separately)."""
+    return sorted(os.path.join(PRESET_DIR, f) for f in os.listdir(PRESET_DIR)
+                  if f.startswith(EAS[ea]) and f.endswith(".set") and "costaware" not in f)
 
 
 # ============================================================================ report parser
@@ -376,6 +378,23 @@ class StaticEA(unittest.TestCase):
                 self.assertEqual(items["InpEquityCsv"], "true")
             self.assertEqual(sorted(risks.values()), [1.0, 2.0, 5.0], ea)
             self.assertTrue(any("RESEARCH_ONLY" in n for n, r in risks.items() if r == 5.0), ea)
+        orb = dict(MR.read_set(presets_for("XAU300_ORB_Research")[0]))
+        self.assertEqual(orb["InpMaxSpreadPrice"], "0.60")
+
+    def test_costaware_presets_differ_only_in_spread_gate(self):
+        pairs = {"XAU300_ORB_Research_costaware2.set": "XAU300_ORB_Research_balanced2.set",
+                 "XAU300_ORB_Research_costaware5_RESEARCH_ONLY.set": "XAU300_ORB_Research_aggressive5_RESEARCH_ONLY.set"}
+        diag = sorted(f for f in os.listdir(PRESET_DIR) if "costaware" in f)
+        self.assertEqual(diag, sorted(pairs))
+        for d, base in pairs.items():
+            a = MR.read_set(os.path.join(PRESET_DIR, d)); b = MR.read_set(os.path.join(PRESET_DIR, base))
+            self.assertEqual([k for k, _ in a], [k for k, _ in b], d)                 # same keys, same order
+            diff = {k: (dict(b)[k], v) for k, v in a if dict(b)[k] != v}
+            self.assertEqual(diff, {"InpMaxSpreadPrice": ("0.60", "0")}, d)
+            self.assertEqual(dict(a)["InpAllowRealAccount"], "false")
+        code, out = Runner.run_cli(self, "backtest", "--ea", "XAU300_ORB_Research", "--terminal-dir", tempfile.mkdtemp(),
+                                   "--preset", os.path.join(PRESET_DIR, "XAU300_ORB_Research_costaware2.set"), "--dry-run")
+        self.assertEqual(code, 0); self.assertIn("InpMaxSpreadPrice=0", json.loads(out)["backtest"]["ini"])
         orb = dict(MR.read_set(presets_for("XAU300_ORB_Research")[0]))
         self.assertEqual(orb["InpMaxSpreadPrice"], "0.60"); self.assertEqual(orb["InpServerOffsetMinutes"], "0")
 

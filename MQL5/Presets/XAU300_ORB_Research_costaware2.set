@@ -1,0 +1,38 @@
+; XAU300_ORB_Research preset: EXECUTION DIAGNOSTIC 2% risk (spread gate off)
+; Derived from XAU300_ORB_Research_balanced2.set: the ONLY change is InpMaxSpreadPrice=0.60 -> 0 (no spread filter).
+; Real bid/ask spread is still paid on every fill; this only stops skipping wide-spread breaks.
+; Adaptive/exploratory after seeing the 0.60 gate skip most breaks in MT5 (2026-11-08). Not out-of-sample, no claim of superiority.
+; Daily hard stop 3% and DD stop 20% unchanged. With 5% risk a losing trade usually hits the 3% daily stop first.
+InpAllowRealAccount=false
+InpMagic=300315
+InpComment=XAU300ORB
+InpRunTag=
+InpServerOffsetMinutes=0
+InpSessionStartHourUTC=0
+InpSessionStartMinUTC=0
+InpRangeMinutes=15
+InpEntryWindowMin=15
+InpMaxHoldMinutes=90
+InpTradeMon=true
+InpTradeTue=true
+InpTradeWed=true
+InpTradeThu=true
+InpTradeFri=false
+InpHalfFilter=0.5
+InpRollSessions=20
+InpRollMinPct=0.18
+InpRollStrict=true
+InpMaxSpreadPrice=0
+InpSLPctOfRange=50.0
+InpRR=2.0
+InpStopMoveAtR=0.5
+InpStopMoveToR=-0.5
+InpRiskPercent=2.0
+InpDailyLossPct=3.0
+InpMaxDDPct=20.0
+InpResetState=false
+InpMaxMarginUsePct=50.0
+InpDeviationPoints=30
+InpVerbose=true
+InpEquityCsv=true
+InpEquityFileName=
