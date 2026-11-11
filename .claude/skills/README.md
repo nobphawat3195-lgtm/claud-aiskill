@@ -6,6 +6,7 @@ Every `<name>/SKILL.md` here loads automatically in Claude Code sessions opened 
 |-------|--------|---------|-------------------|-------|
 | `ponytail` | https://github.com/DietrichGebert/ponytail (`skills/ponytail/SKILL.md`) | MIT | `main`, fetched 2026-10-28 | Smallest-change mode. `/ponytail lite\|full\|ultra\|off`. Prompt only, no hooks or scripts. The plugin's other commands (e.g. `/ponytail-help`) are not vendored. |
 | `reverse-engineer-anything` | Origin not recorded when added (commit `bc6ad93`) | See `reverse-engineer-anything/LICENSE` | `metadata.version: "49"` | Reverse engineering with REA. Has `references/` files. |
+| `agent-browser` | https://github.com/vercel-labs/agent-browser (`skills/agent-browser/SKILL.md`) | Apache-2.0 | `main`, fetched 2026-10-28 (CLI v0.40.0) | Discovery stub only. Needs the CLI: `npm i -g agent-browser && agent-browser install`; then `agent-browser skills get core`. Not installed in cloud sessions by default. |
 
 ## Adding a skill
 
