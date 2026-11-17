@@ -1,0 +1,653 @@
+//@version=6
+// ══════════════════════════════════════════════════════════════════
+//  YOUNGYUU MASTER SYSTEM PRO  v2.0
+//  Trend Engine (Supertrend) + MTF Bias + Supply/Demand Zones
+//  + Confluence Score (A+/A/B/C) + Trade Tracker + Daily Stats HUD
+//  NON-REPAINT : every signal / state change commits on bar close
+// ══════════════════════════════════════════════════════════════════
+indicator("YOUNGYUU Master System PRO", shorttitle = "YOUNGYUU_PRO", overlay = true,
+     max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500)
+
+// ══════════════════════════════════════
+// 🎨 PALETTE
+// ══════════════════════════════════════
+C_UP   = #00c896
+C_DN   = #ff3b5c
+C_GOLD = #FFD700
+C_TXT  = #e6e9f0
+C_MUTE = #8b93a7
+C_WARN = #ffb020
+C_BLUE = #3d8bfd
+C_BG   = color.new(#0b0f19, 5)
+C_SEC  = #1a2132
+
+// ══════════════════════════════════════
+// ⚙️ INPUTS
+// ══════════════════════════════════════
+GRP_MAIN   = "⚙️ CORE"
+atrLen     = input.int(13, "ATR Length", minval = 1, group = GRP_MAIN)
+baseMult   = input.float(2.5, "Supertrend Multiplier", minval = 0.1, step = 0.1, group = GRP_MAIN)
+showST     = input.bool(true, "Show Trend Line", group = GRP_MAIN)
+barColorOn = input.bool(false, "Color Bars by Trend", group = GRP_MAIN)
+
+GRP_FLT      = "🧪 SIGNAL FILTERS"
+useHtf       = input.bool(true, "HTF Trend Filter", inline = "htf", group = GRP_FLT)
+htfTf        = input.timeframe("15", "", inline = "htf", group = GRP_FLT)
+useAdx       = input.bool(false, "ADX Filter ≥", inline = "adx", group = GRP_FLT)
+adxMin       = input.float(20, "", inline = "adx", group = GRP_FLT)
+useEma       = input.bool(false, "EMA Filter", inline = "ema", group = GRP_FLT)
+emaLen       = input.int(200, "", inline = "ema", group = GRP_FLT)
+blockZone    = input.bool(true, "Block BUY in Supply / SELL in Demand", group = GRP_FLT)
+minScore     = input.int(0, "Min Confluence Score (0-5)", minval = 0, maxval = 5, group = GRP_FLT)
+useSess      = input.bool(false, "Session Filter", inline = "ss", group = GRP_FLT)
+sessStr      = input.session("1400-2330", "", inline = "ss", group = GRP_FLT)
+sessTz       = input.string("Asia/Bangkok", "Session Timezone", group = GRP_FLT)
+maxTrades    = input.int(0, "Max Trades / Day (0 = unlimited)", minval = 0, group = GRP_FLT)
+showFiltered = input.bool(true, "Show Filtered Signals (gray ×)", group = GRP_FLT)
+
+GRP_MTF = "🧭 MTF TREND"
+tf1     = input.timeframe("5", "TF 1", group = GRP_MTF)
+tf2     = input.timeframe("15", "TF 2", group = GRP_MTF)
+tf3     = input.timeframe("60", "TF 3", group = GRP_MTF)
+tf4     = input.timeframe("240", "TF 4", group = GRP_MTF)
+
+GRP_SL    = "🛡️ STOP LOSS"
+slMode    = input.string("Dynamic ATR", "SL Mode", options = ["Dynamic ATR", "Fixed Points", "Trend Line"], group = GRP_SL)
+slAtrM    = input.float(1.5, "SL ATR Multiplier", step = 0.1, group = GRP_SL)
+slPts     = input.int(500, "Fixed SL (Points)", group = GRP_SL)
+slBuf     = input.float(0.2, "Trend Line Buffer (ATR ×)", step = 0.05, group = GRP_SL)
+trailMode = input.string("BE after TP1", "SL Management", options = ["None", "BE after TP1", "Step (BE@TP1, TP1@TP2)"], group = GRP_SL)
+
+GRP_TP   = "🎯 TAKE PROFIT"
+tpMode   = input.string("ATR", "TP Mode", options = ["ATR", "Risk:Reward"], group = GRP_TP)
+tpLevels = input.int(3, "TP Levels", minval = 1, maxval = 3, group = GRP_TP)
+tp1Mult  = input.float(2.0, "TP1 (ATR × or R)", step = 0.1, group = GRP_TP)
+tp2Mult  = input.float(4.0, "TP2 (ATR × or R)", step = 0.1, group = GRP_TP)
+tp3Mult  = input.float(6.0, "TP3 (ATR × or R)", step = 0.1, group = GRP_TP)
+showRR   = input.bool(true, "Show Risk/Reward Boxes", group = GRP_TP)
+showHits = input.bool(true, "Show TP / SL Hit Marks", group = GRP_TP)
+
+GRP_Z       = "🧱 SUPPLY / DEMAND"
+showZones   = input.bool(true, "Show Zones", group = GRP_Z)
+zLen        = input.int(5, "Pivot Strength", minval = 2, group = GRP_Z)
+zImpulse    = input.float(1.5, "Min Departure (ATR ×)", step = 0.1, group = GRP_Z, tooltip = "ราคาต้องวิ่งออกจากโซนอย่างน้อย N×ATR ถึงจะนับเป็นโซน S/D")
+zMaxAtr     = input.float(1.0, "Max Zone Height (ATR ×)", step = 0.1, group = GRP_Z)
+zMax        = input.int(4, "Max Zones per Side", minval = 1, maxval = 20, group = GRP_Z)
+zBreak      = input.string("Close", "Invalidate on", options = ["Close", "Wick"], group = GRP_Z)
+zMaxTouch   = input.int(3, "Remove after N Tests (0 = never)", minval = 0, group = GRP_Z)
+zShowBroken = input.bool(false, "Keep Broken Zones (gray)", group = GRP_Z)
+cSupply     = input.color(color.new(#ff3b5c, 80), "Supply", inline = "zc", group = GRP_Z)
+cDemand     = input.color(color.new(#00c896, 80), "Demand", inline = "zc", group = GRP_Z)
+
+GRP_D    = "📊 DASHBOARD"
+dashPos  = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left", "Middle Right"], group = GRP_D)
+dashSzIn = input.string("Small", "Text Size", options = ["Tiny", "Small", "Normal"], group = GRP_D)
+secTrend = input.bool(true, "Section: Trend", group = GRP_D)
+secZone  = input.bool(true, "Section: Supply / Demand", group = GRP_D)
+secSig   = input.bool(true, "Section: Signal", group = GRP_D)
+secPos   = input.bool(true, "Section: Position", group = GRP_D)
+secDay   = input.bool(true, "Section: Today", group = GRP_D)
+secAll   = input.bool(true, "Section: Backtest Stats", group = GRP_D)
+
+GRP_AL    = "🔔 ALERTS"
+alertJson = input.bool(true, "JSON Message (Webhook → MT5 EA)", group = GRP_AL)
+alertZone = input.bool(false, "Alert on Zone Test", group = GRP_AL)
+
+// ══════════════════════════════════════
+// 🧱 TYPES
+// ══════════════════════════════════════
+type Zone
+    box   bx
+    float top
+    float bot
+    int   tests = 0
+
+type Trade
+    int    dir     = 0
+    float  entry   = na
+    float  sl      = na
+    float  tp1     = na
+    float  tp2     = na
+    float  tp3     = na
+    float  tpEnd   = na
+    int    bar     = na
+    string grade   = ""
+    bool   hit1    = false
+    bool   hit2    = false
+    bool   hit3    = false
+    bool   slMoved = false
+
+type Stats
+    int   tradesToday = 0
+    int   winsToday   = 0
+    int   lossToday   = 0
+    int   beToday     = 0
+    float pnlToday    = 0.0
+    int   totalTrades = 0
+    int   totalWins   = 0
+    int   totalLoss   = 0
+    int   totalBe     = 0
+    float totalPnl    = 0.0
+    float grossWin    = 0.0
+    float grossLoss   = 0.0
+    int   tp1Hits     = 0
+    int   tp2Hits     = 0
+    int   tp3Hits     = 0
+    int   days        = 0
+
+// ══════════════════════════════════════
+// 🧠 CORE ENGINE
+// ══════════════════════════════════════
+float atrVal = ta.atr(atrLen)
+[stLine, stDirRaw] = ta.supertrend(baseMult, atrLen)
+int   trendDir = stDirRaw < 0 ? 1 : -1                 // 1 = bull, -1 = bear
+[diP, diM, adxVal] = ta.dmi(atrLen, atrLen)            // FIX: ADX ที่ถูกต้อง
+float emaVal   = ta.ema(close, emaLen)
+float atrAvg   = ta.sma(atrVal, 100)
+float volRatio = atrAvg > 0 ? atrVal / atrAvg : 1.0
+
+// ── MTF (non-repaint: previous closed HTF bar + lookahead_on)
+f_htfDir(simple string tf) =>
+    nz(request.security(syminfo.tickerid, tf, trendDir[1], lookahead = barmerge.lookahead_on), 0)
+
+int htfDir  = f_htfDir(htfTf)
+int d1      = f_htfDir(tf1)
+int d2      = f_htfDir(tf2)
+int d3      = f_htfDir(tf3)
+int d4      = f_htfDir(tf4)
+int mtfBull = (d1 == 1 ? 1 : 0) + (d2 == 1 ? 1 : 0) + (d3 == 1 ? 1 : 0) + (d4 == 1 ? 1 : 0)
+int mtfBear = (d1 == -1 ? 1 : 0) + (d2 == -1 ? 1 : 0) + (d3 == -1 ? 1 : 0) + (d4 == -1 ? 1 : 0)
+
+// ── Sessions
+bool sessOk = not useSess or not na(time(timeframe.period, sessStr, sessTz))
+bool sAsia  = not na(time(timeframe.period, "0000-0800", "UTC"))
+bool sLon   = not na(time(timeframe.period, "0700-1600", "UTC"))
+bool sNY    = not na(time(timeframe.period, "1300-2200", "UTC"))
+string sessName = sLon and sNY ? "LDN+NY 🔥" : sNY ? "NEW YORK" : sLon ? "LONDON" : sAsia ? "ASIA" : "OFF-HOURS"
+
+// ══════════════════════════════════════
+// 📦 STATE
+// ══════════════════════════════════════
+var array<Zone> supZ    = array.new<Zone>()
+var array<Zone> demZ    = array.new<Zone>()
+var Trade       T       = Trade.new()
+var Stats       S       = Stats.new()
+var array<int>  dayHist = array.new<int>()
+var int    lastSigDir   = 0
+var int    lastSigBar   = na
+var string lastSigGrade = ""
+
+// ══════════════════════════════════════
+// 🔧 HELPERS
+// ══════════════════════════════════════
+f_px(float x)  => na(x) ? "—" : str.tostring(x, format.mintick)
+f_sgn(float x) => na(x) ? "—" : (x >= 0 ? "+" : "") + str.tostring(x, "#.##")
+f_pct(int a, int b) => b > 0 ? str.tostring(100.0 * a / b, "#.#") + "%" : "—"
+f_grade(int s) => s >= 5 ? "A+" : s == 4 ? "A" : s == 3 ? "B" : "C"
+f_dots(int s)  => str.repeat("●", s) + str.repeat("○", 5 - s)
+f_arrow(int d) => d == 1 ? "▲" : d == -1 ? "▼" : "•"
+f_tfName(string tf) =>
+    int sec = timeframe.in_seconds(tf)
+    sec < 3600 ? "M" + str.tostring(math.round(sec / 60)) : sec < 86400 ? "H" + str.tostring(math.round(sec / 3600)) : sec < 604800 ? "D" + str.tostring(math.round(sec / 86400)) : tf
+f_reached(int d, float lvl) => d == 1 ? high >= lvl : low <= lvl
+f_stopped(int d, float lvl) => d == 1 ? low <= lvl : high >= lvl
+f_tp(int d, float mult, float risk) => tpMode == "ATR" ? close + d * mult * atrVal : close + d * mult * risk
+f_zoneBg(color c, int tests) => showZones ? color.new(c, math.min(95, color.t(c) + tests * 4)) : color(na)
+f_mark(float y, string txt, color col) =>
+    label.new(bar_index, y, txt, color = col, textcolor = color.white, style = label.style_label_left, size = size.tiny)
+
+f_overlaps(array<Zone> zs, float top, float bot) =>
+    bool hit = false
+    for z in zs
+        if top >= z.bot and bot <= z.top
+            hit := true
+            break
+    hit
+
+method closeTrade(Stats s, Trade t, float px) =>
+    float pnl = (px - t.entry) * t.dir
+    if math.abs(pnl) < syminfo.mintick
+        s.beToday += 1
+        s.totalBe += 1
+    else if pnl > 0
+        s.winsToday += 1
+        s.totalWins += 1
+        s.grossWin  += pnl
+    else
+        s.lossToday += 1
+        s.totalLoss += 1
+        s.grossLoss -= pnl
+    s.pnlToday += pnl
+    s.totalPnl += pnl
+    t.dir := 0
+    pnl
+
+// ══════════════════════════════════════
+// 📅 DAILY RESET
+// ══════════════════════════════════════
+bool newDay = timeframe.change("D")
+if barstate.isconfirmed and newDay
+    if S.days > 0
+        dayHist.push(S.tradesToday)
+        if dayHist.size() > 7
+            dayHist.shift()
+    S.days        += 1
+    S.tradesToday := 0
+    S.winsToday   := 0
+    S.lossToday   := 0
+    S.beToday     := 0
+    S.pnlToday    := 0.0
+
+// ══════════════════════════════════════
+// 🧱 SUPPLY / DEMAND ENGINE
+// Pivot + departure ≥ N×ATR, zone = wick → body (ATR-capped)
+// ══════════════════════════════════════
+float ph        = ta.pivothigh(high, zLen, zLen)
+float pl        = ta.pivotlow(low, zLen, zLen)
+float lowAfter  = ta.lowest(low, zLen)
+float highAfter = ta.highest(high, zLen)
+float atrPiv    = atrVal[zLen]
+bool  supTouch  = false
+bool  demTouch  = false
+
+// 1) update existing zones (tests / invalidation)
+if barstate.isconfirmed and supZ.size() > 0
+    for i = supZ.size() - 1 to 0
+        Zone z = supZ.get(i)
+        float brk = zBreak == "Close" ? close : high
+        if brk > z.top
+            if zShowBroken and showZones
+                z.bx.set_extend(extend.none)
+                z.bx.set_right(bar_index)
+                z.bx.set_bgcolor(color.new(color.gray, 88))
+                z.bx.set_border_color(color.new(color.gray, 70))
+                z.bx.set_text("")
+            else
+                z.bx.delete()
+            supZ.remove(i)
+        else if high >= z.bot and high[1] < z.bot
+            z.tests += 1
+            supTouch := true
+            if zMaxTouch > 0 and z.tests > zMaxTouch
+                z.bx.delete()
+                supZ.remove(i)
+            else
+                z.bx.set_bgcolor(f_zoneBg(cSupply, z.tests))
+                z.bx.set_text(showZones ? "SUPPLY · " + str.tostring(z.tests) + "T" : "")
+
+if barstate.isconfirmed and demZ.size() > 0
+    for i = demZ.size() - 1 to 0
+        Zone z = demZ.get(i)
+        float brk = zBreak == "Close" ? close : low
+        if brk < z.bot
+            if zShowBroken and showZones
+                z.bx.set_extend(extend.none)
+                z.bx.set_right(bar_index)
+                z.bx.set_bgcolor(color.new(color.gray, 88))
+                z.bx.set_border_color(color.new(color.gray, 70))
+                z.bx.set_text("")
+            else
+                z.bx.delete()
+            demZ.remove(i)
+        else if low <= z.top and low[1] > z.top
+            z.tests += 1
+            demTouch := true
+            if zMaxTouch > 0 and z.tests > zMaxTouch
+                z.bx.delete()
+                demZ.remove(i)
+            else
+                z.bx.set_bgcolor(f_zoneBg(cDemand, z.tests))
+                z.bx.set_text(showZones ? "DEMAND · " + str.tostring(z.tests) + "T" : "")
+
+// 2) create new zones
+if barstate.isconfirmed and not na(ph) and not na(atrPiv)
+    float top = ph
+    float bot = math.max(open[zLen], close[zLen])
+    if top - bot > zMaxAtr * atrPiv
+        bot := top - zMaxAtr * atrPiv
+    if top - bot < 0.15 * atrPiv
+        bot := top - 0.15 * atrPiv
+    if ph - lowAfter >= zImpulse * atrPiv and not f_overlaps(supZ, top, bot)
+        box b = box.new(bar_index - zLen, top, bar_index, bot, border_color = showZones ? color.new(cSupply, 40) : color(na),
+             bgcolor = f_zoneBg(cSupply, 0), extend = extend.right, text = showZones ? "SUPPLY" : "",
+             text_color = color.new(cSupply, 0), text_size = size.tiny, text_halign = text.align_right, text_valign = text.align_center)
+        supZ.push(Zone.new(b, top, bot, 0))
+        if supZ.size() > zMax
+            Zone old = supZ.shift()
+            old.bx.delete()
+
+if barstate.isconfirmed and not na(pl) and not na(atrPiv)
+    float bot = pl
+    float top = math.min(open[zLen], close[zLen])
+    if top - bot > zMaxAtr * atrPiv
+        top := bot + zMaxAtr * atrPiv
+    if top - bot < 0.15 * atrPiv
+        top := bot + 0.15 * atrPiv
+    if highAfter - pl >= zImpulse * atrPiv and not f_overlaps(demZ, top, bot)
+        box b = box.new(bar_index - zLen, top, bar_index, bot, border_color = showZones ? color.new(cDemand, 40) : color(na),
+             bgcolor = f_zoneBg(cDemand, 0), extend = extend.right, text = showZones ? "DEMAND" : "",
+             text_color = color.new(cDemand, 0), text_size = size.tiny, text_halign = text.align_right, text_valign = text.align_center)
+        demZ.push(Zone.new(b, top, bot, 0))
+        if demZ.size() > zMax
+            Zone old = demZ.shift()
+            old.bx.delete()
+
+// 3) nearest zones
+f_nearSupply() =>
+    float nb = na
+    float nt = na
+    for z in supZ
+        if z.top >= close and (na(nb) or z.bot < nb)
+            nb := z.bot
+            nt := z.top
+    [nb, nt]
+
+f_nearDemand() =>
+    float nb = na
+    float nt = na
+    for z in demZ
+        if z.bot <= close and (na(nt) or z.top > nt)
+            nb := z.bot
+            nt := z.top
+    [nb, nt]
+
+[sBot, sTop] = f_nearSupply()
+[dBot, dTop] = f_nearDemand()
+bool inSupply = not na(sBot) and close >= sBot and close <= sTop
+bool inDemand = not na(dTop) and close >= dBot and close <= dTop
+
+// ══════════════════════════════════════
+// 🎯 CONFLUENCE SCORE (0-5)
+//  HTF align · ADX · EMA side · Room to TP1 (no opposing zone) · MTF majority
+// ══════════════════════════════════════
+float slLongRaw  = slMode == "Dynamic ATR" ? close - slAtrM * atrVal : slMode == "Fixed Points" ? close - slPts * syminfo.mintick : stLine - slBuf * atrVal
+float slShortRaw = slMode == "Dynamic ATR" ? close + slAtrM * atrVal : slMode == "Fixed Points" ? close + slPts * syminfo.mintick : stLine + slBuf * atrVal
+float slLong     = slLongRaw < close ? slLongRaw : close - slAtrM * atrVal
+float slShort    = slShortRaw > close ? slShortRaw : close + slAtrM * atrVal
+float tp1L       = f_tp(1, tp1Mult, close - slLong)
+float tp1S       = f_tp(-1, tp1Mult, slShort - close)
+bool  roomBuy    = na(sBot) or sBot >= tp1L
+bool  roomSell   = na(dTop) or dTop <= tp1S
+
+int scoreBuy  = (htfDir == 1 ? 1 : 0) + (adxVal >= adxMin ? 1 : 0) + (close > emaVal ? 1 : 0) + (roomBuy ? 1 : 0) + (mtfBull >= 3 ? 1 : 0)
+int scoreSell = (htfDir == -1 ? 1 : 0) + (adxVal >= adxMin ? 1 : 0) + (close < emaVal ? 1 : 0) + (roomSell ? 1 : 0) + (mtfBear >= 3 ? 1 : 0)
+
+// ══════════════════════════════════════
+// 🚦 SIGNALS (confirmed bar only)
+// ══════════════════════════════════════
+bool flipUp  = trendDir == 1 and trendDir[1] == -1
+bool flipDn  = trendDir == -1 and trendDir[1] == 1
+bool limitOk = maxTrades == 0 or S.tradesToday < maxTrades
+
+bool passBuy  = (not useHtf or htfDir == 1) and (not useAdx or adxVal >= adxMin) and (not useEma or close > emaVal) and (not blockZone or not inSupply) and sessOk and limitOk and scoreBuy >= minScore
+bool passSell = (not useHtf or htfDir == -1) and (not useAdx or adxVal >= adxMin) and (not useEma or close < emaVal) and (not blockZone or not inDemand) and sessOk and limitOk and scoreSell >= minScore
+
+bool buySig  = barstate.isconfirmed and flipUp and passBuy
+bool sellSig = barstate.isconfirmed and flipDn and passSell
+bool buyFlt  = barstate.isconfirmed and flipUp and not passBuy
+bool sellFlt = barstate.isconfirmed and flipDn and not passSell
+
+// ══════════════════════════════════════
+// 📒 TRADE TRACKER (SL checked first = conservative)
+// ══════════════════════════════════════
+if barstate.isconfirmed and T.dir != 0 and bar_index > T.bar
+    int d = T.dir
+    if f_stopped(d, T.sl)
+        float slPx = T.sl
+        float pnl  = S.closeTrade(T, slPx)
+        string tag = math.abs(pnl) < syminfo.mintick ? "⚖ BE" : pnl > 0 ? "🔒 LOCK " + f_sgn(pnl) : "✖ SL " + f_sgn(pnl)
+        if showHits
+            f_mark(slPx, tag, pnl < 0 ? C_DN : C_MUTE)
+        alert("YOUNGYUU " + syminfo.ticker + " " + tag + " @ " + f_px(slPx), alert.freq_once_per_bar_close)
+    else
+        if not T.hit1 and f_reached(d, T.tp1)
+            T.hit1 := true
+            S.tp1Hits += 1
+            if showHits and tpLevels > 1
+                f_mark(T.tp1, "✓ TP1", C_UP)
+            if trailMode != "None"
+                T.sl      := T.entry
+                T.slMoved := true
+        if tpLevels >= 2 and not T.hit2 and f_reached(d, T.tp2)
+            T.hit2 := true
+            S.tp2Hits += 1
+            if showHits and tpLevels > 2
+                f_mark(T.tp2, "✓ TP2", C_UP)
+            if trailMode == "Step (BE@TP1, TP1@TP2)"
+                T.sl      := T.tp1
+                T.slMoved := true
+        if tpLevels >= 3 and not T.hit3 and f_reached(d, T.tp3)
+            T.hit3 := true
+            S.tp3Hits += 1
+        if f_reached(d, T.tpEnd)
+            float endPx = T.tpEnd
+            float pnl   = S.closeTrade(T, endPx)
+            if showHits
+                f_mark(endPx, "🏁 TP" + str.tostring(tpLevels) + " " + f_sgn(pnl), C_UP)
+            alert("YOUNGYUU " + syminfo.ticker + " FINAL TP HIT @ " + f_px(endPx), alert.freq_once_per_bar_close)
+
+// exit on opposite flip (even if new signal is filtered)
+if barstate.isconfirmed and T.dir != 0 and ((T.dir == 1 and flipDn) or (T.dir == -1 and flipUp))
+    float pnl = S.closeTrade(T, close)
+    if showHits
+        f_mark(close, "↺ EXIT " + f_sgn(pnl), color.new(C_MUTE, 10))
+
+// open new trade
+if buySig or sellSig
+    int   d    = buySig ? 1 : -1
+    float sl   = d == 1 ? slLong : slShort
+    float risk = math.abs(close - sl)
+    int   sc   = d == 1 ? scoreBuy : scoreSell
+    T.dir     := d
+    T.entry   := close
+    T.sl      := sl
+    T.tp1     := f_tp(d, tp1Mult, risk)
+    T.tp2     := f_tp(d, tp2Mult, risk)
+    T.tp3     := f_tp(d, tp3Mult, risk)
+    T.tpEnd   := tpLevels == 1 ? T.tp1 : tpLevels == 2 ? T.tp2 : T.tp3
+    T.bar     := bar_index
+    T.grade   := f_grade(sc)
+    T.hit1    := false
+    T.hit2    := false
+    T.hit3    := false
+    T.slMoved := false
+    S.tradesToday += 1
+    S.totalTrades += 1
+    lastSigDir   := d
+    lastSigBar   := bar_index
+    lastSigGrade := T.grade
+
+    string tip = "Score " + str.tostring(sc) + "/5\nEntry " + f_px(close) + "\nSL " + f_px(sl) + "\nTP1 " + f_px(T.tp1) + "\nTP2 " + f_px(T.tp2) + "\nTP3 " + f_px(T.tp3)
+    label.new(bar_index, d == 1 ? low : high, (d == 1 ? "BUY " : "SELL ") + T.grade,
+         yloc = d == 1 ? yloc.belowbar : yloc.abovebar, style = d == 1 ? label.style_label_up : label.style_label_down,
+         color = color.new(d == 1 ? C_UP : C_DN, sc >= 4 ? 0 : 35), textcolor = color.white, size = size.small, tooltip = tip)
+
+    string msg = alertJson ?
+         '{"action":"' + (d == 1 ? "BUY" : "SELL") + '","symbol":"' + syminfo.ticker + '","tf":"' + timeframe.period +
+         '","price":' + f_px(close) + ',"sl":' + f_px(sl) + ',"tp1":' + f_px(T.tp1) + ',"tp2":' + f_px(T.tp2) +
+         ',"tp3":' + f_px(T.tp3) + ',"grade":"' + T.grade + '","score":' + str.tostring(sc) + '}' :
+         "YOUNGYUU " + (d == 1 ? "BUY " : "SELL ") + syminfo.ticker + " @ " + f_px(close) + " | SL " + f_px(sl) + " | TP1 " + f_px(T.tp1) + " | Grade " + T.grade
+    alert(msg, alert.freq_once_per_bar_close)
+
+if alertZone and supTouch
+    alert("YOUNGYUU " + syminfo.ticker + " testing SUPPLY zone @ " + f_px(close), alert.freq_once_per_bar_close)
+if alertZone and demTouch
+    alert("YOUNGYUU " + syminfo.ticker + " testing DEMAND zone @ " + f_px(close), alert.freq_once_per_bar_close)
+
+alertcondition(buySig, "YOUNGYUU BUY", "YOUNGYUU BUY {{ticker}} @ {{close}}")
+alertcondition(sellSig, "YOUNGYUU SELL", "YOUNGYUU SELL {{ticker}} @ {{close}}")
+
+// ══════════════════════════════════════
+// 🎨 VISUALS
+// ══════════════════════════════════════
+plot(showST and trendDir == 1 ? stLine : na, "Trend Up", color = C_UP, linewidth = 2, style = plot.style_linebr)
+plot(showST and trendDir == -1 ? stLine : na, "Trend Down", color = C_DN, linewidth = 2, style = plot.style_linebr)
+barcolor(barColorOn ? (trendDir == 1 ? C_UP : C_DN) : na)
+plotshape(showFiltered and buyFlt, "Filtered Buy", shape.xcross, location.belowbar, color.new(C_MUTE, 30), size = size.tiny)
+plotshape(showFiltered and sellFlt, "Filtered Sell", shape.xcross, location.abovebar, color.new(C_MUTE, 30), size = size.tiny)
+
+// ── active trade levels + R:R boxes
+var array<line>  tLines  = array.new<line>()
+var array<label> tLabels = array.new<label>()
+var array<box>   tBoxes  = array.new<box>()
+
+f_lvl(int x1, int x2, float y, string txt, color col, color tcol, string sty) =>
+    tLines.push(line.new(x1, y, x2, y, color = col, width = sty == line.style_solid ? 2 : 1, style = sty))
+    tLabels.push(label.new(x2, y, txt, color = col, textcolor = tcol, style = label.style_label_left, size = size.small))
+
+if barstate.islast
+    for l in tLines
+        l.delete()
+    for lb in tLabels
+        lb.delete()
+    for bx in tBoxes
+        bx.delete()
+    tLines.clear()
+    tLabels.clear()
+    tBoxes.clear()
+    if T.dir != 0
+        int x2 = bar_index + 12
+        if showRR
+            tBoxes.push(box.new(T.bar, math.max(T.entry, T.sl), x2, math.min(T.entry, T.sl), border_color = color(na), bgcolor = color.new(C_DN, 88)))
+            tBoxes.push(box.new(T.bar, math.max(T.entry, T.tpEnd), x2, math.min(T.entry, T.tpEnd), border_color = color(na), bgcolor = color.new(C_UP, 88)))
+        f_lvl(T.bar, x2, T.entry, "🔑 ENTRY " + f_px(T.entry), C_BLUE, color.white, line.style_solid)
+        f_lvl(T.bar, x2, T.sl, (T.slMoved ? "🔒 SL " : "🛡️ SL ") + f_px(T.sl), C_DN, color.white, line.style_solid)
+        f_lvl(T.bar, x2, T.tp1, "🎯 TP1 " + f_px(T.tp1) + (T.hit1 ? " ✓" : ""), C_UP, color.black, line.style_dashed)
+        if tpLevels >= 2
+            f_lvl(T.bar, x2, T.tp2, "🎯 TP2 " + f_px(T.tp2) + (T.hit2 ? " ✓" : ""), C_UP, color.black, line.style_dashed)
+        if tpLevels >= 3
+            f_lvl(T.bar, x2, T.tp3, "🎯 TP3 " + f_px(T.tp3) + (T.hit3 ? " ✓" : ""), C_UP, color.black, line.style_dashed)
+
+// ══════════════════════════════════════
+// 📊 DASHBOARD
+// ══════════════════════════════════════
+tblPos = switch dashPos
+    "Top Left"     => position.top_left
+    "Bottom Right" => position.bottom_right
+    "Bottom Left"  => position.bottom_left
+    "Middle Right" => position.middle_right
+    => position.top_right
+dashSize = switch dashSzIn
+    "Tiny"   => size.tiny
+    "Normal" => size.normal
+    => size.small
+
+var table tbl = table.new(tblPos, 3, 34, bgcolor = C_BG, frame_color = color.new(C_GOLD, 40), frame_width = 1, border_color = #232b3d, border_width = 1)
+
+f_c(int c, int r, string t, color tc, color bg) =>
+    table.cell(tbl, c, r, t, text_color = tc, bgcolor = bg, text_size = dashSize, text_halign = c == 0 ? text.align_left : text.align_right)
+
+f_row(int r, string a, string b, color bc, string c, color cc) =>
+    f_c(0, r, a, C_MUTE, na)
+    f_c(1, r, b, bc, na)
+    f_c(2, r, c, cc, na)
+
+f_sec(int r, string t) =>
+    table.cell(tbl, 0, r, t, text_color = C_GOLD, bgcolor = C_SEC, text_size = dashSize, text_halign = text.align_left)
+    table.merge_cells(tbl, 0, r, 2, r)
+
+if barstate.islast
+    int r = 0
+    table.cell(tbl, 0, r, "⚡ YOUNGYUU PRO", text_color = #0b0f19, bgcolor = C_GOLD, text_size = dashSize, text_halign = text.align_left)
+    table.merge_cells(tbl, 0, r, 1, r)
+    table.cell(tbl, 2, r, syminfo.ticker + " · " + f_tfName(timeframe.period), text_color = #0b0f19, bgcolor = C_GOLD, text_size = dashSize, text_halign = text.align_right)
+    r += 1
+
+    // ── TREND
+    if secTrend
+        f_sec(r, "📈 TREND ENGINE")
+        r += 1
+        f_row(r, "Chart TF", trendDir == 1 ? "BULL ▲" : "BEAR ▼", trendDir == 1 ? C_UP : C_DN, "ST " + f_px(stLine), C_MUTE)
+        r += 1
+        string mtfTxt = f_tfName(tf1) + f_arrow(d1) + " " + f_tfName(tf2) + f_arrow(d2) + " " + f_tfName(tf3) + f_arrow(d3) + " " + f_tfName(tf4) + f_arrow(d4)
+        string mtfLbl = mtfBull == 4 ? "4/4 STRONG BULL" : mtfBear == 4 ? "4/4 STRONG BEAR" : mtfBull >= 3 ? "3/4 BULL" : mtfBear >= 3 ? "3/4 BEAR" : "MIXED"
+        color  mtfCol = mtfBull >= 3 ? C_UP : mtfBear >= 3 ? C_DN : C_WARN
+        f_row(r, "MTF Bias", mtfTxt, C_TXT, mtfLbl, mtfCol)
+        r += 1
+        string adxLbl = adxVal >= 40 ? "VERY STRONG" : adxVal >= 25 ? "TRENDING" : adxVal >= 20 ? "WEAK" : "RANGING"
+        f_row(r, "ADX", str.tostring(adxVal, "#.#"), adxVal >= 25 ? C_UP : adxVal >= 20 ? C_WARN : C_DN, adxLbl, C_MUTE)
+        r += 1
+        string volLbl = volRatio >= 1.5 ? "EXTREME ⚠" : volRatio >= 1.15 ? "HIGH" : volRatio >= 0.75 ? "NORMAL" : "LOW / CHOP"
+        color  volCol = volRatio >= 1.5 ? C_DN : volRatio >= 0.75 ? C_UP : C_WARN
+        f_row(r, "Volatility", "ATR " + str.tostring(atrVal, "#.##"), C_TXT, volLbl + " ×" + str.tostring(volRatio, "#.##"), volCol)
+        r += 1
+        f_row(r, "Session", sessName, sLon or sNY ? C_UP : C_MUTE, useSess ? (sessOk ? "FILTER ✓ OPEN" : "FILTER ✖ CLOSED") : "no filter", useSess and not sessOk ? C_DN : C_MUTE)
+        r += 1
+
+    // ── SUPPLY / DEMAND
+    if secZone
+        f_sec(r, "🧱 SUPPLY / DEMAND")
+        r += 1
+        f_row(r, "Supply ▼", na(sBot) ? "—" : f_px(sBot) + " – " + f_px(sTop), C_DN, na(sBot) ? "" : inSupply ? "INSIDE" : "↑ $" + str.tostring(sBot - close, "#.##"), inSupply ? C_WARN : C_MUTE)
+        r += 1
+        f_row(r, "Demand ▲", na(dTop) ? "—" : f_px(dBot) + " – " + f_px(dTop), C_UP, na(dTop) ? "" : inDemand ? "INSIDE" : "↓ $" + str.tostring(close - dTop, "#.##"), inDemand ? C_WARN : C_MUTE)
+        r += 1
+        string locTxt = inSupply ? "IN SUPPLY ⚠" : inDemand ? "IN DEMAND ⚠" : "BETWEEN"
+        f_row(r, "Price at", locTxt, inSupply ? C_DN : inDemand ? C_UP : C_TXT, "S:" + str.tostring(supZ.size()) + "  D:" + str.tostring(demZ.size()), C_MUTE)
+        r += 1
+
+    // ── SIGNAL
+    if secSig
+        f_sec(r, "🔥 SIGNAL")
+        r += 1
+        string lastTxt = lastSigDir == 1 ? "BUY " + lastSigGrade : lastSigDir == -1 ? "SELL " + lastSigGrade : "—"
+        f_row(r, "Last Signal", lastTxt, lastSigDir == 1 ? C_UP : lastSigDir == -1 ? C_DN : C_MUTE, na(lastSigBar) ? "" : str.tostring(bar_index - lastSigBar) + " bars ago", C_MUTE)
+        r += 1
+        int biasSc = trendDir == 1 ? scoreBuy : scoreSell
+        f_row(r, "Setup Score", f_dots(biasSc), biasSc >= 4 ? C_UP : biasSc == 3 ? C_WARN : C_DN, (trendDir == 1 ? "BUY " : "SELL ") + f_grade(biasSc) + " " + str.tostring(biasSc) + "/5", C_TXT)
+        r += 1
+
+    // ── POSITION
+    if secPos
+        f_sec(r, "🎯 POSITION")
+        r += 1
+        bool  live = T.dir != 0
+        float fl   = live ? (close - T.entry) * T.dir : na
+        f_row(r, "Status", T.dir == 1 ? "LONG" : T.dir == -1 ? "SHORT" : "FLAT / WAIT", T.dir == 1 ? C_UP : T.dir == -1 ? C_DN : C_MUTE, live ? "Grade " + T.grade : "", C_GOLD)
+        r += 1
+        f_row(r, "Entry", live ? f_px(T.entry) : "—", C_BLUE, live ? "P/L " + f_sgn(fl) : "", live ? (fl >= 0 ? C_UP : C_DN) : C_MUTE)
+        r += 1
+        f_row(r, "Stop", live ? f_px(T.sl) : "—", C_DN, live ? (T.slMoved ? "🔒 PROTECTED" : "risk $" + str.tostring(math.abs(T.entry - T.sl), "#.##")) : "", T.slMoved ? C_UP : C_MUTE)
+        r += 1
+        f_row(r, "TP1", live ? f_px(T.tp1) : "—", C_UP, live ? (T.hit1 ? "✓ HIT" : "…") : "", T.hit1 ? C_UP : C_MUTE)
+        r += 1
+        if tpLevels >= 2
+            f_row(r, "TP2", live ? f_px(T.tp2) : "—", C_UP, live ? (T.hit2 ? "✓ HIT" : "…") : "", T.hit2 ? C_UP : C_MUTE)
+            r += 1
+        if tpLevels >= 3
+            f_row(r, "TP3", live ? f_px(T.tp3) : "—", C_UP, live ? (T.hit3 ? "✓ HIT" : "…") : "", T.hit3 ? C_UP : C_MUTE)
+            r += 1
+
+    // ── TODAY
+    if secDay
+        f_sec(r, "📅 TODAY")
+        r += 1
+        string trTxt = str.tostring(S.tradesToday) + (maxTrades > 0 ? " / " + str.tostring(maxTrades) : "")
+        string trRem = maxTrades > 0 ? (limitOk ? "left " + str.tostring(maxTrades - S.tradesToday) : "LIMIT ⛔") : "signals"
+        f_row(r, "Trades", trTxt, C_TXT, trRem, limitOk ? C_MUTE : C_DN)
+        r += 1
+        f_row(r, "W / L / BE", str.tostring(S.winsToday) + " / " + str.tostring(S.lossToday) + " / " + str.tostring(S.beToday), C_TXT, "WR " + f_pct(S.winsToday, S.winsToday + S.lossToday), C_MUTE)
+        r += 1
+        f_row(r, "Net Δ", f_sgn(S.pnlToday), S.pnlToday >= 0 ? C_UP : C_DN, "$/oz", C_MUTE)
+        r += 1
+        string hist = ""
+        for v in dayHist
+            hist += str.tostring(v) + " "
+        f_row(r, "Last 7D", hist == "" ? "—" : hist, C_TXT, S.days > 0 ? "avg " + str.tostring(S.totalTrades * 1.0 / S.days, "#.#") + "/d" : "", C_MUTE)
+        r += 1
+
+    // ── BACKTEST (on loaded chart history)
+    if secAll
+        f_sec(r, "📊 BACKTEST · " + str.tostring(S.days) + " days")
+        r += 1
+        int closed = S.totalWins + S.totalLoss
+        f_row(r, "Win Rate", f_pct(S.totalWins, closed), C_GOLD, str.tostring(S.totalTrades) + " trades", C_MUTE)
+        r += 1
+        f_row(r, "TP1 · TP2 · TP3", f_pct(S.tp1Hits, S.totalTrades) + " · " + f_pct(S.tp2Hits, S.totalTrades) + " · " + f_pct(S.tp3Hits, S.totalTrades), C_UP, "", C_MUTE)
+        r += 1
+        string pf = S.grossLoss > 0 ? str.tostring(S.grossWin / S.grossLoss, "#.##") : "—"
+        f_row(r, "Net Δ / PF", f_sgn(S.totalPnl), S.totalPnl >= 0 ? C_UP : C_DN, "PF " + pf, C_MUTE)
+        r += 1
+
+    table.cell(tbl, 0, r, "No-repaint · confirmed on bar close", text_color = color.new(C_MUTE, 30), text_size = size.tiny, text_halign = text.align_left)
+    table.merge_cells(tbl, 0, r, 2, r)
