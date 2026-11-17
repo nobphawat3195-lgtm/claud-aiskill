@@ -1,0 +1,544 @@
+//@version=6
+// ══════════════════════════════════════════════════════════════
+// YOUNGYUU BACKTEST HUB · v1.0
+// Runs several signal logics side by side on the same chart and keeps
+// separate statistics for each one, all under the SAME SL / TP / exit /
+// money rules — so the numbers can be compared fairly.
+//
+// Logics:
+//   1. Pulse · Chop Shield   (YOUNGYUU)
+//   2. Pulse · Pure Cross    (YOUNGYUU)
+//   3. MCE                   Momentum Confluence Engine score port
+//                            (© FXProSystems.com, Mozilla Public License 2.0)
+//   4. Supertrend v4         (YOUNGYUU v4 trend signal)
+//   5. External              any indicator that plots +1 (buy) / -1 (sell)
+//
+// Because it contains MPL-2.0 code, this file is distributed under the
+// Mozilla Public License 2.0: https://mozilla.org/MPL/2.0/
+// ══════════════════════════════════════════════════════════════
+indicator("YY Backtest Hub", shorttitle = "YY_HUB", overlay = true, max_labels_count = 500, max_lines_count = 100)
+
+// ══════════════════════════════════════
+// INPUTS
+// ══════════════════════════════════════
+const string GRP_LOG = "🧠 Logics ที่จะเทียบ"
+const string GRP_SL  = "🛡️ SL"
+const string GRP_TP  = "🎯 TP / Exit"
+const string GRP_MON = "💰 Money Simulator"
+const string GRP_DSH = "📊 Dashboard"
+
+const string L1 = "Pulse · Chop Shield"
+const string L2 = "Pulse · Pure Cross"
+const string L3 = "MCE"
+const string L4 = "Supertrend v4"
+
+useL1Input   = input.bool(true, L1, group = GRP_LOG, display = display.none)
+useL2Input   = input.bool(true, L2, group = GRP_LOG, display = display.none)
+useL3Input   = input.bool(true, L3, group = GRP_LOG, display = display.none)
+useL4Input   = input.bool(true, L4, group = GRP_LOG, display = display.none)
+useL5Input   = input.bool(false, "External", group = GRP_LOG, display = display.none, tooltip = "ต่อ indicator อื่นที่ plot ค่า +1 ตอน Buy และ -1 ตอน Sell (0 = ไม่มีสัญญาณ)")
+extSrcInput  = input.source(close, "External signal (+1 / -1)", group = GRP_LOG, display = display.none)
+extNameInput = input.string("External", "ชื่อ External", group = GRP_LOG, display = display.none)
+showLogInput = input.string(L1, "แสดงสัญญาณบนกราฟของ", options = [L1, L2, L3, L4, "External", "None"], group = GRP_LOG, display = display.none)
+
+slModeInput  = input.string("ATR", "SL Mode", options = ["ATR", "Swing", "Fixed $"], group = GRP_SL, display = display.none, tooltip = "ATR: entry ± SL ATR × ATR\nSwing: high/low ของ N แท่งล่าสุด ± buffer\nFixed $: ระยะคงที่เป็นราคา (เช่น 5 = $5)")
+slAtrInput   = input.float(1.0, "SL ATR ×", minval = 0.1, step = 0.1, group = GRP_SL, display = display.none)
+swingLenInput = input.int(10, "Swing Lookback", minval = 2, maxval = 100, group = GRP_SL, display = display.none)
+swingBufInput = input.float(0.3, "Swing Buffer (× ATR)", minval = 0.0, step = 0.1, group = GRP_SL, display = display.none)
+slFixInput   = input.float(5.0, "Fixed SL ($)", minval = 0.1, step = 0.5, group = GRP_SL, display = display.none)
+minSlInput   = input.float(0.5, "SL ขั้นต่ำ (× ATR)", minval = 0.0, step = 0.1, group = GRP_SL, display = display.none)
+slHitInput   = input.string("Wick (แตะ)", "SL นับเมื่อ", options = ["Wick (แตะ)", "Close (ปิดแท่ง)"], group = GRP_SL, display = display.none, tooltip = "Wick = ใกล้เคียงโบรกจริง · Close = แบบ MCE ต้นฉบับ (ผลดูดีกว่าความจริง)")
+atrLenInput  = input.int(14, "ATR Length", minval = 1, group = GRP_SL, display = display.none)
+
+tpModeInput  = input.string("R Multiple", "TP Mode", options = ["R Multiple", "ATR Multiple", "Fixed $"], group = GRP_TP, display = display.none, tooltip = "ค่า TP1/TP2/TP3 ด้านล่างจะตีความตามโหมด: R = เท่าของระยะ SL · ATR = เท่าของ ATR · Fixed $ = ระยะเป็นราคา")
+tp1Input     = input.float(1.0, "TP1", minval = 0.1, step = 0.1, group = GRP_TP, display = display.none)
+tp2Input     = input.float(2.0, "TP2", minval = 0.1, step = 0.1, group = GRP_TP, display = display.none)
+tp3Input     = input.float(3.0, "TP3", minval = 0.1, step = 0.1, group = GRP_TP, display = display.none)
+exitInput    = input.string("Scale 1/3", "ปิดไม้แบบ", options = ["Scale 1/3", "All @ TP1", "All @ TP2", "All @ TP3"], group = GRP_TP, display = display.none, tooltip = "Scale 1/3: ปิด 1/3 ที่ TP1, TP2, TP3\nAll @ TPx: ปิดหมดที่ TP นั้น")
+beInput      = input.bool(true, "Break-Even หลัง TP1", group = GRP_TP, display = display.none)
+newSigInput  = input.string("Ignore", "สัญญาณใหม่ระหว่างถือไม้", options = ["Ignore", "Replace"], group = GRP_TP, display = display.none, tooltip = "Ignore: ถือไม้เดิมจนจบ · Replace: ปิดไม้เดิมที่ราคาปิดแล้วเข้าใหม่")
+
+capitalInput  = input.float(300.0, "เงินทุน (USD) ต่อ logic", minval = 1.0, step = 10.0, group = GRP_MON, display = display.none)
+sizeModeInput = input.string("Risk %", "ขนาดไม้", options = ["Risk %", "Fixed Lot"], group = GRP_MON, display = display.none)
+riskPctInput  = input.float(1.0, "Risk % ต่อไม้", minval = 0.1, maxval = 20.0, step = 0.1, group = GRP_MON, display = display.none)
+fixLotInput   = input.float(0.01, "Fixed Lot", minval = 0.01, step = 0.01, group = GRP_MON, display = display.none)
+compoundInput = input.bool(true, "ทบต้น", group = GRP_MON, display = display.none)
+contractInput = input.float(100.0, "Contract Size (oz / lot)", minval = 1.0, group = GRP_MON, display = display.none)
+minLotInput   = input.float(0.01, "Min Lot", minval = 0.001, step = 0.01, group = GRP_MON, display = display.none)
+lotStepInput  = input.float(0.01, "Lot Step", minval = 0.001, step = 0.01, group = GRP_MON, display = display.none)
+commLotInput  = input.float(7.0, "ค่าคอม $/lot (ไป-กลับ)", minval = 0.0, step = 0.5, group = GRP_MON, display = display.none)
+spreadPxInput = input.float(0.20, "Spread (ราคา $)", minval = 0.0, step = 0.05, group = GRP_MON, display = display.none)
+
+deviceInput  = input.string("PC", "Layout", options = ["PC", "iPad", "Mobile"], group = GRP_DSH, display = display.none, tooltip = "PC: ทุกคอลัมน์ · iPad: 6 คอลัมน์ · Mobile: 4 คอลัมน์")
+dashPosInput = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left", "Middle Right"], group = GRP_DSH, display = display.none)
+fontInput    = input.string("Small", "Font (PC)", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_DSH, display = display.none)
+minNInput    = input.int(10, "ไม้ขั้นต่ำก่อนจัดอันดับ", minval = 1, group = GRP_DSH, display = display.none)
+
+// ══════════════════════════════════════
+// PALETTE (dark)
+// ══════════════════════════════════════
+TEXT_COLOR   = #E6E9F2
+TEXT_MUTED   = #8A93B2
+TABLE_BG     = #0B0F1C
+ROW_ALT      = #121829
+TABLE_BORDER = #232B45
+HEAD_BG      = #2F3654
+HEAD_TX      = #FFFFFF
+BEST_BG      = #0F3B2E
+BULL_TEXT    = #00E58F
+BEAR_TEXT    = #FF4D6D
+NEU_TEXT     = #FFC107
+GOLD_TEXT    = #FFC940
+
+const int N_LOGIC = 5
+const int WARMUP  = 150
+const int FORM_LEN = 10
+
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
+fmtUsd(float v) =>
+    (v < 0 ? "-$" : "$") + str.tostring(math.abs(v), "0.00")
+
+fmtUsdS(float v) =>
+    (v >= 0 ? "+$" : "-$") + str.tostring(math.abs(v), "0.00")
+
+fmtPctS(float v) =>
+    (v >= 0 ? "+" : "") + str.tostring(v, "0.0") + "%"
+
+fmtR(float r) =>
+    (r >= 0 ? "+" : "") + str.tostring(r, "0.00") + "R"
+
+sizeFromString(string s) =>
+    s == "Tiny" ? size.tiny : s == "Small" ? size.small : s == "Normal" ? size.normal : s == "Large" ? size.large : size.small
+
+sgnCol(float v) =>
+    v > 0 ? BULL_TEXT : v < 0 ? BEAR_TEXT : TEXT_COLOR
+
+// ══════════════════════════════════════
+// COMMON SERIES
+// ══════════════════════════════════════
+bool  isWarm = bar_index >= WARMUP
+float atr    = nz(ta.atr(atrLenInput), 0.0)
+float atr13  = nz(ta.atr(13), 0.0)
+float tfMin  = timeframe.in_seconds() / 60.0
+float adxThr = tfMin <= 1 ? 13.0 : tfMin <= 3 ? 14.0 : tfMin <= 5 ? 15.0 : tfMin <= 15 ? 17.0 : tfMin <= 30 ? 19.0 : tfMin <= 60 ? 21.0 : tfMin <= 240 ? 23.0 : 25.0
+float bbwThr = tfMin <= 1 ? 0.002 : tfMin <= 3 ? 0.003 : tfMin <= 5 ? 0.004 : tfMin <= 15 ? 0.006 : tfMin <= 30 ? 0.007 : tfMin <= 60 ? 0.008 : tfMin <= 240 ? 0.010 : 0.012
+[dipY, dimY, adxRaw] = ta.dmi(13, 13)
+float adx = nz(adxRaw, 0.0)
+float swingLo = ta.lowest(low, swingLenInput)
+float swingHi = ta.highest(high, swingLenInput)
+float bodyRat = atr13 > 0 ? math.abs(close - open) / atr13 : 0.0
+float bodyMin = tfMin <= 5 ? 0.05 : tfMin <= 15 ? 0.08 : 0.12
+bool  momB = tfMin <= 5 ? close > close[1] : close > close[1] and close[1] > close[2]
+bool  momS = tfMin <= 5 ? close < close[1] : close < close[1] and close[1] < close[2]
+
+// ══════════════════════════════════════
+// LOGIC 1 + 2 — Pulse (9/21 cross) + Chop Shield
+// ══════════════════════════════════════
+float pFast = ta.ema(close, 9)
+float pSlow = ta.ema(close, 21)
+bool  pUp   = ta.crossover(pFast, pSlow)
+bool  pDn   = ta.crossunder(pFast, pSlow)
+float pCrossCnt = math.sum(pUp or pDn ? 1 : 0, 30)
+float pErPath   = math.sum(math.abs(close - nz(close[1], close)), 20)
+float pEr       = pErPath > 0 ? math.abs(close - nz(close[20], close)) / pErPath : 1.0
+int   pVotes    = (pCrossCnt >= 3 ? 1 : 0) + (pEr < 0.30 ? 1 : 0) + (adx < adxThr ? 1 : 0)
+bool  pChop     = pVotes >= 2
+
+// ══════════════════════════════════════
+// LOGIC 3 — MCE score (port of Momentum Confluence Engine, default settings)
+// © FXProSystems.com — Mozilla Public License 2.0
+// ══════════════════════════════════════
+f_clamp(float v, float lim) =>
+    math.max(-lim, math.min(lim, v))
+
+f_bounded(float v) =>
+    (v - 50.0) * 2.0
+
+f_zScore(float v, int len, float sat) =>
+    float _m  = ta.sma(v, len)
+    float _sd = ta.stdev(v, len)
+    float _z  = na(v) or na(_sd) ? na : _sd > 0.0 ? (v - _m) / _sd : na
+    f_clamp(_z / sat * 100.0, 100.0)
+
+f_dir(float v) =>
+    v > 0.0 ? 1 : v < 0.0 ? -1 : 0
+
+f_agr(float s, float w, int d) =>
+    f_dir(s) == d ? w : 0.0
+
+float _rsiRaw = ta.rsi(close, 14)
+float _stoRaw = ta.sma(ta.stoch(close, high, low, 14), 3)
+float _cciRaw = ta.cci(close, 20)
+[_m1, _m2, _macdH] = ta.macd(close, 12, 26, 9)
+float _rocRaw = ta.roc(close, 14)
+float _mfiRaw = ta.mfi(hlc3, 14)
+float _sRsi  = f_clamp(f_bounded(_rsiRaw), 100.0)
+float _sSto  = f_clamp(f_bounded(_stoRaw), 100.0)
+float _sCci  = f_clamp(_cciRaw / 200.0 * 100.0, 100.0)
+float _sMacd = f_zScore(_macdH, 100, 2.5)
+float _sRoc  = f_zScore(_rocRaw, 100, 2.5)
+float _sMfi  = f_clamp(f_bounded(_mfiRaw), 100.0)
+bool _std    = chart.is_standard
+bool _okRsi  = _std and not na(_sRsi)
+bool _okSto  = _std and not na(_sSto)
+bool _okCci  = _std and not na(_sCci)
+bool _okMacd = _std and not na(_sMacd)
+bool _okRoc  = _std and not na(_sRoc)
+bool _okMfi  = _std and not na(_sMfi)
+float nRsi  = _okRsi  ? _sRsi  : 0.0
+float nSto  = _okSto  ? _sSto  : 0.0
+float nCci  = _okCci  ? _sCci  : 0.0
+float nMacd = _okMacd ? _sMacd : 0.0
+float nRoc  = _okRoc  ? _sRoc  : 0.0
+float nMfi  = _okMfi  ? _sMfi  : 0.0
+float wRsi  = _okRsi  ? 1.0 : 0.0
+float wSto  = _okSto  ? 1.0 : 0.0
+float wCci  = _okCci  ? 1.0 : 0.0
+float wMacd = _okMacd ? 1.0 : 0.0
+float wRoc  = _okRoc  ? 1.0 : 0.0
+float wMfi  = _okMfi  ? 1.0 : 0.0
+float _wSum = wRsi + wSto + wCci + wMacd + wRoc + wMfi
+float _sSum = wRsi * nRsi + wSto * nSto + wCci * nCci + wMacd * nMacd + wRoc * nRoc + wMfi * nMfi
+float _raw  = _wSum > 0.0 ? _sSum / _wSum : na
+float _scoreEma = ta.ema(_raw, 3)
+float mScore    = na(_raw) ? na : _scoreEma
+float _sigEma   = ta.ema(mScore, 9)
+float mSignal   = na(mScore) ? na : _sigEma
+int   _mDir     = na(mScore) or na(mSignal) ? na : mScore > mSignal ? 1 : mScore < mSignal ? -1 : 0
+float _agrW     = f_agr(nRsi, wRsi, _mDir) + f_agr(nSto, wSto, _mDir) + f_agr(nCci, wCci, _mDir) + f_agr(nMacd, wMacd, _mDir) + f_agr(nRoc, wRoc, _mDir) + f_agr(nMfi, wMfi, _mDir)
+float mAgree    = na(_mDir) or _wSum <= 0.0 ? na : _mDir != 0 ? _agrW / _wSum * 100.0 : 0.0
+float mSlope    = nz(ta.change(mScore, 3))
+bool  _mxUp     = ta.crossover(mScore, mSignal)
+bool  _mxDn     = ta.crossunder(mScore, mSignal)
+bool  _mDef     = not na(mScore) and not na(mSignal) and not na(mScore[1]) and not na(mSignal[1])
+bool  _mAgrOk   = not na(mAgree) and mAgree >= 60
+bool  mBull     = _std and _mxUp and _mDef and _mAgrOk and mSlope > 0.0
+bool  mBear     = _std and _mxDn and _mDef and _mAgrOk and mSlope < 0.0
+
+// ══════════════════════════════════════
+// LOGIC 4 — Supertrend v4 (flip + regime + EMA21 + RSI + body + momentum)
+// ══════════════════════════════════════
+[stLine, stDirP] = ta.supertrend(2.5, 13)
+int   stDir  = stDirP < 0 ? 1 : -1
+bool  stUp   = stDir == 1 and nz(stDir[1]) == -1
+bool  stDn   = stDir == -1 and nz(stDir[1]) == 1
+float adxAvg = nz(ta.sma(adx, 50), adx)
+float tsf    = adxAvg > 0 ? adx / adxAvg : 1.0
+[bbM, bbU, bbL] = ta.bb(close, 20, 2.0)
+float bbw    = bbM != 0 ? (bbU - bbL) / bbM : 0.0
+bool  vAdxOk = adx >= adxThr
+bool  vTsf   = tsf >= 1.05
+bool  vTrend = (vAdxOk and bbw >= bbwThr and vTsf) or ((vAdxOk or vTsf))
+bool  vBuy   = stUp and vTrend and close > pSlow and _rsiRaw < 70 and bodyRat >= bodyMin and momB
+bool  vSell  = stDn and vTrend and close < pSlow and _rsiRaw > 30 and bodyRat >= bodyMin and momS
+
+// ══════════════════════════════════════
+// SIGNALS → one int per logic (1 buy · -1 sell · 0 none), confirmed bars only
+// ══════════════════════════════════════
+bool  ok   = barstate.isconfirmed and isWarm and atr > 0
+int   s1   = not ok ? 0 : pUp and not pChop ? 1 : pDn and not pChop ? -1 : 0
+int   s2   = not ok ? 0 : pUp ? 1 : pDn ? -1 : 0
+int   s3   = not ok ? 0 : mBull ? 1 : mBear ? -1 : 0
+int   s4   = not ok ? 0 : vBuy ? 1 : vSell ? -1 : 0
+int   s5   = not ok ? 0 : nz(extSrcInput) > 0.5 ? 1 : nz(extSrcInput) < -0.5 ? -1 : 0
+int[] sigs = array.from(s1, s2, s3, s4, s5)
+bool[] ens = array.from(useL1Input, useL2Input, useL3Input, useL4Input, useL5Input)
+string[] names = array.from(L1, L2, L3, L4, extNameInput)
+
+// ══════════════════════════════════════
+// TYPES + ENGINE (identical rules for every logic)
+// ══════════════════════════════════════
+type Trade
+    int   dir      = 0
+    float entry    = na
+    float sl       = na
+    float tp1      = na
+    float tp2      = na
+    float tp3      = na
+    float risk     = na
+    int   entryBar = na
+    int   tp1Bar   = na
+    bool  tp1Hit   = false
+    bool  tp2Hit   = false
+    bool  be       = false
+    float lot      = 0.0
+    float realized = 0.0
+    float rAcc     = 0.0
+    float rem      = 1.0
+
+type Stats
+    int    closed = 0
+    int    wins   = 0
+    int    losses = 0
+    int    bes    = 0
+    float  rSum   = 0.0
+    float  lastR  = 0.0
+    string form   = ""
+
+type Money
+    float equity = 0.0
+    float peak   = 0.0
+    float maxDD  = 0.0
+    float grossW = 0.0
+    float grossL = 0.0
+    bool  bust   = false
+
+var Trade[] TR = array.from(Trade.new(), Trade.new(), Trade.new(), Trade.new(), Trade.new())
+var Stats[] ST = array.from(Stats.new(), Stats.new(), Stats.new(), Stats.new(), Stats.new())
+var Money[] MO = array.from(Money.new(equity = capitalInput, peak = capitalInput), Money.new(equity = capitalInput, peak = capitalInput), Money.new(equity = capitalInput, peak = capitalInput), Money.new(equity = capitalInput, peak = capitalInput), Money.new(equity = capitalInput, peak = capitalInput))
+var int startTime = na
+if isWarm and na(startTime)
+    startTime := time
+
+tradeCost(float lot) =>
+    (commLotInput + spreadPxInput * contractInput) * lot
+
+realize(Trade t, float frac, float px) =>
+    float f = math.min(frac, t.rem)
+    if f > 0 and not na(t.risk) and t.risk > 0
+        t.rAcc     := t.rAcc + f * (px - t.entry) * t.dir / t.risk
+        t.realized := t.realized + f * (px - t.entry) * t.dir * contractInput * t.lot
+        t.rem      := t.rem - f
+    f
+
+finalize(Trade t, Stats s, Money m) =>
+    s.closed := s.closed + 1
+    if t.rAcc > 0.0001
+        s.wins := s.wins + 1
+    else if t.rAcc < -0.0001
+        s.losses := s.losses + 1
+    else
+        s.bes := s.bes + 1
+    s.rSum  := s.rSum + t.rAcc
+    s.lastR := t.rAcc
+    s.form  := s.form + (t.rAcc > 0.0001 ? "▰" : "▱")
+    if str.length(s.form) > FORM_LEN
+        s.form := str.substring(s.form, str.length(s.form) - FORM_LEN)
+    float net = t.realized - tradeCost(t.lot)
+    if not m.bust
+        m.equity := m.equity + net
+        if net >= 0
+            m.grossW := m.grossW + net
+        else
+            m.grossL := m.grossL - net
+        m.peak  := math.max(m.peak, m.equity)
+        m.maxDD := math.max(m.maxDD, m.peak > 0 ? (m.peak - m.equity) / m.peak * 100.0 : 0.0)
+        if m.equity <= 0
+            m.bust := true
+    t.dir := 0
+    t.rAcc
+
+calcLot(float riskPx, float eq) =>
+    float raw = sizeModeInput == "Fixed Lot" ? fixLotInput : (eq * riskPctInput / 100.0) / math.max(riskPx * contractInput, 1e-10)
+    math.max(minLotInput, math.floor(raw / lotStepInput) * lotStepInput)
+
+slDistance(int d, float px) =>
+    float dist = slModeInput == "ATR" ? slAtrInput * atr : slModeInput == "Fixed $" ? slFixInput : (d == 1 ? px - (swingLo - swingBufInput * atr) : (swingHi + swingBufInput * atr) - px)
+    math.max(dist, minSlInput * atr, syminfo.mintick)
+
+tpDistance(float rd, float k) =>
+    tpModeInput == "R Multiple" ? rd * k : tpModeInput == "ATR Multiple" ? atr * k : k
+
+int  exitLvl  = exitInput == "All @ TP1" ? 1 : exitInput == "All @ TP2" ? 2 : 3
+bool scaleOut = exitInput == "Scale 1/3"
+bool wickSL   = slHitInput == "Wick (แตะ)"
+bool replace  = newSigInput == "Replace"
+
+// per-bar events for the logic shown on the chart
+int   showIdx   = showLogInput == L1 ? 0 : showLogInput == L2 ? 1 : showLogInput == L3 ? 2 : showLogInput == L4 ? 3 : showLogInput == "External" ? 4 : -1
+int   evOpenDir = 0
+float evOpenPx  = na
+bool  evClosed  = false
+float evCloseR  = na
+float evClosePx = na
+
+for i = 0 to N_LOGIC - 1
+    if not array.get(ens, i)
+        continue
+    Trade t = array.get(TR, i)
+    Stats s = array.get(ST, i)
+    Money m = array.get(MO, i)
+    // ── manage open trade (from the bar after entry; SL checked first = worst case)
+    if t.dir != 0 and bar_index > t.entryBar
+        if beInput and t.tp1Hit and not t.be and bar_index > t.tp1Bar
+            t.sl := t.entry
+            t.be := true
+        bool slHit = wickSL ? (t.dir == 1 ? low <= t.sl : high >= t.sl) : barstate.isconfirmed and (t.dir == 1 ? close < t.sl : close > t.sl)
+        if slHit
+            float px = wickSL ? t.sl : close
+            realize(t, t.rem, px)
+            float rr = finalize(t, s, m)
+            if i == showIdx
+                evClosed  := true
+                evCloseR  := rr
+                evClosePx := px
+        else
+            bool h1 = t.dir == 1 ? high >= t.tp1 : low <= t.tp1
+            bool h2 = t.dir == 1 ? high >= t.tp2 : low <= t.tp2
+            bool h3 = t.dir == 1 ? high >= t.tp3 : low <= t.tp3
+            if h1 and not t.tp1Hit
+                t.tp1Hit := true
+                t.tp1Bar := bar_index
+                if exitLvl == 1
+                    realize(t, t.rem, t.tp1)
+                    float rr = finalize(t, s, m)
+                    if i == showIdx
+                        evClosed  := true
+                        evCloseR  := rr
+                        evClosePx := t.tp1
+                else if scaleOut
+                    realize(t, 1.0 / 3.0, t.tp1)
+            if t.dir != 0 and h2 and not t.tp2Hit
+                t.tp2Hit := true
+                if exitLvl == 2
+                    realize(t, t.rem, t.tp2)
+                    float rr = finalize(t, s, m)
+                    if i == showIdx
+                        evClosed  := true
+                        evCloseR  := rr
+                        evClosePx := t.tp2
+                else if scaleOut
+                    realize(t, 1.0 / 3.0, t.tp2)
+            if t.dir != 0 and h3 and exitLvl == 3
+                realize(t, t.rem, t.tp3)
+                float rr = finalize(t, s, m)
+                if i == showIdx
+                    evClosed  := true
+                    evCloseR  := rr
+                    evClosePx := t.tp3
+    // ── entry
+    int sg = array.get(sigs, i)
+    if sg != 0 and (t.dir == 0 or replace)
+        if t.dir != 0
+            realize(t, t.rem, close)
+            float rr = finalize(t, s, m)
+            if i == showIdx
+                evClosed  := true
+                evCloseR  := rr
+                evClosePx := close
+        float rd = slDistance(sg, close)
+        float d1 = tpDistance(rd, tp1Input)
+        float d2 = math.max(tpDistance(rd, tp2Input), d1 + rd * 0.1)
+        float d3 = math.max(tpDistance(rd, tp3Input), d2 + rd * 0.1)
+        t.dir      := sg
+        t.entry    := close
+        t.sl       := close - sg * rd
+        t.risk     := rd
+        t.tp1      := close + sg * d1
+        t.tp2      := close + sg * d2
+        t.tp3      := close + sg * d3
+        t.entryBar := bar_index
+        t.tp1Bar   := na
+        t.tp1Hit   := false
+        t.tp2Hit   := false
+        t.be       := false
+        t.lot      := m.bust ? 0.0 : calcLot(rd, compoundInput ? m.equity : capitalInput)
+        t.realized := 0.0
+        t.rAcc     := 0.0
+        t.rem      := 1.0
+        if i == showIdx
+            evOpenDir := sg
+            evOpenPx  := close
+
+// ══════════════════════════════════════
+// CHART — signals + current trade of the selected logic only
+// ══════════════════════════════════════
+if evOpenDir != 0
+    label.new(bar_index, evOpenDir == 1 ? low : high, (evOpenDir == 1 ? "BUY" : "SELL"), yloc = evOpenDir == 1 ? yloc.belowbar : yloc.abovebar, style = evOpenDir == 1 ? label.style_label_up : label.style_label_down, color = evOpenDir == 1 ? #00A86B : #E53950, textcolor = #FFFFFF, size = size.small, tooltip = showLogInput)
+if evClosed
+    label.new(bar_index, evClosePx, " " + fmtR(nz(evCloseR)), style = label.style_label_left, color = color.new(nz(evCloseR) >= 0 ? BULL_TEXT : BEAR_TEXT, 80), textcolor = nz(evCloseR) >= 0 ? BULL_TEXT : BEAR_TEXT, size = size.tiny)
+
+var line[] liveLines = array.new_line()
+if barstate.islast
+    for l in liveLines
+        line.delete(l)
+    array.clear(liveLines)
+    if showIdx >= 0 and array.get(ens, showIdx)
+        Trade ct = array.get(TR, showIdx)
+        if ct.dir != 0
+            array.push(liveLines, line.new(ct.entryBar, ct.entry, bar_index + 10, ct.entry, color = #5C8AAE, style = line.style_dotted))
+            array.push(liveLines, line.new(ct.entryBar, ct.sl, bar_index + 10, ct.sl, color = ct.be ? #FFA726 : #E57373, width = 2))
+            array.push(liveLines, line.new(ct.entryBar, ct.tp1, bar_index + 10, ct.tp1, color = ct.tp1Hit ? #4DB6AC : #66BB6A, style = line.style_dashed))
+            array.push(liveLines, line.new(ct.entryBar, ct.tp2, bar_index + 10, ct.tp2, color = ct.tp2Hit ? #4DB6AC : #66BB6A, style = line.style_dashed))
+            array.push(liveLines, line.new(ct.entryBar, ct.tp3, bar_index + 10, ct.tp3, color = #66BB6A, style = line.style_dashed))
+
+if array.size(label.all) > 450
+    label.delete(array.shift(label.all))
+
+// ══════════════════════════════════════
+// DASHBOARD — one row per logic
+// ══════════════════════════════════════
+var table dash = na
+dashPos = switch dashPosInput
+    "Top Left"     => position.top_left
+    "Bottom Right" => position.bottom_right
+    "Bottom Left"  => position.bottom_left
+    "Middle Right" => position.middle_right
+    =>                position.top_right
+
+if barstate.islast
+    bool isPC  = deviceInput == "PC"
+    bool isMob = deviceInput == "Mobile"
+    fsz = isPC ? sizeFromString(fontInput) : isMob ? size.tiny : size.small
+    int cols = isPC ? 10 : isMob ? 4 : 6
+    int nOn = 0
+    for i = 0 to N_LOGIC - 1
+        nOn += array.get(ens, i) ? 1 : 0
+    int rows = 5 + nOn
+    float calDays = na(startTime) ? 0.0 : (time - startTime) / 86400000.0
+    float trDays  = math.max(1.0, calDays * 5.0 / 7.0)
+    if not na(dash)
+        table.delete(dash)
+    dash := table.new(dashPos, cols, rows, bgcolor = TABLE_BG, border_color = TABLE_BORDER, border_width = 1, frame_color = TABLE_BORDER, frame_width = 1)
+
+    // header + settings + period
+    string slTx = slModeInput == "ATR" ? "ATR " + str.tostring(slAtrInput, "0.0") + "×" : slModeInput == "Swing" ? "Swing " + str.tostring(swingLenInput) : "$" + str.tostring(slFixInput, "0.0")
+    string tpU  = tpModeInput == "R Multiple" ? "R" : tpModeInput == "ATR Multiple" ? "×ATR" : "$"
+    string tpTx = str.tostring(tp1Input, "0.0#") + "/" + str.tostring(tp2Input, "0.0#") + "/" + str.tostring(tp3Input, "0.0#") + tpU
+    table.cell(dash, 0, 0, "◆ YY BACKTEST HUB · ทุน " + fmtUsd(capitalInput) + " ต่อ logic · " + (sizeModeInput == "Fixed Lot" ? str.tostring(fixLotInput, "0.00") + " lot" : str.tostring(riskPctInput, "0.0") + "% risk"), text_color = HEAD_TX, bgcolor = HEAD_BG, text_size = fsz)
+    table.merge_cells(dash, 0, 0, cols - 1, 0)
+    table.cell(dash, 0, 1, "SL " + slTx + (wickSL ? " (แตะ)" : " (ปิดแท่ง)") + " · TP " + tpTx + " · " + exitInput + (beInput ? " · BE" : "") + " · ใหม่=" + newSigInput, text_color = TEXT_MUTED, bgcolor = ROW_ALT, text_size = size.tiny)
+    table.merge_cells(dash, 0, 1, cols - 1, 1)
+    table.cell(dash, 0, 2, na(startTime) ? "—" : str.format_time(startTime, "dd MMM yyyy", syminfo.timezone) + " → " + str.format_time(time, "dd MMM yyyy", syminfo.timezone) + " · " + str.tostring(trDays, "0") + " วันเทรด · " + timeframe.period, text_color = TEXT_MUTED, bgcolor = ROW_ALT, text_size = size.tiny)
+    table.merge_cells(dash, 0, 2, cols - 1, 2)
+
+    // column titles
+    string[] heads = isPC ? array.from("Logic", "สถานะ", "Trades", "ไม้/วัน", "WR", "Avg R", "PF", "กำไร", "/เดือน", "Max DD") : isMob ? array.from("Logic", "WR", "กำไร", "DD") : array.from("Logic", "Trades", "WR", "Avg R", "กำไร", "DD")
+    for c = 0 to cols - 1
+        table.cell(dash, c, 3, array.get(heads, c), text_color = TEXT_MUTED, bgcolor = ROW_ALT, text_size = fsz, text_halign = c == 0 ? text.align_left : text.align_right)
+
+    // rows
+    int   bestIdx = -1
+    float bestR   = -1e9
+    int   r = 4
+    for i = 0 to N_LOGIC - 1
+        if not array.get(ens, i)
+            continue
+        Trade t = array.get(TR, i)
+        Stats s = array.get(ST, i)
+        Money m = array.get(MO, i)
+        int   dec   = s.wins + s.losses
+        float wr    = dec > 0 ? 100.0 * s.wins / dec : 0.0
+        float avgR  = s.closed > 0 ? s.rSum / s.closed : 0.0
+        float pf    = m.grossL > 0 ? m.grossW / m.grossL : m.grossW > 0 ? 99.0 : 0.0
+        float floatP = t.dir != 0 ? t.realized + t.rem * (close - t.entry) * t.dir * contractInput * t.lot - tradeCost(t.lot) : 0.0
+        float net   = m.equity - capitalInput
+        float netP  = capitalInput > 0 ? net / capitalInput * 100.0 : 0.0
+        float perM  = net / trDays * 21.0
+        string stat = t.dir == 1 ? "LONG " + fmtUsdS(floatP) : t.dir == -1 ? "SHORT " + fmtUsdS(floatP) : "—"
+        if s.closed >= minNInput and avgR > bestR
+            bestR := avgR
+            bestIdx := i
+        string[] vals = isPC ? array.from(array.get(names, i), stat, str.tostring(s.closed), str.tostring(s.closed / trDays, "0.0"), str.tostring(math.round(wr)) + "%", fmtR(avgR), str.tostring(pf, "0.00"), fmtUsdS(net) + " (" + fmtPctS(netP) + ")", fmtUsdS(perM), "-" + str.tostring(m.maxDD, "0.0") + "%") : isMob ? array.from(array.get(names, i), str.tostring(math.round(wr)) + "%", fmtPctS(netP), "-" + str.tostring(m.maxDD, "0") + "%") : array.from(array.get(names, i), str.tostring(s.closed), str.tostring(math.round(wr)) + "%", fmtR(avgR), fmtUsdS(net), "-" + str.tostring(m.maxDD, "0.0") + "%")
+        for c = 0 to cols - 1
+            string hd = array.get(heads, c)
+            color tc = hd == "WR" ? (wr >= 55 ? BULL_TEXT : wr >= 45 ? NEU_TEXT : BEAR_TEXT) : hd == "Avg R" ? sgnCol(avgR) : hd == "PF" ? (pf >= 1.2 ? BULL_TEXT : pf >= 1.0 ? NEU_TEXT : BEAR_TEXT) : hd == "กำไร" or hd == "/เดือน" ? sgnCol(net) : hd == "Max DD" or hd == "DD" ? (m.maxDD >= 20 ? BEAR_TEXT : m.maxDD >= 10 ? NEU_TEXT : BULL_TEXT) : hd == "สถานะ" ? (t.dir == 1 ? BULL_TEXT : t.dir == -1 ? BEAR_TEXT : TEXT_MUTED) : TEXT_COLOR
+            table.cell(dash, c, r, array.get(vals, c), text_color = tc, bgcolor = TABLE_BG, text_size = fsz, text_halign = c == 0 ? text.align_left : text.align_right, tooltip = array.get(names, i) + " · Wins " + str.tostring(s.wins) + " · Losses " + str.tostring(s.losses) + " · BE " + str.tostring(s.bes) + " · Form " + s.form)
+        r += 1
+
+    // best line
+    string bestTx = bestIdx < 0 ? "ยังมีไม้ไม่ถึง " + str.tostring(minNInput) + " ไม้ต่อ logic — ยังจัดอันดับไม่ได้" : "🏆 ดีที่สุด (Avg R): " + array.get(names, bestIdx) + " · " + fmtR(bestR) + " · ⚠ จำลองจากประวัติกราฟ"
+    table.cell(dash, 0, r, bestTx, text_color = bestIdx < 0 ? TEXT_MUTED : GOLD_TEXT, bgcolor = bestIdx < 0 ? TABLE_BG : BEST_BG, text_size = fsz)
+    table.merge_cells(dash, 0, r, cols - 1, r)
