@@ -79,3 +79,19 @@ The best scalps have a gross edge of about +0.06–0.07R per trade; the spread c
 Chosen for `XAU_H4Trend_EA_v4.00.mq5`: H4 EMA20 pullback in the D1 trend, SL $12, TP 2R. 152 trades (~0.6/day), win 39%, +0.16R per trade; train +20.8R, test +3.4R.
 
 $300 Standard at 3% risk (0.01 lot floor): actual path $590 with 41% max DD; week-block bootstrap (2000 runs) median $557, 10th pct $178, 90th pct $887, P(loss) 28%, P(45% halt) 29%. Chosen as the best of 162, so expect live results below the backtest.
+
+## Out-of-sample check of XAU Growth EA v4.10 modules (`grok_rep.py`, `grok_sim.py`, `grok_tick.py`)
+
+v4.10 (built with Grok Bot) tuned its modules on 2026-05-12..2026-11-11. The five core modules were replicated at v4.10 parameters on Exness-style UTC days and run on the 2.5 years before that window. Sum R (trades):
+
+| Module | Nov 23–Oct 24 | Nov 24–Oct 25 | Nov 25–May 26 | Grok DEV | Grok HO |
+|---|---|---|---|---|---|
+| DM_A | +35.9 (106) | +53.2 (117) | +22.1 (71) | +22.0 (49) | +5.7 (17) |
+| ORB_A | +5.4 (201) | +23.3 (264) | +7.6 (132) | +34.6 (104) | +3.0 (35) |
+| DM_L | −6.7 (201) | +28.6 (260) | −9.4 (135) | +23.5 (102) | +7.5 (32) |
+| ASIA_B | −4.0 (39) | +23.0 (77) | −7.2 (43) | +18.4 (30) | +10.7 (10) |
+| LON_A | −13.9 (98) | +9.1 (113) | −9.4 (41) | +13.1 (37) | +4.9 (10) |
+
+Replication check on Grok's DEV window: ORB_A 34.6R vs Grok 35.6R, DM_A 22.0R vs 27.4R, DM_L 23.5R vs 26.1R. Real ticks 2026-04-23..2026-11-13 vs M1: DM_A +38.9R vs +40.9R (72 trades).
+
+$300 Standard, DM_A only, 3% risk, skip when 0.01 lot risks more than 5%: $300 start each year → $521 / $986 / $929, max DD 29–37%, no halt; week-block bootstrap median $639, P(loss) 25%, P(45% halt) 26%. Adding ORB_A (median SL ~$17) makes the $300 account worse. Implemented as `XAU_DMA_EA_v5.00.mq5`.
