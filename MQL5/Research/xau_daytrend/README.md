@@ -145,3 +145,13 @@ The latest year reproduces Grok's MT5 number. 1-year week-block bootstrap over a
 |---|---|---|---|---|---|
 | XMS 5 modules | $289 | $156 | $2,307 | 52% | 81% |
 | DM_A only (v5.00) | $723 | $187 | $2,295 | 24% | 26% |
+
+## Grok v7 aggressive on $100 USD (`grok_rep_v.py`, `v7_starts.py`)
+
+v7 preset: 0.01-lot trades allowed up to 40% risk per trade, DD halt off, daily loss stop 60%, max 2 min-lot positions under $1,000; modules ORB_A (SL 2.0 ATR), DM_A (1.5), DM_L, ASIA_B, LON_A. Runner trail not modelled. $100 for six months from each month start, Jan 2024 – May 2026, plus Grok's 12 May 2026 start:
+
+- 12 May 2026 start: $100 → $3,321 (Grok's MT5: $2,110)
+- 1 May 2026 start: $100 → $18 (−82%)
+- 30 starts: 6 above $100, 17 lost more than 80%, median end $14
+
+Grok's own README for this package: "USD $100 standard — NO robust config exists"; v7 from 07.01 −89%, 09.01 −90%, holdout −89.4%, earlier 6 months −88.4%.
