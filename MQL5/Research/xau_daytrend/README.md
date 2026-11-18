@@ -47,3 +47,21 @@ Day-trend (`daytrend.py`): enter 01:00 UTC in the direction of D1 close vs EMA50
 | 3% | $328 | $186 | $827 | 25% | 41% | 44% |
 
 The median stops improving beyond about 2%; higher risk only widens the spread of outcomes and the chance of a halt.
+
+## $300 Standard account, last year only (2025-11-01..2026-11-13)
+
+Train 2025-11..2026-06, test 2026-07..2026-11. Standard account: 0.01 lot minimum, $1 per $1 move.
+
+**M5 scalps** (`scalp.py`, `scalp_mid.py`): 168 configs (trend filter D1/H1/none × pullback/breakout/fade × Asia/London/NY/all × TP 1/1.5/2R × max hold 1h/2h), SL 1 × ATR(M5) ($4–8, i.e. 1.3–2.7% of $300 at 0.01 lot):
+
+| Spread | Positive in train | Positive in train and test |
+|---|---|---|
+| Dukascopy real (~$0.66) | 0 / 168 | 0 |
+| $0.30 | 18 / 168 | 0 |
+| 0 (mid price) | 48 / 168 | 28 |
+
+The best scalps have a gross edge of about +0.06–0.07R per trade; the spread costs 0.07–0.13R per trade.
+
+**D1 trend, smaller stops** (`trend_re.py`): one 01:00 UTC entry, SL 0.15 or 0.20 × ADR, is positive in train and test (+30.3/+18.0R and +38.7/+15.5R); re-entries on M5 pullbacks lose in every variant.
+
+**$300 Standard simulation** (`std2.py`): with the 0.01 lot floor these stops risk 3–10% of the account per trade. Every variant hits the 45% DD halt on the actual last-year sequence; block-bootstrap halt probability is 71–100%.
