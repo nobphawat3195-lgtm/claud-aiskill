@@ -197,3 +197,15 @@ The repo's only strategy marked as passing its author's gates (its board also re
 - $300 Standard (2%, cap 6%): 3 trades taken, $261 (−$39)
 
 The repo's engine uses M1 bars with a fixed $0.30 spread; resampling labels bars by close time and fills on the next bar (no look-ahead).
+
+## Three more gitee strategies (`gb_run.py`)
+
+The repo's own signal code (copied unmodified: base.py, common.py and the three strategy files) with the author's params, on real-tick M1 bars (platform time GMT+2/+3, volume = tick count), executed on real ticks. Latest year:
+
+| Strategy | Trades | Win | Avg R | Sum R | Median SL | $300 Standard |
+|---|---|---|---|---|---|---|
+| asia_range_expansion_continuation | 1 | 0% | −1.01 | −1.0 | $5.4 | $295 |
+| inside_day_breakout (5y params) | 22 | 41% | −0.06 | −1.4 | $128 | no trade possible |
+| range_expansion_failure_reversal_swing | 2 | 50% | +0.08 | +0.2 | $8.0 | $302 |
+
+Thresholds are fixed in dollars (e.g. Asia range $3.2–13.5) and were drafted for a lower gold price, so they rarely trigger at 2026 prices.
