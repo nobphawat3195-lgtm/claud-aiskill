@@ -175,3 +175,16 @@ TP 2R, limit valid 48 h, SL buffer 0.1 ATR; real ticks 2025-11-03..2026-11-13.
 |---|---|---|---|---|---|---|---|
 | S1 BOS + FVG (buy limit at FVG low edge, SL below leg swing low) | 77 | 47% | +0.093 | 0.57 | +9.6 | −2.5 | $240 (19 trades taken, median SL $29) |
 | S2 CHoCH + OB (buy limit at OB top, SL below OB) | 124 | 27% | −0.249 | −2.09 | −14.7 | −16.2 | $170, halt |
+
+## Random-direction baseline for the XMS modules, latest year (`rand_base.py`)
+
+Same entry time, stop distance and exit; direction randomised 10,000 times. Real ticks 2025-11-03..2026-11-13.
+
+| Module | Trades | Real R | Random mean | Random 95th | Real beats | Always buy |
+|---|---|---|---|---|---|---|
+| All 5 | 843 | +180.6 | +17.0 | +82.2 | 100% | −83.9 |
+| ORB_A | 270 | +52.5 | −4.2 | +27.5 | 99.9% | −21.8 |
+| DM_A | 136 | +57.4 | +27.1 | +60.7 | 93.1% | +1.9 |
+| DM_L | 266 | +31.4 | −12.2 | +18.7 | 99.0% | −33.7 |
+| ASIA_B | 83 | +26.3 | +7.5 | +30.6 | 91.1% | −4.8 |
+| LON_A | 88 | +13.0 | −0.4 | +18.7 | 87.7% | −25.5 |
