@@ -155,3 +155,14 @@ v7 preset: 0.01-lot trades allowed up to 40% risk per trade, DD halt off, daily 
 - 30 starts: 6 above $100, 17 lost more than 80%, median end $14
 
 Grok's own README for this package: "USD $100 standard — NO robust config exists"; v7 from 07.01 −89%, 09.01 −90%, holdout −89.4%, earlier 6 months −88.4%.
+
+## SMC Order Block on H1, latest year (`smc_h1.py`)
+
+Pre-registered: fractal swings (3 bars), BOS on H1 close, OB = last opposite candle of the BOS leg, limit at the OB edge within 48 h, SL 0.1 ATR beyond the OB; real ticks 2025-11-03..2026-11-13.
+
+| Config | Trades | Avg R | t | Train R | Test R | $300 Standard (2%, cap 6%) |
+|---|---|---|---|---|---|---|
+| C1 TP 2R | 255 | −0.124 | −1.42 | −7.9 | −23.8 | $208, halt |
+| C2 TP 3R | 239 | −0.097 | −0.97 | −4.0 | −19.2 | $159, halt |
+| C3 + FVG, TP 2R | 84 | −0.012 | −0.07 | +6.1 | −7.1 | $305, DD 34% |
+| C4 + discount/premium, TP 2R | 86 | −0.273 | −1.66 | −8.4 | −15.0 | $188, halt |
