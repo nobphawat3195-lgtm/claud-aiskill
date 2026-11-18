@@ -65,3 +65,17 @@ The best scalps have a gross edge of about +0.06–0.07R per trade; the spread c
 **D1 trend, smaller stops** (`trend_re.py`): one 01:00 UTC entry, SL 0.15 or 0.20 × ADR, is positive in train and test (+30.3/+18.0R and +38.7/+15.5R); re-entries on M5 pullbacks lose in every variant.
 
 **$300 Standard simulation** (`std2.py`): with the 0.01 lot floor these stops risk 3–10% of the account per trade. Every variant hits the 45% DD halt on the actual last-year sequence; block-bootstrap halt probability is 71–100%.
+
+## Any timeframe, $300 Standard, last year (`anytf.py`, `h4sim.py`)
+
+162 configs: M15/H1/H4 × pullback/breakout/band-reversion × trend from own EMA50 or D1 × fixed SL $6/$9/$12 × TP 1/2/3R; max hold 48 bars, flat Friday 20:00 UTC.
+
+| Timeframe | Share positive in train and test |
+|---|---|
+| M15 | 0% |
+| H1 | 2% |
+| H4 | 13% |
+
+Chosen for `XAU_H4Trend_EA_v4.00.mq5`: H4 EMA20 pullback in the D1 trend, SL $12, TP 2R. 152 trades (~0.6/day), win 39%, +0.16R per trade; train +20.8R, test +3.4R.
+
+$300 Standard at 3% risk (0.01 lot floor): actual path $590 with 41% max DD; week-block bootstrap (2000 runs) median $557, 10th pct $178, 90th pct $887, P(loss) 28%, P(45% halt) 29%. Chosen as the best of 162, so expect live results below the backtest.
