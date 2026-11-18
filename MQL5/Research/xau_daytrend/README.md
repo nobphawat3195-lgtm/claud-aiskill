@@ -128,3 +128,20 @@ $300 portfolios (1-year week-block bootstrap):
 | Cent | 01:00 SL 0.75 + 02:00 SL 1.25, 2% | 18–23 | $797 | 16% | 15% |
 
 On Standard $300 the two entries mostly share direction, so the second one stacks risk instead of diversifying it. `XAU_DMA_EA_v5.10.mq5` adds the 02:00 entry as an option (`InpUseSecond`, off by default).
+
+## XMS v2.90 RECENT claim on $300 USD (`xms_years.py`)
+
+Grok's MT5 real-tick run (Exness Trial, 12 Nov 2025 – 11 Nov 2026): 471 trades, +$3,461, equity DD 32.5%. Five of its six modules (all but NY_PULLBACK), sized like RECENT (1.5% risk, min-lot cap 5.5%/2%, max open risk 8%, DD 35/45% scaling, halt 48%), $300 start each year:
+
+| Year | Result | Trades/month | Max closed DD | Halt |
+|---|---|---|---|---|
+| Nov 23 – Oct 24 (M1) | $156 (−$144) | ~5 | 48% | yes, Feb 2024 |
+| Nov 24 – Oct 25 (M1) | $1,679 (+$1,379) | 61 | 46% | no |
+| Nov 25 – Nov 26 (real ticks) | $3,667 (+$3,367) | 34 | 44% | no |
+
+The latest year reproduces Grok's MT5 number. 1-year week-block bootstrap over all three years:
+
+| | Median | p10 | p90 | P(loss) | P(halt) |
+|---|---|---|---|---|---|
+| XMS 5 modules | $289 | $156 | $2,307 | 52% | 81% |
+| DM_A only (v5.00) | $723 | $187 | $2,295 | 24% | 26% |
