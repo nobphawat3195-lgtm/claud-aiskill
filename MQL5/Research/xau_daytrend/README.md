@@ -188,3 +188,12 @@ Same entry time, stop distance and exit; direction randomised 10,000 times. Real
 | DM_L | 266 | +31.4 | −12.2 | +18.7 | 99.0% | −33.7 |
 | ASIA_B | 83 | +26.3 | +7.5 | +30.6 | 91.1% | −4.8 |
 | LON_A | 88 | +13.0 | −0.4 | +18.7 | 87.7% | −25.5 |
+
+## gitee wg722/xauusd-backtest: market_facilitation_relock_swing (`mfi_relock.py`)
+
+The repo's only strategy marked as passing its author's gates (its board also records the author's own MT5 run at 118 deals / −151.88). Ported 1:1 with the author's 5-year params; H4 bars from real ticks, tick count as volume, latest year:
+
+- 12 trades, 1 winner, avg −0.92R, sum −11.0R, t −3.79 (Nov–Jun −5.0R, Jul–Nov −5.9R)
+- $300 Standard (2%, cap 6%): 3 trades taken, $261 (−$39)
+
+The repo's engine uses M1 bars with a fixed $0.30 spread; resampling labels bars by close time and fills on the next bar (no look-ahead).
