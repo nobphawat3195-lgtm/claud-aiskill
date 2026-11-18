@@ -95,3 +95,18 @@ v4.10 (built with Grok Bot) tuned its modules on 2026-05-12..2026-11-11. The fiv
 Replication check on Grok's DEV window: ORB_A 34.6R vs Grok 35.6R, DM_A 22.0R vs 27.4R, DM_L 23.5R vs 26.1R. Real ticks 2026-04-23..2026-11-13 vs M1: DM_A +38.9R vs +40.9R (72 trades).
 
 $300 Standard, DM_A only, 3% risk, skip when 0.01 lot risks more than 5%: $300 start each year → $521 / $986 / $929, max DD 29–37%, no halt; week-block bootstrap median $639, P(loss) 25%, P(45% halt) 26%. Adding ORB_A (median SL ~$17) makes the $300 account worse. Implemented as `XAU_DMA_EA_v5.00.mq5`.
+
+## Full-year real-tick verification (2025-11-02..2026-11-13)
+
+Dukascopy real ticks (6 of ~6,500 hourly files failed to download) vs M1 bid/ask pseudo-ticks, same signals:
+
+| Strategy | Trades | Sum R, real ticks | Sum R, M1 |
+|---|---|---|---|
+| DayTrend v3.00 (DT_0100) | 266 | +30.5 | +17.9 |
+| DM_A (v5.00) | 136 | +57.4 | +49.8 |
+| ORB_A | 270 | +52.5 | +46.3 |
+| DM_L | 266 | +31.4 | +22.7 |
+| ASIA_B | 83 | +26.3 | +21.9 |
+| LON_A | 88 | +13.0 | +8.6 |
+
+Direction matches on every DayTrend day; median per-trade difference 0.004R. Real ticks come out higher because M1 pseudo-ticks fill stops at the bar extreme. The M1 results across three years are therefore a slightly conservative estimate.
