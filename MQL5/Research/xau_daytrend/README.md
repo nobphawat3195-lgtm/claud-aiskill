@@ -110,3 +110,21 @@ Dukascopy real ticks (6 of ~6,500 hourly files failed to download) vs M1 bid/ask
 | LON_A | 88 | +13.0 | +8.6 |
 
 Direction matches on every DayTrend day; median per-trade difference 0.004R. Real ticks come out higher because M1 pseudo-ticks fill stops at the bar extreme. The M1 results across three years are therefore a slightly conservative estimate.
+
+## More trades from DM_A? (`dm_grid.py`, `dm_port.py`, `dm_cent.py`)
+
+Grid over entry hour 01:00–06:00 UTC × ADX cap 20/25/30/35/none × SL 0.75/1.0/1.25 ATR(H1), three years:
+
+- 01:00 is positive in all three years for every SL and ADX setting; 02:00 is weaker (SL 1.0 and 1.25 pass); 03:00–06:00 fail
+- Raising the ADX cap adds trades with negative contribution: e.g. 01:00 SL 0.75 sums 38.6/74.4/53.5R at ADX < 25 but 21.9/60.0/43.9R at ADX < 35
+
+$300 portfolios (1-year week-block bootstrap):
+
+| Account | Setup | Trades/month | Median | P(loss) | P(halt) |
+|---|---|---|---|---|---|
+| Standard | 01:00 SL 1.0, 3% (v5.00) | 7–10 | $697 | 24% | 25% |
+| Standard | + 02:00 SL 1.25, 3% | 17–20 | $509 | 34% | 66% |
+| Cent | 01:00 SL 1.0, 3% | 9–11 | $784 | 12% | 7% |
+| Cent | 01:00 SL 0.75 + 02:00 SL 1.25, 2% | 18–23 | $797 | 16% | 15% |
+
+On Standard $300 the two entries mostly share direction, so the second one stacks risk instead of diversifying it. `XAU_DMA_EA_v5.10.mq5` adds the 02:00 entry as an option (`InpUseSecond`, off by default).
