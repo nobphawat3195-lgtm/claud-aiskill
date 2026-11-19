@@ -209,3 +209,20 @@ The repo's own signal code (copied unmodified: base.py, common.py and the three 
 | range_expansion_failure_reversal_swing | 2 | 50% | +0.08 | +0.2 | $8.0 | $302 |
 
 Thresholds are fixed in dollars (e.g. Asia range $3.2–13.5) and were drafted for a lower gold price, so they rarely trigger at 2026 prices.
+
+## GitHub EAs found by search (2026-11-19), latest year, real ticks
+
+Source read first (no DLL/WebRequest/grid/martingale in either).
+
+**maker-tung/xauusd-trend-follow** (`tf_test.py`, license CC BY-NC): H1, long only, close > EMA200 and ADX ≥ 20, trigger MACD / Stoch / EMA9-21 cross, SL 1.25 ATR, TP 6 ATR, 60-bar exit. Author's own MT5 test: +54.8% in 2022–2026 on $10,000, PF ~1.17, win 25.8%.
+
+| Config | Trades | Win | Avg R | t | Nov–Jun / Jul–Nov | $300 Standard (2%, cap 6%) |
+|---|---|---|---|---|---|---|
+| C1 default | 249 | 29% | +0.072 | 0.58 | +4.1R / +13.9R | $218, DD 50% (39 trades taken) |
+| C2 TP 3 ATR | 249 | 36% | +0.085 | 0.85 | +11.3R / +9.8R | $234, DD 48% |
+| C3 SL 2.0 ATR | 249 | 38% | −0.015 | −0.17 | 0 / −3.8R | no trade possible |
+| Baseline: same filter, long on every 6th bar | 315 | 30% | **+0.126** | – | – | – |
+
+The triggers add nothing over the trend filter (baseline is better); median SL $23 means 0.01 lot risks 7.7% of $300, so most signals are skipped.
+
+**NadirAliOfficial/engulfing-zone-ea** (`ez_test.py`, M5 engulfing zone retest): defaults ported from source. 66 zones created in the year, 94 bars met trend + engulfing + swing, 28 had an active zone, 26 had left the zone, **0** had the retest engulfing candle fully inside the zone range (the code requires it) → **0 trades**. On a 3-digit gold symbol (Exness) `InpMaxSpreadPoints=50` is $0.05, below the ~$0.26–0.66 spread, so it would not trade even earlier.
