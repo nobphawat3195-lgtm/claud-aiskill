@@ -248,3 +248,12 @@ Same rules as C1 (range 1 h, D1 trend, SL opposite edge, exit 12:00 unless noted
 | **Ranges 00+01+02 (overlap allowed)** | 166 (13) | +0.46 | +77.0 | +56.5 / +20.5 | 1,295 | 25% |
 | **All four ranges 00–03** | 286 (23) | +0.41 | +116.6 | +95.9 / +20.7 | 1,948 | 31% |
 London/NY ORB have no edge: the edge is the 00–07 UTC window. Overlapping positions are sized one after another in the sim, so real combined risk and DD are higher. EA: `XAU_ORB_EA_v6.10.mq5` (`InpRangeHours`). Not yet done: PBO/DSR, compile.
+
+### ORB Asia: concurrent-aware sizing, PBO and DSR (`orb5.py`)
+Sizing at entry uses realized equity only; DD on closed-trade equity. At USD 300 the 5.5% min-lot cap binds (SL ≈ 15 USD), so risk 1–2% gives the same result: trades run 0.01 lot at ~5% risk. 
+| Ranges | USD 300 → | DD | n |
+|---|---|---|---|
+| 00 | 759 | 16% | 58 |
+| 00+01+02 | 1,145 | 30% | 143 |
+| 00–03 | 1,683 | 36% | 273 |
+PBO across the 7 range combinations 0.70 (no combination can be picked as best); Deflated Sharpe (14 trials, daily R): r0 0.62, 0+1+2 0.76, 00–03 0.74, all below 0.95. Verdict: all variants positive and beat random, but not statistically proven after multiple trials; demo required.
