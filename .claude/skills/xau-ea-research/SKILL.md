@@ -28,6 +28,10 @@ Keep min-lot caps 5.5% (ORB_A/DM_A/DM_L) and 2% (ASIA_B/LON_A); never use the v4
 Risks: the first months skip most trades (SL > cap); results depend on start date; tuned on the same year.
 Lower-risk alternative: `MQL5/Experts/XAU_DMA_EA_v5.10.mq5` (DM_A only).
 
+## Open item (2026-11-19): does the XMS .set actually trade on $300?
+
+The user's package `XMS_USD300_BEST` (v2.90 .ex5, risk 1.5%) has `InpMinLotMaxRiskNew=3.0`. Replica: cap 3.0% → 0 trades, cap 5.5% → +$3,456 / 404 trades / DD 44%. Unknown whether RECENT mode really applies the input. A/B test files (original vs 5.5) are in the user's Drive folder `XAU_Claude_Research_2026-11-18` (`XMS_USD300_AB_test.zip`). The user has **no computer**; MT5 runs only through Grok Bot (usage limit resets Mon 2026-11-23 18:52). Next step: get the two .htm reports (trade count decides), compare with the replica. Real trading without a PC needs a Windows VPS (MT5 mobile cannot run EAs).
+
 ## Tools (all in this repo)
 
 | Path | Purpose |
