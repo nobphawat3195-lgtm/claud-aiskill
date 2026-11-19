@@ -257,3 +257,13 @@ Sizing at entry uses realized equity only; DD on closed-trade equity. At USD 300
 | 00+01+02 | 1,145 | 30% | 143 |
 | 00–03 | 1,683 | 36% | 273 |
 PBO across the 7 range combinations 0.70 (no combination can be picked as best); Deflated Sharpe (14 trials, daily R): r0 0.62, 0+1+2 0.76, 00–03 0.74, all below 0.95. Verdict: all variants positive and beat random, but not statistically proven after multiple trials; demo required.
+
+## HTF Sweep CISD Setups [WillyAlgoTrader] v1.7.1 (TradingView) — `htf_cisd.py`, `htf_engine.py`, `htf_run.py`, `htf_opt.py` (2026-11-19)
+Pine core logic ported (HTF sweep of previous / any untaken HTF high-low → LTF CISD/FVG/IFVG/breaker → limit at PD array, SL at swept extreme, BE after TP1, close at TP3, reversal, same-bar conflict skip). Latest year, real ticks (limit fills at ask/bid, exits at bid/ask).
+| TF (HTF) | best of 8 variants (entry × TP) | trades | avg R |
+|---|---|---|---|
+| M1 (M15) | brC-Market 1/3R | 3,746 | −0.15 (all 8 −0.15 to −0.30) |
+| M5 (H1) | brC-Limit 0.8/2R | 370 | −0.04 (all 8 negative) |
+| M15 (H4) | brC-Limit 1/3R (default) | 127 | +0.03 (others −0.07 to 0.00) |
+Outcome mix M5 default: 48% full loss, 36% break-even, 11% TP3. Spread costs ~0.13R per trade on M1 (SL ≈ 4.6 USD).
+Filters (D1 EMA20 trend, 00–07 UTC, both) on M5/M15, 32 configs selected on Nov–Jun: best train M15 obOpen 00–07 1/3R +37.5R → Jul–Nov **−6.4R**; M5 all negative. M15 brC 00–07 positive in both halves but 44 trades and SL ≈ 19 USD (above the USD 300 min-lot cap); it is the known 00–07 UTC time edge, not the CISD model. Verdict: no edge; EA not written.
