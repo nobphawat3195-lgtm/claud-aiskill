@@ -41,6 +41,7 @@ Lower-risk alternative: `MQL5/Experts/XAU_DMA_EA_v5.10.mq5` (DM_A only).
 | `MQL5/Research/xau_daytrend/rand_base.py` | Random-direction baseline (10,000 shuffles) |
 | `MQL5/Research/toolkit/pbo.py` | `pbo(M)` (CSCV) and `deflated_sharpe(r, n_trials)` |
 | `MQL5/Research/toolkit/report.py` | Monthly table + quantstats HTML from `close_time,pnl` CSV |
+| `MQL5/Research/toolkit/compare_demo.py` | Demo/live EA log (CSV the EAs write) vs backtest: slippage, spread, trades/month, entry hours (wrong GMT offset check) |
 | `MQL5/Research/xau_daytrend/README.md` | Every result so far (read before testing an idea; it may already be done) |
 
 Python deps install automatically via the environment setup script (`MQL5/Research/toolkit/requirements.txt`).
@@ -59,7 +60,7 @@ Python deps install automatically via the environment setup script (`MQL5/Resear
 3. Random-direction baseline: the real R must beat ≥ 95% of shuffles; also report always-buy.
 4. If several configs were compared: PBO < 0.2 and Deflated Sharpe > 0.95.
 5. Report: trades/month, win rate, avg R, $ result, max DD, monthly $ table.
-6. Final proof is the user's MT5 Strategy Tester (real ticks) and 4–8 weeks demo; ask for the .htm report.
+6. Final proof is the user's MT5 Strategy Tester (real ticks) and 4–8 weeks demo; ask for the .htm report and, after the demo, the EA's trade log CSV (`MQL5/Files`) and run `compare_demo.py` on it.
 
 ## Already tested, do not repeat (latest year unless noted)
 
