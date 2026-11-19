@@ -15,7 +15,7 @@ Reply in Thai. The user is an MQL5 developer (gold scalping/intraday, MetaTrader
 ## User's standing rules (do not re-ask)
 
 - **Test only the latest year** (currently 2025-11-01 → today). Do not run multi-year tests unless asked; it wastes tokens.
-- Account: **USD USD 300 Standard** (0.01 lot = USD 1 per USD 1 move), Exness server **GMT+0**, M5 chart.
+- Account: **USD 300 Standard** (0.01 lot = USD 1 per USD 1 move), Exness server **GMT+0**, M5 chart.
 - Goals: trade often, fastest growth, **max drawdown ≤ 50%**.
 - Keep answers short; tables over prose; money in USD per month.
 - Cracked EAs (`_fix`, Telegram/FXProSystems, .ex5 without source): do not run or decompile. Offer the official MQL5 Market demo or a re-implementation of the logic instead.
