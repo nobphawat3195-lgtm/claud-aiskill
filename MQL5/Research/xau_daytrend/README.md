@@ -226,3 +226,13 @@ Source read first (no DLL/WebRequest/grid/martingale in either).
 The triggers add nothing over the trend filter (baseline is better); median SL $23 means 0.01 lot risks 7.7% of $300, so most signals are skipped.
 
 **NadirAliOfficial/engulfing-zone-ea** (`ez_test.py`, M5 engulfing zone retest): defaults ported from source. 66 zones created in the year, 94 bars met trend + engulfing + swing, 28 had an active zone, 26 had left the zone, **0** had the retest engulfing candle fully inside the zone range (the code requires it) → **0 trades**. On a 3-digit gold symbol (Exness) `InpMaxSpreadPoints=50` is $0.05, below the ~$0.26–0.66 spread, so it would not trade even earlier.
+
+## ORB Asia (00:00–01:00 UTC range) + D1 trend, hold to close — `orb_asia.py` (2026-11-19)
+Latest year, real ticks, USD 300 Standard (risk 2%, min-lot cap 5.5%, halt 48%). Pre-registered 4 configs × TP {none, 2R}. Range 3–16 USD, first M5 close outside 01:05–06:00 UTC, SL = opposite range edge. Trend = prior D1 close vs EMA20.
+| Config | n | avg R | sum R | Nov–Jun / Jul–Nov | beats random | USD 300 → | DD |
+|---|---|---|---|---|---|---|---|
+| C1 trend, edge SL, exit 12:00 | 71 | +0.67 | +47.6 | +39.3 / +8.3 | 99% | 968 | 13% |
+| C2 trend, mid SL, exit 12:00 | 129 | +0.38 | +49.4 | +46.5 / +2.8 | 92% | 632 | 19% |
+| C3 no trend, edge SL, exit 12:00 | 103 | +0.44 | +45.1 | +35.6 / +9.5 | 96% | 928 | 24% |
+| C4 trend, edge SL, exit 20:00 | 71 | +0.75 | +53.0 | +26.1 / +26.9 | 100% | 1,031 | 30% |
+2R TP variants are worse (C1 +21R, C4 +23R): hold-to-close confirmed. ~6 trades/month; losing months: C1 Jul −75 USD only. EA: `MQL5/Experts/XAU_ORB_EA_v6.00.mq5` (not compiled in cloud). Not yet run: PBO/DSR across the 8 variants, M1 vs tick check.

@@ -27,6 +27,7 @@ MT5 real tick latest year: +USD 3,461, equity DD 32.5%, 471 trades. Our replica:
 Keep min-lot caps 5.5% (ORB_A/DM_A/DM_L) and 2% (ASIA_B/LON_A); never use the v4.10 USD300 HIGH_RISK preset (DD halt off).
 Risks: the first months skip most trades (SL > cap); results depend on start date; tuned on the same year.
 Lower-risk alternative: `MQL5/Experts/XAU_DMA_EA_v5.10.mq5` (DM_A only).
+New candidate (2026-11-19, untested outside the latest year): `MQL5/Experts/XAU_ORB_EA_v6.00.mq5` Asia ORB + D1 trend, hold to 12:00 UTC: 71 trades, +0.67R avg, USD 300 → 968, DD 13%, beats 99% of random; ~6 trades/month.
 
 ## Resolved (2026-11-19): the XMS .set does trade on USD 300
 
