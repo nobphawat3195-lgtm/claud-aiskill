@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|  XAU_ORB_EA v6.00 — Asia Opening-Range Breakout + D1 trend         |
+//|  XAU_ORB_EA v6.10 — Asia Opening-Range Breakout + D1 trend         |
 //|  สำหรับบัญชี Standard ทุน $300, server GMT+0 (Exness), ถือไม้ถึง 12:00 UTC |
 //|                                                                  |
 //|  Logic:                                                          |
@@ -11,11 +11,16 @@
 //|   71 ไม้ ชนะ 48% เฉลี่ย +0.67R รวม +47.6R (พ.ย.-มิ.ย. +39.3R, ก.ค.-พ.ย. +8.3R)|
 //|   ชนะ random-direction 99% | $300 Standard risk 2% -> ~$968, DD 13%       |
 //|   ออก 20:00 UTC (C4): +53.0R, $1,031 แต่ DD 30% | ไม่กรองเทรนด์ (C3): +45.1R |
+//|  v6.10: หลายกรอบ (InpRangeHours="0,1,2,3" = กรอบ 1 ชม. เริ่ม 00,01,02,03 UTC, รับสัญญาณถึง +5 ชม.)|
+//|   ทั้ง 4 กรอบ: 286 ไม้ (~23/เดือน) เฉลี่ย +0.41R รวม +116.6R, $300 -> ~$1,948, DD 31%      |
+//|   (พ.ย.-มิ.ย. +95.9R / ก.ค.-พ.ย. +20.7R) กรอบ 0+1+2: 166 ไม้ $1,295 DD 25%               |
+//|   ข้อควรระวัง: ไม้ซ้อนกันได้หลายไม้พร้อมกัน (ทิศมักตรงกัน) DD จริงอาจสูงกว่าจำลอง ลอง Risk 1.5%|
+//|   กรอบ London 07 / NY 13 ทดสอบแล้ว ไม่มี edge (+0.01R / -0.07R) จึงไม่รวม               |
 //|  ข้อควรระวัง: ~6 ไม้/เดือน (ไม่ใช่ตัวที่ออกไม้บ่อย) ทดสอบปีเดียว ปรับค่าครั้งเดียว|
 //|  ต้อง demo 4-8 สัปดาห์ก่อนใช้เงินจริง                                      |
 //+------------------------------------------------------------------+
 #property copyright "XAU ORB EA"
-#property version   "6.00"
+#property version   "6.10"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -25,7 +30,8 @@ enum ENUM_DST_MODE { DST_NONE, DST_US, DST_EU };
 input group "=== เวลา ==="
 input int           InpServerGMTWinter = 0;        // GMT offset เซิร์ฟเวอร์ฤดูหนาว (Exness = 0)
 input ENUM_DST_MODE InpServerDST       = DST_NONE; // กฎ DST เซิร์ฟเวอร์ (Exness = DST_NONE)
-input int           InpLastSignalHour  = 6;        // รับสัญญาณถึงกี่โมง UTC
+input string        InpRangeHours      = "0,1,2,3"; // ชั่วโมงเริ่มกรอบ 1 ชม. (UTC) คั่นด้วยจุลภาค สูงสุด 4
+input int           InpSignalSpanHours = 5;        // รับสัญญาณหลังจบกรอบกี่ชม. (เริ่ม+span)
 input int           InpExitHourUTC     = 12;       // ปิดไม้กี่โมง UTC (12 = C1, 20 = C4)
 
 input group "=== สัญญาณ ==="
@@ -51,7 +57,8 @@ input string InpLogFile  = "xau_orb_trades.csv";
 CTrade trade;
 string gPfx;
 bool   gHalted = false;
-long   gTradedDay = -1;
+int    gHrs[4]; int gN = 0;
+long   gTradedDay[4] = {-1, -1, -1, -1};
 datetime gLastBar = 0;
 
 //--- DST helpers
@@ -109,6 +116,7 @@ ulong OpenTicketM(long magic)
 //    คืนทิศเทรนด์ (close วันล่าสุดที่จบแล้ว เทียบ EMA) และ ADR ของวันที่จบแล้ว
 
 ulong OpenTicket() { return OpenTicketM(InpMagic); }
+bool AnyOpen() { for(int i = 0; i < gN; i++) if(OpenTicketM(InpMagic + i) != 0) return true; return false; }
 int OnInit()
 {
    gPfx = "XORB_" + IntegerToString(InpMagic) + "_" + _Symbol + "_";
@@ -117,7 +125,8 @@ int OnInit()
    trade.SetDeviationInPoints(50);
    if(InpResetHalt) { GlobalVariableDel(gPfx + "halted"); GVSet("peak", AccountInfoDouble(ACCOUNT_EQUITY)); }
    gHalted = GVGet("halted", 0) > 0;
-   gTradedDay = (long)GVGet("day", -1);
+   string parts[]; gN = MathMin(StringSplit(InpRangeHours, ',', parts), 4);
+   for(int i = 0; i < gN; i++) { gHrs[i] = (int)StringToInteger(parts[i]); gTradedDay[i] = (long)GVGet("day" + IntegerToString(i), -1); }
    if(InpServerGMTWinter != 0 || InpServerDST != DST_NONE)
       Print("คำเตือน: งานวิจัยใช้วัน UTC; ตั้ง InpServerGMTWinter/DST ให้ตรงเซิร์ฟเวอร์");
    return INIT_SUCCEEDED;
@@ -126,18 +135,19 @@ int OnInit()
 void OnDeinit(const int reason) { Comment(""); }
 
 //--- ประเมินสัญญาณที่แท่ง M5 ที่ปิดล่าสุด (shift 1)
-string TryEntry(datetime utc, long day, double eq, double fr)
+string TryEntry(int slot, datetime utc, long day, double eq, double fr)
 {
    MqlDateTime du; TimeToStruct(utc, du);
-   if(gHalted || OpenTicket() != 0 || gTradedDay == day || du.day_of_week < 1 || du.day_of_week > 5) return "";
+   int rs = gHrs[slot]; long magic = InpMagic + slot;
+   if(gHalted || OpenTicketM(magic) != 0 || gTradedDay[slot] == day || du.day_of_week < 1 || du.day_of_week > 5) return "";
    long srvOff = ServerOffsetSec(TimeCurrent());
    datetime barSrv = iTime(_Symbol, PERIOD_M5, 1);
    long barUtc = (long)barSrv - srvOff;                              // เวลาเปิดแท่งที่ปิดแล้ว (UTC)
    long sod = barUtc % 86400;
-   if(barUtc / 86400 != day || sod < 3600 || sod >= (long)InpLastSignalHour * 3600) return "";
-   //--- กรอบ 00:00-01:00 UTC (12 แท่ง M5)
+   if(barUtc / 86400 != day || sod < (long)(rs + 1) * 3600 || sod >= (long)(rs + 1 + InpSignalSpanHours) * 3600) return "";
+   //--- กรอบ 1 ชม. เริ่ม rs UTC (12 แท่ง M5)
    double hi = -1e9, lo = 1e9;
-   datetime t0 = (datetime)(day * 86400 + srvOff);
+   datetime t0 = (datetime)(day * 86400 + rs * 3600 + srvOff);
    MqlRates r[];
    if(CopyRates(_Symbol, PERIOD_M5, t0, t0 + 3600 - 1, r) < 10) return "";
    for(int i = 0; i < ArraySize(r); i++) { hi = MathMax(hi, r[i].high); lo = MathMin(lo, r[i].low); }
@@ -154,7 +164,7 @@ string TryEntry(datetime utc, long day, double eq, double fr)
       int tr = iClose(_Symbol, PERIOD_D1, 1) > e[0] ? 1 : -1;
       if(tr != dir) return "ข้าม: ผิดทิศเทรนด์ D1 (รอสัญญาณทิศตรงเทรนด์ต่อ)";
    }
-   gTradedDay = day; GVSet("day", (double)day);                  // ไม้แรกที่ผ่านตัวกรองเท่านั้น (1 ไม้/วัน)
+   gTradedDay[slot] = day; GVSet("day" + IntegerToString(slot), (double)day);                  // ไม้แรกที่ผ่านตัวกรองเท่านั้น (1 ไม้/วัน)
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK), bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    double entry = dir > 0 ? ask : bid, spread = ask - bid;
    double sl = NormalizeDouble(dir > 0 ? lo : hi, _Digits);
@@ -169,7 +179,8 @@ string TryEntry(datetime utc, long day, double eq, double fr)
    lots = MathMin(lots, MathMin(InpMaxLot, SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX)));
    if(lots < vmin) return StringFormat("ข้าม: 0.01 lot เสี่ยง %.1f%% เกิน %.1f%%", vmin * perLot / eq * 100.0, InpMinLotCap);
    lots = NormalizeDouble(lots, 2);
-   bool ok = dir > 0 ? trade.Buy(lots, _Symbol, 0, sl, 0, "ORB") : trade.Sell(lots, _Symbol, 0, sl, 0, "ORB");
+   trade.SetExpertMagicNumber(magic);
+   bool ok = dir > 0 ? trade.Buy(lots, _Symbol, 0, sl, 0, "ORB" + IntegerToString(rs)) : trade.Sell(lots, _Symbol, 0, sl, 0, "ORB" + IntegerToString(rs));
    if(ok && (trade.ResultRetcode() == TRADE_RETCODE_DONE || trade.ResultRetcode() == TRADE_RETCODE_PLACED))
    {
       LogLine(StringFormat("%s,OPEN,%d,%.2f,%s,%s,%s,%s,%.2f,%.2f,", TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS), dir, lots,
@@ -177,7 +188,7 @@ string TryEntry(datetime utc, long day, double eq, double fr)
               DoubleToString(sl, _Digits), W, lots * perLot / eq * 100.0));
       return "เปิดไม้แล้ว";
    }
-   gTradedDay = -1; GVSet("day", -1);
+   gTradedDay[slot] = -1; GVSet("day" + IntegerToString(slot), -1);
    return "order ล้มเหลว " + IntegerToString((int)trade.ResultRetcode());
 }
 
@@ -193,32 +204,32 @@ void OnTick()
    double peak = GVGet("peak", eq);
    if(eq > peak || !GlobalVariableCheck(gPfx + "peak")) { peak = MathMax(eq, peak); GVSet("peak", peak); }
    double dd = peak > 0 ? (peak - eq) / peak * 100.0 : 0;
-   ulong tk = OpenTicket();
+   bool flat = mn >= InpExitHourUTC * 60 || du.day_of_week == 6 || du.day_of_week == 0;
    if(!gHalted && dd >= InpDDHalt)
    {
       gHalted = true; GVSet("halted", 1);
-      if(tk > 0) trade.PositionClose(tk);
+      for(int i = 0; i < gN; i++) { ulong h = OpenTicketM(InpMagic + i); if(h > 0) trade.PositionClose(h); }
       Print("XAU ORB: DD ถึงเพดาน หยุด EA — ตั้ง InpResetHalt=true เพื่อเริ่มใหม่");
    }
-   if(tk > 0 && (mn >= InpExitHourUTC * 60 || du.day_of_week == 6 || du.day_of_week == 0)) trade.PositionClose(tk);
+   for(int i = 0; i < gN; i++) { ulong h = OpenTicketM(InpMagic + i); if(h > 0 && flat) trade.PositionClose(h); }
 
    double fr = InpRiskPct * (dd >= InpDDHalf ? 0.5 : 1.0);
-   string status = gHalted ? "หยุดเพราะ DD ถึงเพดาน" : (OpenTicket() > 0 ? StringFormat("ถือไม้ ปิด %02d:00 UTC", InpExitHourUTC) : "รอสัญญาณ 01:05-06:00 UTC");
+   string status = gHalted ? "หยุดเพราะ DD ถึงเพดาน" : (AnyOpen() ? StringFormat("ถือไม้ ปิด %02d:00 UTC", InpExitHourUTC) : "รอสัญญาณ");
    datetime bar = iTime(_Symbol, PERIOD_M5, 0);
    if(bar != gLastBar)                                              // ประเมินครั้งเดียวต่อแท่ง M5 ใหม่
    {
       gLastBar = bar;
-      string s = TryEntry(utc, day, eq, fr);
-      if(s != "") status = s;
+      for(int i = 0; i < gN; i++) { string s = TryEntry(i, utc, day, eq, fr); if(s != "") status = s; }
    }
-   Comment(StringFormat("XAU ORB v6.00\nUTC %s\nDD %.1f%% | Risk %.2f%%\n%s", TimeToString(utc, TIME_DATE | TIME_MINUTES), dd, fr, status));
+   Comment(StringFormat("XAU ORB v6.10\nUTC %s\nDD %.1f%% | Risk %.2f%%\n%s", TimeToString(utc, TIME_DATE | TIME_MINUTES), dd, fr, status));
 }
 
 void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest &request, const MqlTradeResult &result)
 {
    if(!InpWriteLog || trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
    if(!HistoryDealSelect(trans.deal)) return;
-   if(HistoryDealGetInteger(trans.deal, DEAL_MAGIC) != InpMagic || HistoryDealGetString(trans.deal, DEAL_SYMBOL) != _Symbol) return;
+   long dm = HistoryDealGetInteger(trans.deal, DEAL_MAGIC);
+   if(dm < InpMagic || dm >= InpMagic + 4 || HistoryDealGetString(trans.deal, DEAL_SYMBOL) != _Symbol) return;
    if(HistoryDealGetInteger(trans.deal, DEAL_ENTRY) != DEAL_ENTRY_OUT) return;
    double net = HistoryDealGetDouble(trans.deal, DEAL_PROFIT) + HistoryDealGetDouble(trans.deal, DEAL_SWAP) + HistoryDealGetDouble(trans.deal, DEAL_COMMISSION);
    LogLine(StringFormat("%s,CLOSE,,%.2f,,%s,,,,,%.2f", TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS),

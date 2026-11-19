@@ -236,3 +236,15 @@ Latest year, real ticks, USD 300 Standard (risk 2%, min-lot cap 5.5%, halt 48%).
 | C3 no trend, edge SL, exit 12:00 | 103 | +0.44 | +45.1 | +35.6 / +9.5 | 96% | 928 | 24% |
 | C4 trend, edge SL, exit 20:00 | 71 | +0.75 | +53.0 | +26.1 / +26.9 | 100% | 1,031 | 30% |
 2R TP variants are worse (C1 +21R, C4 +23R): hold-to-close confirmed. ~6 trades/month; losing months: C1 Jul −75 USD only. EA: `MQL5/Experts/XAU_ORB_EA_v6.00.mq5` (not compiled in cloud). Not yet run: PBO/DSR across the 8 variants, M1 vs tick check.
+
+### More trades: other sessions and multiple ranges (`orb3.py`, `orb4.py`, 2026-11-19)
+Same rules as C1 (range 1 h, D1 trend, SL opposite edge, exit 12:00 unless noted). Latest year, real ticks, USD 300, risk 2%.
+| Test | n (/month) | avg R | sum R | Nov–Jun / Jul–Nov | USD 300 → | DD |
+|---|---|---|---|---|---|---|
+| London range 07–08, exit 16 | 101 (8) | +0.01 | +0.9 | −3.3 / +4.2 | 279 | 34% |
+| NY range 13–14, exit 20 | 45 (4) | −0.07 | −3.0 | +5.3 / −8.3 | 276 | 38% |
+| Asia re-entry up to 3/day | 86 (7) | +0.53 | +45.8 | +39.5 / +6.2 | 962 | 21% |
+| Range 00–01 / 01–02 / 02–03 / 03–04 | 67 / 29 / 70 / 120 | +0.55 / +0.59 / +0.33 / +0.33 | +37 / +17 / +23 / +40 | all positive Nov–Jun | 759 / 481 / 589 / 782 | 16–27% |
+| **Ranges 00+01+02 (overlap allowed)** | 166 (13) | +0.46 | +77.0 | +56.5 / +20.5 | 1,295 | 25% |
+| **All four ranges 00–03** | 286 (23) | +0.41 | +116.6 | +95.9 / +20.7 | 1,948 | 31% |
+London/NY ORB have no edge: the edge is the 00–07 UTC window. Overlapping positions are sized one after another in the sim, so real combined risk and DD are higher. EA: `XAU_ORB_EA_v6.10.mq5` (`InpRangeHours`). Not yet done: PBO/DSR, compile.
