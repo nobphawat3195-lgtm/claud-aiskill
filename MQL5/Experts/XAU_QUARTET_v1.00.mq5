@@ -335,8 +335,8 @@ void DrawPanel()
 
    // ความเสี่ยง
    Text("l_risk", 14, 76, "ความเสี่ยง/ไม้", C_MUTED, 9);
-   string rn[3] = {"ต่ำ", "กลาง", "สูง"}; double rv[3] = {InpRiskLow, InpRiskMid, InpRiskHigh}; color rc[3] = {C_GREEN, C_GOLD, C_ORANGE};
-   for(int k = 0; k < 3; k++) Button("r" + IntegerToString(k), 110 + k * 145, 72, 138, 26, StringFormat("%s %.2g%%", rn[k], rv[k]), gRisk == k, rc[k]);
+   string rn[3] = {"ต่ำ", "กลาง", "สูง"};
+   for(int k = 0; k < 3; k++) Button("r" + IntegerToString(k), 110 + k * 145, 72, 138, 26, StringFormat("%s %.2g%%", rn[k], k == 0 ? InpRiskLow : k == 1 ? InpRiskMid : InpRiskHigh), gRisk == k, k == 0 ? C_GREEN : k == 1 ? C_GOLD : C_ORANGE);
    int bdd = BtDD(gRisk);
    Text("bt", 14, 106, "ทดสอบ 2 ปี ($300 → " + BtEnd(gRisk) + ")" + (bdd >= 40 ? "  ! ใกล้เพดาน" : "  อยู่ในเกณฑ์") + " · เปิดครบ 4 เครื่อง", DDColor(bdd), 8);
 
