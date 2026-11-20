@@ -429,7 +429,7 @@ void DrawEntryArrow(int k, int dir, double price)
    ObjectSetInteger(0, n, OBJPROP_COLOR, C_ENG[k]); ObjectSetInteger(0, n, OBJPROP_WIDTH, 3);
    ObjectSetInteger(0, n, OBJPROP_ANCHOR, dir > 0 ? ANCHOR_TOP : ANCHOR_BOTTOM);
    ObjectSetInteger(0, n, OBJPROP_SELECTABLE, false); ObjectSetInteger(0, n, OBJPROP_HIDDEN, true);
-   ObjectSetString(0, n, OBJPROP_TOOLTIP, "QUARTET " + E[k].name + (dir > 0 ? " BUY" : " SELL"));
+   ObjectSetString(0, n, OBJPROP_TOOLTIP, "QUARTET " + E[k].name + (dir > 0 ? " ซื้อ" : " ขาย"));
 }
 void DrawSLLines()
 {
@@ -445,7 +445,7 @@ void DrawSLLines()
       ObjectSetInteger(0, n, OBJPROP_BACK, true);
       if(ObjectFind(0, lb) < 0) ObjectCreate(0, lb, OBJ_TEXT, 0, TimeCurrent(), sl);
       ObjectMove(0, lb, 0, TimeCurrent() + PeriodSeconds() * 3, sl);
-      ObjectSetString(0, lb, OBJPROP_TEXT, "◆ SL " + E[k].name); ObjectSetString(0, lb, OBJPROP_FONT, "Tahoma Bold");
+      ObjectSetString(0, lb, OBJPROP_TEXT, "◆ ตัดขาดทุน " + E[k].name); ObjectSetString(0, lb, OBJPROP_FONT, "Tahoma Bold");
       ObjectSetInteger(0, lb, OBJPROP_FONTSIZE, 8); ObjectSetInteger(0, lb, OBJPROP_COLOR, C_ENG[k]); ObjectSetInteger(0, lb, OBJPROP_ANCHOR, ANCHOR_LEFT_LOWER);
       ObjectSetInteger(0, lb, OBJPROP_SELECTABLE, false); ObjectSetInteger(0, lb, OBJPROP_HIDDEN, true);
    }
@@ -456,7 +456,7 @@ void DrawSLLines()
 //====================================================================
 string LotModeName(int m)
 {
-   return m == LOT_RISK_EQUITY ? "อัตโนมัติ % Equity" : m == LOT_RISK_BALANCE ? "อัตโนมัติ % Balance" : m == LOT_RISK_MONEY ? "เสี่ยงเงินคงที่" :
+   return m == LOT_RISK_EQUITY ? "อัตโนมัติ % มูลค่าพอร์ต" : m == LOT_RISK_BALANCE ? "อัตโนมัติ % ยอดเงิน" : m == LOT_RISK_MONEY ? "เสี่ยงเงินคงที่" :
           m == LOT_PER_STEP ? "ล็อตตามขนาดทุน" : "ล็อตคงที่";
 }
 string LotModeDetail(int m)
@@ -536,7 +536,7 @@ void OpenEngine(int k, int dir)
    bool ok = dir > 0 ? trade.Buy(lots, _Symbol, 0, sl, 0, "QUARTET " + E[k].name) : trade.Sell(lots, _Symbol, 0, sl, 0, "QUARTET " + E[k].name);
    if(ok && (trade.ResultRetcode() == TRADE_RETCODE_DONE || trade.ResultRetcode() == TRADE_RETCODE_PLACED))
    {
-      E[k].note = (dir > 0 ? "ปล่อยยาน BUY " : "ปล่อยยาน SELL ") + DoubleToString(lots, 2) + " lot";
+      E[k].note = (dir > 0 ? "ปล่อยยาน: ซื้อ " : "ปล่อยยาน: ขาย ") + DoubleToString(lots, 2) + " ล็อต";
       DrawEntryArrow(k, dir, trade.ResultPrice() > 0 ? trade.ResultPrice() : entry);
       LogLine(StringFormat("%s,OPEN,%d,%.2f,%s,%s,%s,%s,%s,%.2f,", TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS), dir, lots,
               DoubleToString(entry, _Digits), DoubleToString(trade.ResultPrice(), _Digits), DoubleToString(spread, _Digits),
@@ -567,7 +567,7 @@ void UpdateStats()
       if(nl < 5)
       {
          long ty = HistoryDealGetInteger(dl, DEAL_TYPE);
-         sLast[nl++] = StringFormat("%s  %-5s %s  %+.2f", TimeToString(t, TIME_DATE | TIME_MINUTES), E[(int)(mg - InpMagic)].name, ty == DEAL_TYPE_SELL ? "BUY " : "SELL", p);
+         sLast[nl++] = StringFormat("%s  %-5s %s  %+.2f", TimeToString(t, TIME_DATE | TIME_MINUTES), E[(int)(mg - InpMagic)].name, ty == DEAL_TYPE_SELL ? "ซื้อ" : "ขาย", p);
       }
    }
 }
@@ -579,7 +579,7 @@ string NextLotText(int k)
 {
    string why; double rr;
    double l = CalcLots(k, InpSLATR * E[k].atr, why, rr);
-   return l > 0 ? StringFormat("  ·  ล็อตถัดไป %.2f (%.1f%%)", l, rr) : "  ·  ไม้ถัดไป: ข้าม";
+   return l > 0 ? StringFormat("ไม้ถัดไป %.2f ล็อต (เสี่ยง %.1f%%)", l, rr) : "ไม้ถัดไป: ข้าม (ล็อตต่ำกว่าขั้นต่ำ)";
 }
 void DrawPanel()
 {
@@ -588,7 +588,7 @@ void DrawPanel()
    double bal = AccountInfoDouble(ACCOUNT_BALANCE), eq = AccountInfoDouble(ACCOUNT_EQUITY);
    double dd  = gPeak > 0 ? (gPeak - eq) / gPeak * 100 : 0;
    color  sc  = gHalted ? C_RED : gPaused ? C_ORANGE : C_GREEN;
-   string stat = gHalted ? "ยานจอด: DD ถึงเพดาน" : gPaused ? "ลอยนิ่ง (หยุดชั่วคราว)" : "ยานแม่ออนไลน์";
+   string stat = gHalted ? "ยานจอด: ขาดทุนถึงเพดาน" : gPaused ? "ลอยนิ่ง (หยุดชั่วคราว)" : "ยานแม่ออนไลน์";
    bool   pulse = InpAnimate && gFrame % 2 == 0;
 
    // ฉากหลัง + กรอบนีออน + ดาว
@@ -603,11 +603,11 @@ void DrawPanel()
    // หัว
    UFO(18, 12, sc);
    GlowText("title", 98, 10, "XAU QUARTET", C_GOLD, C'110,60,0', 20);
-   Text("sub", 100, 44, "MOTHERSHIP EDITION · v1.10 · สัญญาณจากนอกโลก 4 ดวง", C_GLOW3, 8, true);
-   Text("sub2", 100, 60, "KST · CORAL · GANN · SSL-H4", C_MUTED, 7, false, ANCHOR_LEFT_UPPER, "Consolas");
+   Text("sub", 100, 44, "ฉบับยานแม่ · v1.10 · สัญญาณจากนอกโลก 4 ดวง", C_GLOW3, 8, true);
+   Text("sub2", 100, 60, "หุ่นยนต์เทรดทองคำตามเทรนด์ · 4 เครื่องยนต์", C_MUTED, 7);
    NeonFrame("stat", 420, 14, 165, 28, sc);
    Text("stat_t", 502, 20, (pulse ? "● " : "○ ") + stat, sc, 8, true, ANCHOR_UPPER);
-   Text("acct", 420, 50, (cent ? "บัญชี CENT · " : "บัญชี STANDARD · ") + cur + (cent ? "  OK" : "  ! แนะนำ Cent"), cent ? C_GREEN : C_ORANGE, 8, true);
+   Text("acct", 420, 50, (cent ? "บัญชีเซ็นต์ · " : "บัญชีมาตรฐาน · ") + cur + (cent ? "  พร้อม" : "  ! แนะนำบัญชีเซ็นต์"), cent ? C_GREEN : C_ORANGE, 8, true);
    Text("clock", 420, 64, "เวลายาน " + TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS), C_MUTED, 7, false, ANCHOR_LEFT_UPPER, "Consolas");
    Scanner(84);
 
@@ -619,7 +619,7 @@ void DrawPanel()
    bool pctMode = gLotMode == LOT_RISK_EQUITY || gLotMode == LOT_RISK_BALANCE;
    string halt50 = InpDDHalt < 54 && gRisk >= 3 ? "  !! เพดาน " + DoubleToString(InpDDHalt, 0) + "% แบ็กเทสชนเพดานหยุด" : "";
    if(pctMode)
-      Text("bt", 14, 144, StringFormat("ทดสอบ 2 ปี: $300 → %s · DD %d%% · โอกาสชน DD 70%% ≈ %d%%", BtEnd(gRisk), bdd, BtRuin(gRisk)) + halt50 +
+      Text("bt", 14, 144, StringFormat("ทดสอบ 2 ปี: $300 → %s · ขาดทุนสะสมสูงสุด %d%% · โอกาสชนเพดาน ≈ %d%%", BtEnd(gRisk), bdd, BtRuin(gRisk)) + halt50 +
            (InpCompound ? "" : " · (ผลแบ็กเทสเป็นแบบทบต้น)"), DDColor(bdd), 8, true);
    else
       Text("bt", 14, 144, "ระดับ % ไม่ใช้ในโหมดล็อตนี้ · ผลแบ็กเทสอ้างอิงโหมด % Equity", C_MUTED, 8, true);
@@ -628,7 +628,7 @@ void DrawPanel()
    Text("l_lot", 14, 164, "โหมดล็อต", C_MUTED, 8, true);
    for(int m = 0; m < NLOTMODE; m++)
    {
-      string lb[NLOTMODE] = {"%Equity", "%Balance", "เงินคงที่", "ตามทุน", "คงที่"};
+      string lb[NLOTMODE] = {"% มูลค่าพอร์ต", "% ยอดเงิน", "เงินคงที่", "ตามขนาดทุน", "ล็อตคงที่"};
       Button("lm" + IntegerToString(m), 80 + m * 102, 160, 98, 22, lb[m], gLotMode == m, C_GLOW3, 8);
    }
    Text("lotd", 14, 186, "► " + LotModeName(gLotMode) + ": " + LotModeDetail(gLotMode) +
@@ -638,14 +638,14 @@ void DrawPanel()
    // ห้องควบคุมบัญชี
    NeonFrame("acc", 10, 166, W - 20, 118, C_GLOW2);
    Text("acc_h", 22, 172, "■ ห้องควบคุม", C_GLOW3, 8, true);
-   Text("a1", 22, 190, "ทุน (BALANCE)", C_MUTED, 7);         Text("a1v", 22, 202, StringFormat("%.2f", bal), C_TXT, 13, true);
-   Text("a2", 210, 190, "มูลค่าสุทธิ (EQUITY)", C_MUTED, 7);  Text("a2v", 210, 202, StringFormat("%.2f", eq), eq >= bal ? C_GREEN : C_RED, 13, true);
-   Text("a3", 400, 190, cent ? "เทียบเป็น USD" : "กำไรลอย", C_MUTED, 7);
+   Text("a1", 22, 190, "ยอดเงิน", C_MUTED, 7);         Text("a1v", 22, 202, StringFormat("%.2f", bal), C_TXT, 13, true);
+   Text("a2", 210, 190, "มูลค่าพอร์ต (รวมกำไรลอย)", C_MUTED, 7);  Text("a2v", 210, 202, StringFormat("%.2f", eq), eq >= bal ? C_GREEN : C_RED, 13, true);
+   Text("a3", 400, 190, cent ? "คิดเป็นดอลลาร์" : "กำไรลอย", C_MUTED, 7);
    Text("a3v", 400, 202, cent ? StringFormat("$%.2f", eq * 0.01) : StringFormat("%+.2f", eq - bal), C_GOLD, 13, true);
    Text("a4", 22, 228, StringFormat("วันนี้ %+.2f", sToday), sToday >= 0 ? C_GREEN : C_RED, 9, true);
    Text("a5", 210, 228, StringFormat("เดือนนี้ %+.2f", sMonth), sMonth >= 0 ? C_GREEN : C_RED, 9, true);
    Text("a6", 400, 228, StringFormat("จุดสูงสุด %.2f", gPeak), C_MUTED, 8);
-   Text("dd_l", 22, 252, StringFormat("โล่ป้องกัน DD %.1f%%", dd), DDColor(dd), 8, true);
+   Text("dd_l", 22, 252, StringFormat("ขาดทุนจากจุดสูงสุด %.1f%%", dd), DDColor(dd), 8, true);
    DDGauge(160, 252, 410, dd);
    Text("dd_m", 570, 268, StringFormat("เพดาน %.0f%%", InpDDHalt), C_MUTED, 7, false, ANCHOR_RIGHT_UPPER);
 
@@ -666,14 +666,14 @@ void DrawPanel()
       string id = "e" + IntegerToString(k);
       NeonFrame(id, x, y, 284, 130, ec);
       Rect(id + "_bar", x + 2, y + 2, 6, 126, E[k].on ? (pulse && pd != 0 ? C_TXT : C_ENG[k]) : C_OFF);
-      Text(id + "_no", x + 16, y + 6, "POD-0" + IntegerToString(k + 1), C_MUTED, 7, false, ANCHOR_LEFT_UPPER, "Consolas");
+      Text(id + "_no", x + 16, y + 6, "เครื่องที่ " + IntegerToString(k + 1), C_MUTED, 7);
       Text(id + "n", x + 16, y + 18, E[k].name + " · " + E[k].nick, E[k].on ? C_ENG[k] : C_MUTED, 11, true);
-      Button("t" + IntegerToString(k), x + 216, y + 8, 60, 22, E[k].on ? "● ON" : "○ OFF", E[k].on, C_ENG[k]);
-      Text(id + "s", x + 16, y + 42, !E[k].on ? "ดับเครื่อง (ไม่เปิดไม้ใหม่)" : pd > 0 ? "▲ ถือ BUY" : pd < 0 ? "▼ ถือ SELL" : "○ สแกนหาสัญญาณกลับทิศ", ec, 11, true);
-      Text(id + "p", x + 16, y + 64, pd != 0 ? StringFormat("%.2f lot  %+.2f  (%+.2fR)", pl, pp, rr) : " ", pp >= 0 ? C_GREEN : C_RED, 9, true);
+      Button("t" + IntegerToString(k), x + 216, y + 8, 60, 22, E[k].on ? "● เปิด" : "○ ปิด", E[k].on, C_ENG[k]);
+      Text(id + "s", x + 16, y + 42, !E[k].on ? "ดับเครื่อง (ไม่เปิดไม้ใหม่)" : pd > 0 ? "▲ ถือฝั่งซื้อ" : pd < 0 ? "▼ ถือฝั่งขาย" : "○ สแกนหาสัญญาณกลับทิศ", ec, 11, true);
+      Text(id + "p", x + 16, y + 64, pd != 0 ? StringFormat("%.2f ล็อต  %+.2f  (%+.2f เท่าของความเสี่ยง)", pl, pp, rr) : NextLotText(k), pd == 0 ? C_MUTED : pp >= 0 ? C_GREEN : C_RED, pd != 0 ? 9 : 8, pd != 0);
       if(pd != 0) EnergyBar(id + "_en", x + 16, y + 82, 256, rr, C_ENG[k]);
       else { EnergyBar(id + "_en", x + 16, y + 82, 256, -1, C_OFF); }
-      Text(id + "t", x + 16, y + 96, "สัญญาณ " + (E[k].state > 0 ? "ขาขึ้น ▲" : E[k].state < 0 ? "ขาลง ▼" : "-") + StringFormat("  ·  SL %.1f$", InpSLATR * E[k].atr) + NextLotText(k), C_TXT, 8);
+      Text(id + "t", x + 16, y + 96, "สัญญาณ " + (E[k].state > 0 ? "ขาขึ้น ▲" : E[k].state < 0 ? "ขาลง ▼" : "-") + StringFormat("  ·  ตัดขาดทุน %.1f$", InpSLATR * E[k].atr), C_TXT, 8);
       Text(id + "d", x + 16, y + 110, E[k].note != "" ? E[k].note : E[k].desc, C_MUTED, 7);
    }
 
@@ -682,7 +682,7 @@ void DrawPanel()
    double wr = sTrades > 0 ? 100.0 * sWins / sTrades : 0, pf = sGrossL > 0 ? sGrossW / sGrossL : 0;
    Text("st0", 24, 606, "■ สถิติภารกิจ", C_GLOW3, 8, true);
    Text("st1", 24, 624, StringFormat("ไม้ที่ปิด %d · ชนะ %.0f%%", sTrades, wr), C_TXT, 9);
-   Text("st2", 24, 642, StringFormat("Profit Factor %.2f  (เป้า > 1.3)", pf), pf >= 1.3 ? C_GREEN : pf >= 1.0 ? C_GOLD : C_RED, 9, true);
+   Text("st2", 24, 642, StringFormat("กำไรรวม/ขาดทุนรวม %.2f  (เป้า > 1.3)", pf), pf >= 1.3 ? C_GREEN : pf >= 1.0 ? C_GOLD : C_RED, 9, true);
    Text("st3", 24, 660, StringFormat("กำไรสุทธิ %+.2f", sGrossW - sGrossL), sGrossW >= sGrossL ? C_GREEN : C_RED, 10, true);
    Text("st4", 24, 684, "ชนะ 30-40% · แพ้ติดกันเป็นปกติของระบบเทรนด์", C_MUTED, 7);
    NeonFrame("lt", 268, 600, 320, 108, C_GLOW2);
