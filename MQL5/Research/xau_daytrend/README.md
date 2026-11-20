@@ -345,3 +345,9 @@ PBO 0.19. Portfolios (Cent USD 300, DD halt 50%), end USD / DD at risk 0.25 / 0.
 A SSL M15+H1 (47/mo): 531/9%, 895/17%, 1,443/24% (1%: 2,232/31%) · B SSL M5+M15+H1 (84/mo): 772/18%, 1,650/33%, 3,026/45% ·
 C A + MACD H1,M15 +D1 (82/mo): 756/16%, 1,653/30%, 3,201/42% · F A + MACD H1,M15 unfiltered (120/mo): 815/17%, 1,854/32%, 3,616/46% ·
 D/E with M5 MACD (137–174/mo): 0.5% → 3,463–3,892 at DD 47–50%, 0.75% halts. MACD correlates with SSL (0.6), so it adds trades and return but DD scales with it; best return per DD at ≤ 31% DD is still A at 1%.
+
+### XAU THUNDER v1.00 (MACD-only EA, `macd_port.py`)
+MACD engine portfolios, Cent USD 300, DD halt 50%, end USD / DD at 0.5 / 0.75 / 1 / 1.5%:
+H1: 444/9, 534/14, 637/18, 884/26 · M15: 515/15, 651/23, 805/29, 1,155/41 · **H1+M15 (73/mo)**: 730/23, 1,052/33, 1,446/42, halt ·
+**H1+M15+M5(D1) (91/mo)**: 1,047/28, 1,660/40, halt, halt · H1d+M15d+M5d (53/mo): 905/26, 1,377/36, 1,946/46, halt · H1+M15d: 674/16, 960/24, 1,325/31, 2,311/43 · H1+M15+M5 unfiltered: 783/35, 1,036/49, halt.
+EA `MQL5/Experts/XAU_THUNDER_v1.00.mq5` (modes H1+M15 / H1+M15+M5 D1, magic 890000+). Docs/visuals in `MQL5/Docs/thunder/`. MACD alone is weaker than SENTINEL (SSL) at the same DD.
