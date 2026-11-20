@@ -296,3 +296,9 @@ SSL H1 detail (`ssl_detail.py`, `ssl_h1_equity.png`): 28 trades/month, PF 1.47, 
 | M30 | −0.04 | +0.06 | +0.12 (120) | +0.27 (+0.18/+0.41), 226 tr |
 | H1 | **+0.30 (+0.31/+0.29), 331 tr** | +0.47 (+0.57/+0.33), 156 tr | = | = |
 PBO 0.0 (the in-sample best ranks well out of sample). Random baseline: M5 720+D1 97.7% (longs +9.5R, shorts +121R: fragile), M15 240+D1 96.9%, H1 99.9%. DSR (18 trials): 0.29 / 0.40 / 0.82. Win rates 16–33%, max losing streak 25 (M5). Standard USD 300 fails (0.01 lot forces 2.4–9% risk → 48% halt in Feb–Apr). Cent USD 300: H1 risk 1% → 753 (DD 11%); M15+H1 risk 1% → 1,437 (DD 30%, ~51/month); M5+M15+H1 risk 0.5% → 1,076 (DD 33%, ~96/month). EA `XAU_SSL_EA_v7.10.mq5` (chart TF, `InpHMALen`, `InpUseD1`).
+
+### SSL optimisation round 2 (`ssl_opt2.py`, `ssl_opt2_port.py`)
+M15: HMA {160,240,320} × D1 EMA {10,20,50} × SL {1.0,1.5,2.0} (27); H1: HMA {40,60,80} × SL (9). Selected on Nov–Jun.
+M15 best: HMA 320 (80 h) EMA 10/20 SL 1.5: Nov–Jun +0.56R / Jul–Nov +0.48 to +0.54R (247–253 trades); HMA 160 fails out of sample. PBO 0.39.
+H1 best is the default HMA 60 SL 1.5 (Jul–Nov +0.29R); HMA 40 fails. PBO 0.34.
+Portfolio Cent USD 300: M15 320/EMA20 + H1 60, risk 1% → 2,232 (DD 31%, ~47 trades/month, 3 losing months) vs 240 version 1,437 (DD 30%, ~51/month). Risk 1.5% → 4,776 (DD 43%).

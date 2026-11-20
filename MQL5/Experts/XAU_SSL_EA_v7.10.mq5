@@ -3,6 +3,7 @@
 //|  Attach to the chart TF you want; run several charts with different |
 //|  InpMagic to build the portfolio. Presets (latest year, real ticks): |
 //|   H1  InpHMALen=60  InpUseD1=false: 331 tr, +0.30R, beats rnd 99.9%  |
+//|   M15 InpHMALen=320 InpUseD1=true : 253 tr, +0.55R (opt round 2)     |
 //|   M15 InpHMALen=240 InpUseD1=true : 306 tr, +0.29R, beats rnd 96.9%  |
 //|   M5  InpHMALen=720 InpUseD1=true : 552 tr, +0.24R, beats rnd 97.7%  |
 //|  HMA length ~ 60 hours of bars is the key; HMA 60 on M1-M30 loses.  |
