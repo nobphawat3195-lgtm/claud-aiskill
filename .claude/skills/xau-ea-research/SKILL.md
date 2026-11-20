@@ -27,6 +27,7 @@ MT5 real tick latest year: +USD 3,461, equity DD 32.5%, 471 trades. Our replica:
 Keep min-lot caps 5.5% (ORB_A/DM_A/DM_L) and 2% (ASIA_B/LON_A); never use the v4.10 USD300 HIGH_RISK preset (DD halt off).
 Risks: the first months skip most trades (SL > cap); results depend on start date; tuned on the same year.
 New candidate (2026-11-20): `MQL5/Experts/XAU_SSL_EA_v7.00.mq5` SSL Hybrid core H1, +0.27R/trade, 341 trades, beats random 99.9%, PBO 0.095, DSR 0.67; SL ~27 USD so Cent account only.
+Second TradingView batch (2026-11-20): only MACD histogram H1 passes (+0.18R, beats random 99.3%, corr 0.6 with SSL); mean-reversion (WaveTrend, BB, RSI2, StochRSI, VixFix) and all M5 fail.
 Lower-risk alternative: `MQL5/Experts/XAU_DMA_EA_v5.10.mq5` (DM_A only).
 New candidate (2026-11-19, untested outside the latest year): `MQL5/Experts/XAU_ORB_EA_v6.10.mq5` Asia ORB (hourly ranges 00-03 UTC) + D1 trend, hold to 12:00 UTC: single range 71 trades USD 300 → 968, DD 13%; four ranges 286 trades (~23/month), USD 300 → 1,948, DD 31% (overlap risk understated). London/NY ORB have no edge.
 

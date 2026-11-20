@@ -314,3 +314,19 @@ Portfolio Cent USD 300: M15 320 + H1 60: risk 0.5% → 895 (DD 17%), 0.75% → 1
 | 1 HMA ≈60 h + D1 (M15 240, M5 720) | 708 / 1,027 / 1,437 | 1,076 / 1,658 / halted |
 | 2 optimised (M15 320, M5 960) = SENTINEL | 895 / 1,443 / 2,232 | 1,650 / 3,026 / halted |
 Slippage 0.10 USD/side costs 5% (standard) to 13% (high-freq). Standard USD 300 account halts.
+
+## 10 more TradingView indicators (`ind10b.py`, `ind10b_check.py`, 2026-11-20)
+Defaults, SL 1.5 ATR, own exit rule (SAR types exit on opposite signal). avg R per trade:
+| Indicator | M5 | M15 | H1 (Nov–Jun / Jul–Nov) |
+|---|---|---|---|
+| WaveTrend (LazyBear, ±53) | −0.08 | +0.14 (+0.22 / +0.01) | +0.08 (41 tr, +0.45 / −0.50) |
+| Bollinger Bands Strategy | −0.12 | −0.11 | −0.12 |
+| RSI(2) Connors + SMA200 | −0.11 | −0.07 | +0.05, beats random 91% |
+| Stochastic RSI 20/80 | −0.12 | −0.08 | −0.12 |
+| Donchian 20/10 | −0.11 | −0.05 | +0.15, beats random 86% |
+| **MACD 12/26/9 (histogram sign)** | −0.08 | −0.05 | **+0.18 (+0.19 / +0.18), 446 tr, beats random 99.3%** |
+| Parabolic SAR | −0.10 | −0.05 | +0.11, beats random 90% |
+| Smoothed Heikin Ashi | −0.07 | −0.02 | +0.18, beats random 94% |
+| DMI/ADX cross | −0.19 | −0.07 | −0.09 |
+| CM Williams Vix Fix (long, 10 bars) | −0.10 | −0.05 | −0.12 |
+PBO 0.056. MACD H1: longs +41R / shorts +41R, always-buy −0.3R, DSR (59 trials) 0.47, daily-R correlation with SSL H1 0.60 (same trend family), Cent USD 300 risk 0.75% → 534 (DD 14%). Mean-reversion indicators lose on every TF; M5 loses for all.
