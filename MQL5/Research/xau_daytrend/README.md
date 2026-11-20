@@ -482,3 +482,7 @@ Findings: the new 4-engine portfolio is the only one with similar profit in both
 ## XAU QUARTET v1.00 (EA, 2026-11-20)
 `MQL5/Experts/XAU_QUARTET_v1.00.mq5`: KST H1 + Coral H1 + Gann HiLo H1 + SSL HMA60 H4, author defaults, SL 1.5×ATR14, reverse on opposite signal, risk 0.5/0.75/1%, DD halt 50%, magic 891000+.
 `quartet_parity.py`: a literal Python port of the EA's state functions (1,500-bar rolling window) agrees 100% with the research signals on H1/H4 bars (Jan–May 2025). Not compiled in MT5 yet.
+
+## QUARTET with a 70% DD halt (`quartet_dd70.py`, 2026-11-20)
+Cent USD 300, 2 years: 1.25% → $9,718 DD 53% · **1.5% → $14,385 DD 60%** (prev year $2,031 DD 60%, latest $2,124 DD 52%, worst month −$3,902) · 2% halts at 70% in Aug 2025.
+Halt 50%: 1.25% and 1.5% halt in Aug 2025. Block bootstrap of weekly R (4-week blocks, 5,000 paths): 1.5% → P(DD ≥ 50%) 79%, P(DD ≥ 70%) 22%, median DD 60%; 1% → 30% / 3%; 0.75% → 8% / 0%.
