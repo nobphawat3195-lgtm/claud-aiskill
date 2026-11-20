@@ -400,3 +400,14 @@ Optimisation (length ×0.5/1/2, SL 1.0/1.5/2.0, D1 on/off = 18 configs, select o
 - Coral H1: selected len 10 SL 1.0 +D1 → test +0.09 (default +0.27), random 85%: optimisation hurts; PBO 0.07.
 - OTT H1 (percent 0.7/1.4/2.8): selected 2.8 SL 1.0 → test −0.35 (default +0.35), random 77%: optimisation hurts; PBO 0.42.
 Optimising small-edge H1 trend indicators does not raise profit above ~450 USD/year on Cent 300 (SENTINEL standard 0.75% = 1,443).
+
+### Source check: OTT and MavilimW against the user-supplied Pine code (`src_check.py`, `ott_m15.py`)
+MavilimW: our port matches the source (WMA 3/5/8/13/21/34, signal = colour change). OTT: logic matches; the source strategy is pure stop-and-reverse without SL (we had added SL 1.5 ATR); VAR starts at 0 (warm-up only).
+Re-test with the source behaviour (USD per 0.01 lot, avg in 1.5-ATR units, random baseline):
+| | M5 | M15 | H1 |
+|---|---|---|---|
+| OTT no SL (original) | +100, +0.06, 86% | **+2,110, +0.23 (+0.21/+0.28), 96.7%**, worst −151 | +1,153, +0.15, 81% |
+| OTT SL 1.5 ATR | −1,373 | −1,546 | +1,887, +0.31, 89% |
+| MavilimW no SL | +684, −0.04 | +1,282, +0.12, 86% | +1, +0.06 |
+| MavilimW SL 1.5 ATR | −483 | +1,752, +0.18, 87% | −541 |
+OTT M15 passes only without a tight SL. With a 5-ATR safety SL: 520 trades, +0.073R (5-ATR units), Nov–Jun +0.07 / Jul–Nov +0.09, random 96.2%, longs/shorts both positive, DSR (121 trials) 0.15, corr with SSL H1 0.46; Cent USD 300 risk 1% → 427 (DD 12%). Small edge, same trend family as SENTINEL.
