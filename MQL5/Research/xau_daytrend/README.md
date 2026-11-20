@@ -411,3 +411,12 @@ Re-test with the source behaviour (USD per 0.01 lot, avg in 1.5-ATR units, rando
 | MavilimW no SL | +684, −0.04 | +1,282, +0.12, 86% | +1, +0.06 |
 | MavilimW SL 1.5 ATR | −483 | +1,752, +0.18, 87% | −541 |
 OTT M15 passes only without a tight SL. With a 5-ATR safety SL: 520 trades, +0.073R (5-ATR units), Nov–Jun +0.07 / Jul–Nov +0.09, random 96.2%, longs/shorts both positive, DSR (121 trials) 0.15, corr with SSL H1 0.46; Cent USD 300 risk 1% → 427 (DD 12%). Small edge, same trend family as SENTINEL.
+
+### Lorentzian Classification re-test from the user-supplied Pine source (`lorentz.py`, numba)
+Our first port had the label sign reversed (source: src[4] < src[0] → short) and exited on the opposite signal; the source holds 4 bars (strict exit). Rolling 2000-bar window, k = 8, all 3 filters and kernel as in the source.
+| TF | trades/month | avg R (1.5-ATR units) | Nov–Jun / Jul–Nov | random |
+|---|---|---|---|---|
+| H1 | 13 | −0.03 (no SL) / −0.02 (SL 1.5) | −0.01 / −0.05 | 49–65% |
+| M15 | 62 | −0.06 / −0.07 | −0.05 / −0.07 | 42–44% |
+| M5 | 187 | −0.12 / −0.12 | −0.11 / −0.12 | 20–22% |
+With the corrected label the indicator trades normally but loses on every TF and is worse than random direction. The flipped (old) label gives almost no trades. Dead end.
