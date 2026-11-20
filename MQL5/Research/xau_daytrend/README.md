@@ -478,3 +478,7 @@ M1 bid/ask, Nov 2024 – Nov 2026, realized-equity sizing, overlapping engines, 
 | SENTINEL v1.20 draft (SSL H1 + M15 + KST H1) | 0.75% | $3,384 DD 48% | $507 DD 48% | $2,003 DD 29% |
 Engines alone (2-yr R): KST +123, Coral +98, Gann +112, SSL H4 +63, SSL H1 +106, SSL M15 D1 +171, MACD H1 +59 (prev yr −8), MACD M15 +51 (prev yr −38).
 Findings: the new 4-engine portfolio is the only one with similar profit in both years; SENTINEL turbo (MACD) hits the 50% halt in the previous year at every risk; SENTINEL standard earns mostly in the latest year. M1 data is pessimistic vs ticks (SENTINEL standard 0.75% latest year: $1,124 on M1 vs $1,443 on ticks). Portfolio selection is post-hoc.
+
+## XAU QUARTET v1.00 (EA, 2026-11-20)
+`MQL5/Experts/XAU_QUARTET_v1.00.mq5`: KST H1 + Coral H1 + Gann HiLo H1 + SSL HMA60 H4, author defaults, SL 1.5×ATR14, reverse on opposite signal, risk 0.5/0.75/1%, DD halt 50%, magic 891000+.
+`quartet_parity.py`: a literal Python port of the EA's state functions (1,500-bar rolling window) agrees 100% with the research signals on H1/H4 bars (Jan–May 2025). Not compiled in MT5 yet.
