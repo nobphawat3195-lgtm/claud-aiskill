@@ -13,6 +13,9 @@
 //|   SL = 1.5 x ATR(14) ของ TF นั้น ไม่มี TP ถือจนสัญญาณกลับทิศ           |
 //|                                                                  |
 //|  v1.10: ความเสี่ยง 5 ระดับ 0.5-1.5% | เพดาน DD เริ่มต้น 70%          |
+//|         โหมดล็อตอัตโนมัติ 5 แบบ: %Equity / %Balance / เงินเสี่ยงคงที่ /   |
+//|         ล็อตต่อทุนทุก X / ล็อตคงที่ + ทบต้น/ไม่ทบต้น, ตัวคูณรายเครื่อง,   |
+//|         ลดล็อตเมื่อ DD, เพดานล็อต, เพดานความเสี่ยงรวม, กติกาล็อตขั้นต่ำ |
 //|         แดชบอร์ดยานแม่ (ดาว ระบบสแกน ไฟ UFO เครื่องยนต์เรืองแสง)     |
 //|         ธีมกราฟอวกาศ (แท่งเทียนนีออน) + ลูกศรเข้าไม้ + เส้น SL สด     |
 //|                                                                  |
@@ -36,6 +39,21 @@
 
 #define NRISK 5
 #define NENG  4
+#define NLOTMODE 5
+enum ENUM_LOT_MODE
+{
+   LOT_RISK_EQUITY  = 0,   // อัตโนมัติ: % ของ Equity (ค่าเริ่มต้น ตรงกับแบ็กเทส)
+   LOT_RISK_BALANCE = 1,   // อัตโนมัติ: % ของ Balance
+   LOT_RISK_MONEY   = 2,   // อัตโนมัติ: เสี่ยงเงินคงที่ต่อไม้ (สกุลเงินบัญชี)
+   LOT_PER_STEP     = 3,   // อัตโนมัติ: ล็อต X ต่อทุนทุก Y
+   LOT_FIXED        = 4    // ล็อตคงที่
+};
+enum ENUM_MINLOT_RULE
+{
+   MINLOT_CAP    = 0,      // ใช้ล็อตขั้นต่ำถ้าเสี่ยงจริง <= InpMinLotCap ไม่งั้นข้าม
+   MINLOT_ALWAYS = 1,      // ใช้ล็อตขั้นต่ำเสมอ (เสี่ยงเกินที่ตั้งได้)
+   MINLOT_SKIP   = 2       // ข้ามไม้ทุกครั้งที่คำนวณได้ต่ำกว่าล็อตขั้นต่ำ
+};
 
 input group "=== ความเสี่ยง (เปลี่ยนได้จากแดชบอร์ด) ==="
 input int    InpRiskLevel = 4;     // ระดับเริ่มต้น 0-4 (0=0.5% 1=0.75% 2=1% 3=1.25% 4=1.5%)
@@ -44,6 +62,23 @@ input double InpRisk1 = 0.75;      // ระดับ 2: % ต่อไม้
 input double InpRisk2 = 1.0;       // ระดับ 3: % ต่อไม้
 input double InpRisk3 = 1.25;      // ระดับ 4: % ต่อไม้
 input double InpRisk4 = 1.5;       // ระดับ 5: % ต่อไม้
+input group "=== โหมดล็อต (ออโต้ล็อต) — เปลี่ยนโหมดได้จากแดชบอร์ด ==="
+input ENUM_LOT_MODE InpLotMode = LOT_RISK_EQUITY; // โหมดล็อตเริ่มต้น
+input bool   InpCompound   = true;   // ทบต้น (false = คิดจากทุนตั้งต้นคงที่)
+input double InpBaseCapital = 0;     // ทุนตั้งต้นเมื่อไม่ทบต้น (0 = Balance ตอนติดตั้ง EA)
+input double InpRiskMoney  = 10.0;   // โหมดเงินคงที่: เสี่ยงต่อไม้ (สกุลเงินบัญชี เช่น USC)
+input double InpStepMoney  = 3000;   // โหมดล็อตต่อทุน: ทุกๆ ทุนเท่านี้ ...
+input double InpStepLot    = 0.01;   // ... ใช้ล็อตเท่านี้ (เช่น 0.01 ต่อ 3,000 USC)
+input double InpFixedLot   = 0.01;   // โหมดล็อตคงที่
+input double InpMultKST    = 1.0;    // ตัวคูณล็อต KST
+input double InpMultCoral  = 1.0;    // ตัวคูณล็อต Coral
+input double InpMultGann   = 1.0;    // ตัวคูณล็อต Gann
+input double InpMultSSL    = 1.0;    // ตัวคูณล็อต SSL H4
+input double InpDDReduceAt = 0;      // ลดล็อตเมื่อ DD >= % นี้ (0 = ปิด)
+input double InpDDReduceMult = 0.5;  // ... ตัวคูณล็อตตอน DD สูง
+input double InpMaxLot     = 0;      // ล็อตสูงสุดต่อไม้ (0 = ตามโบรกเกอร์)
+input double InpMaxTotalRisk = 0;    // ความเสี่ยงรวมไม้ที่เปิดอยู่สูงสุด % (0 = ไม่จำกัด)
+input ENUM_MINLOT_RULE InpMinLotRule = MINLOT_CAP; // กติกาเมื่อคำนวณได้ต่ำกว่าล็อตขั้นต่ำ
 input double InpMinLotCap = 5.5;   // ถ้าต้องใช้ lot ขั้นต่ำ: เข้าเฉพาะเมื่อเสี่ยงจริง <= % นี้
 input double InpDDHalt    = 70.0;  // DD จากจุดสูงสุด (%) ปิดทุกไม้และหยุด
 input double InpMaxSpreadUSD = 1.5;
@@ -84,7 +119,9 @@ struct Engine
 
 CTrade  trade;
 Engine  E[NENG];
-int     gRisk;
+int     gRisk, gLotMode;
+double  gBase = 0;
+int     gOY = 0;          // ระยะเลื่อนแนวตั้งของส่วนล่างแดชบอร์ด
 bool    gPaused = false, gHalted = false;
 double  gPeak = 0;
 string  gPfx;
@@ -233,7 +270,7 @@ void Rect(string id, int x, int y, int w, int h, color bg, color bd = clrNONE, i
 {
    string n = P + id;
    if(ObjectFind(0, n) < 0) ObjectCreate(0, n, OBJ_RECTANGLE_LABEL, 0, 0, 0);
-   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, InpPanelX + x); ObjectSetInteger(0, n, OBJPROP_YDISTANCE, InpPanelY + y);
+   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, InpPanelX + x); ObjectSetInteger(0, n, OBJPROP_YDISTANCE, InpPanelY + gOY + y);
    ObjectSetInteger(0, n, OBJPROP_XSIZE, MathMax(1, w)); ObjectSetInteger(0, n, OBJPROP_YSIZE, MathMax(1, h));
    ObjectSetInteger(0, n, OBJPROP_BGCOLOR, bg); ObjectSetInteger(0, n, OBJPROP_BORDER_TYPE, BORDER_FLAT);
    ObjectSetInteger(0, n, OBJPROP_COLOR, bd == clrNONE ? bg : bd); ObjectSetInteger(0, n, OBJPROP_WIDTH, bw);
@@ -243,7 +280,7 @@ void Text(string id, int x, int y, string s, color c, int sz = 9, bool bold = fa
 {
    string n = P + id;
    if(ObjectFind(0, n) < 0) ObjectCreate(0, n, OBJ_LABEL, 0, 0, 0);
-   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, InpPanelX + x); ObjectSetInteger(0, n, OBJPROP_YDISTANCE, InpPanelY + y);
+   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, InpPanelX + x); ObjectSetInteger(0, n, OBJPROP_YDISTANCE, InpPanelY + gOY + y);
    ObjectSetString(0, n, OBJPROP_TEXT, s); ObjectSetString(0, n, OBJPROP_FONT, font != "" ? font : bold ? "Tahoma Bold" : "Tahoma");
    ObjectSetInteger(0, n, OBJPROP_FONTSIZE, sz); ObjectSetInteger(0, n, OBJPROP_COLOR, c); ObjectSetInteger(0, n, OBJPROP_ANCHOR, an);
    ObjectSetInteger(0, n, OBJPROP_SELECTABLE, false); ObjectSetInteger(0, n, OBJPROP_HIDDEN, true);
@@ -259,7 +296,7 @@ void Button(string id, int x, int y, int w, int h, string s, bool on, color onc,
 {
    string n = P + "B_" + id;
    if(ObjectFind(0, n) < 0) ObjectCreate(0, n, OBJ_BUTTON, 0, 0, 0);
-   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, InpPanelX + x); ObjectSetInteger(0, n, OBJPROP_YDISTANCE, InpPanelY + y);
+   ObjectSetInteger(0, n, OBJPROP_XDISTANCE, InpPanelX + x); ObjectSetInteger(0, n, OBJPROP_YDISTANCE, InpPanelY + gOY + y);
    ObjectSetInteger(0, n, OBJPROP_XSIZE, w); ObjectSetInteger(0, n, OBJPROP_YSIZE, h);
    ObjectSetString(0, n, OBJPROP_TEXT, s); ObjectSetString(0, n, OBJPROP_FONT, on ? "Tahoma Bold" : "Tahoma"); ObjectSetInteger(0, n, OBJPROP_FONTSIZE, fs);
    ObjectSetInteger(0, n, OBJPROP_BGCOLOR, on ? onc : C_DEEP); ObjectSetInteger(0, n, OBJPROP_COLOR, on ? C_VOID : C_TXT);
@@ -286,7 +323,7 @@ color Mix(color a, color b, double t)
 //====================================================================
 // องค์ประกอบยานแม่
 //====================================================================
-const int W = 600, H = 760;
+const int W = 600, H = 802;
 int  starX[70], starY[70], starB[70];
 void InitStars()
 {
@@ -417,25 +454,84 @@ void DrawSLLines()
 //====================================================================
 // คำสั่งเทรด
 //====================================================================
+string LotModeName(int m)
+{
+   return m == LOT_RISK_EQUITY ? "อัตโนมัติ % Equity" : m == LOT_RISK_BALANCE ? "อัตโนมัติ % Balance" : m == LOT_RISK_MONEY ? "เสี่ยงเงินคงที่" :
+          m == LOT_PER_STEP ? "ล็อตตามขนาดทุน" : "ล็อตคงที่";
+}
+string LotModeDetail(int m)
+{
+   string cmp = InpCompound ? "ทบต้น" : StringFormat("ไม่ทบต้น (ฐาน %.0f)", gBase);
+   if(m == LOT_RISK_EQUITY || m == LOT_RISK_BALANCE) return StringFormat("เสี่ยง %.2g%% ต่อไม้ · %s", RiskPct(), cmp);
+   if(m == LOT_RISK_MONEY) return StringFormat("เสี่ยง %.2f %s ต่อไม้ (ไม่ขึ้นกับระดับ %%)", InpRiskMoney, AccountInfoString(ACCOUNT_CURRENCY));
+   if(m == LOT_PER_STEP)   return StringFormat("%.2f lot ต่อทุกๆ %.0f %s · %s", InpStepLot, InpStepMoney, AccountInfoString(ACCOUNT_CURRENCY), cmp);
+   return StringFormat("%.2f lot ทุกไม้ (ไม่ขึ้นกับ SL)", InpFixedLot);
+}
+double EngineMult(int k) { return k == 0 ? InpMultKST : k == 1 ? InpMultCoral : k == 2 ? InpMultGann : InpMultSSL; }
+double PerLotLoss(double dist)               // เงินที่เสียต่อ 1.0 lot เมื่อชน SL
+{
+   double tv = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE), ts = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+   return tv > 0 && ts > 0 && dist > 0 ? dist / ts * tv : 0;
+}
+double OpenRiskPct()                          // ความเสี่ยงรวม (% equity) ของไม้ QUARTET ที่เปิดอยู่
+{
+   double eq = AccountInfoDouble(ACCOUNT_EQUITY), r = 0;
+   for(int k = 0; k < NENG; k++)
+   {
+      ulong t = EngineTicket(E[k].magic);
+      if(t == 0 || !PositionSelectByTicket(t)) continue;
+      double op = PositionGetDouble(POSITION_PRICE_OPEN), sl = PositionGetDouble(POSITION_SL);
+      bool buy = PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY;
+      double d = buy ? op - sl : sl - op;     // ติดลบ = SL ล็อกกำไรแล้ว
+      if(sl > 0 && d > 0) r += PerLotLoss(d) * PositionGetDouble(POSITION_VOLUME);
+   }
+   return eq > 0 ? r / eq * 100 : 0;
+}
+// คำนวณล็อต: คืน 0 = ข้ามไม้ (เหตุผลใน why)
+double CalcLots(int k, double dist, string &why, double &riskReal)
+{
+   why = ""; riskReal = 0;
+   double perLot = PerLotLoss(dist);
+   if(perLot <= 0) { why = "ข้อมูลสัญญาไม่พร้อม"; return 0; }
+   double eq = AccountInfoDouble(ACCOUNT_EQUITY), bal = AccountInfoDouble(ACCOUNT_BALANCE);
+   double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP), vmin = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN), vmax = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+   if(step <= 0) step = 0.01;
+   double raw = 0;
+   switch(gLotMode)
+   {
+      case LOT_RISK_EQUITY:  raw = (InpCompound ? eq  : gBase) * RiskPct() / 100.0 / perLot; break;
+      case LOT_RISK_BALANCE: raw = (InpCompound ? bal : gBase) * RiskPct() / 100.0 / perLot; break;
+      case LOT_RISK_MONEY:   raw = InpRiskMoney / perLot; break;
+      case LOT_PER_STEP:     raw = InpStepMoney > 0 ? MathFloor((InpCompound ? bal : gBase) / InpStepMoney) * InpStepLot : 0; break;
+      default:               raw = InpFixedLot;
+   }
+   raw *= EngineMult(k);
+   double dd = gPeak > 0 ? (gPeak - eq) / gPeak * 100 : 0;
+   if(InpDDReduceAt > 0 && dd >= InpDDReduceAt) raw *= InpDDReduceMult;
+   if(InpMaxLot > 0) raw = MathMin(raw, InpMaxLot);
+   raw = MathMin(raw, vmax);
+   double lots = MathFloor(raw / step + 1e-9) * step;
+   if(lots < vmin)
+   {
+      double rp = eq > 0 ? vmin * perLot / eq * 100.0 : 999;
+      if(InpMinLotRule == MINLOT_SKIP || (InpMinLotRule == MINLOT_CAP && rp > InpMinLotCap))
+      { why = StringFormat("ล็อตต่ำกว่าขั้นต่ำ (0.01 เสี่ยง %.1f%%)", rp); return 0; }
+      lots = vmin;
+   }
+   riskReal = eq > 0 ? lots * perLot / eq * 100.0 : 0;
+   if(InpMaxTotalRisk > 0 && OpenRiskPct() + riskReal > InpMaxTotalRisk)
+   { why = StringFormat("ความเสี่ยงรวมจะเกิน %.1f%%", InpMaxTotalRisk); return 0; }
+   return NormalizeDouble(lots, 2);
+}
 void OpenEngine(int k, int dir)
 {
-   double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK), bid = SymbolInfoDouble(_Symbol, SYMBOL_BID), spread = ask - bid;
    if(spread > InpMaxSpreadUSD) { E[k].note = "ข้าม: spread กว้าง"; return; }
    double entry = dir > 0 ? ask : bid, dist = InpSLATR * E[k].atr;
    double sl = NormalizeDouble(entry - dir * dist, _Digits);
-   double tv = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE), ts = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
-   double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP), vmin = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-   if(tv <= 0 || ts <= 0 || dist <= 0) { E[k].note = "ข้าม: ข้อมูลสัญญาไม่พร้อม"; return; }
-   double perLot = dist / ts * tv;
-   double lots = MathFloor(eq * RiskPct() / 100.0 / perLot / step) * step;
-   if(lots < vmin)
-   {
-      double rp = vmin * perLot / eq * 100.0;
-      if(rp > InpMinLotCap) { E[k].note = StringFormat("ข้าม: lot ขั้นต่ำเสี่ยง %.1f%%", rp); return; }
-      lots = vmin;
-   }
-   lots = NormalizeDouble(MathMin(lots, SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX)), 2);
+   string why; double riskReal;
+   double lots = CalcLots(k, dist, why, riskReal);
+   if(lots <= 0) { E[k].note = "ข้าม: " + why; return; }
    trade.SetExpertMagicNumber(E[k].magic);
    bool ok = dir > 0 ? trade.Buy(lots, _Symbol, 0, sl, 0, "QUARTET " + E[k].name) : trade.Sell(lots, _Symbol, 0, sl, 0, "QUARTET " + E[k].name);
    if(ok && (trade.ResultRetcode() == TRADE_RETCODE_DONE || trade.ResultRetcode() == TRADE_RETCODE_PLACED))
@@ -444,7 +540,7 @@ void OpenEngine(int k, int dir)
       DrawEntryArrow(k, dir, trade.ResultPrice() > 0 ? trade.ResultPrice() : entry);
       LogLine(StringFormat("%s,OPEN,%d,%.2f,%s,%s,%s,%s,%s,%.2f,", TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS), dir, lots,
               DoubleToString(entry, _Digits), DoubleToString(trade.ResultPrice(), _Digits), DoubleToString(spread, _Digits),
-              DoubleToString(sl, _Digits), E[k].name, lots * perLot / eq * 100.0));
+              DoubleToString(sl, _Digits), E[k].name, riskReal));
    }
    else E[k].note = "ส่งคำสั่งไม่สำเร็จ " + IntegerToString((int)trade.ResultRetcode());
 }
@@ -479,8 +575,15 @@ void UpdateStats()
 //====================================================================
 // แดชบอร์ดยานแม่
 //====================================================================
+string NextLotText(int k)
+{
+   string why; double rr;
+   double l = CalcLots(k, InpSLATR * E[k].atr, why, rr);
+   return l > 0 ? StringFormat("  ·  ล็อตถัดไป %.2f (%.1f%%)", l, rr) : "  ·  ไม้ถัดไป: ข้าม";
+}
 void DrawPanel()
 {
+   gOY = 0;
    bool   cent = IsCent(); string cur = AccountInfoString(ACCOUNT_CURRENCY);
    double bal = AccountInfoDouble(ACCOUNT_BALANCE), eq = AccountInfoDouble(ACCOUNT_EQUITY);
    double dd  = gPeak > 0 ? (gPeak - eq) / gPeak * 100 : 0;
@@ -494,7 +597,7 @@ void DrawPanel()
    Rect("bg", 0, 0, W, H, C_VOID, pulse ? C_GLOW3 : C_GLOW2, 2);
    Stars();
    // มุมเป้าเล็งสี่มุม
-   int cx[4] = {4, 576, 4, 576}, cy[4] = {4, 4, 752, 752};
+   int cx[4] = {4, 576, 4, 576}, cy[4] = {4, 4, 794, 794};
    for(int i = 0; i < 4; i++) { Rect("cnh" + IntegerToString(i), cx[i], cy[i], 20, 2, C_GLOW3); Rect("cnv" + IntegerToString(i), i % 2 == 0 ? cx[i] : cx[i] + 18, i < 2 ? cy[i] : cy[i] - 16, 2, 18, C_GLOW3); }
 
    // หัว
@@ -513,10 +616,25 @@ void DrawPanel()
    for(int k = 0; k < NRISK; k++)
       Button("r" + IntegerToString(k), 14 + k * 115, 110, 110, 28, StringFormat("%s %.2g%%", k == 4 ? "!!" : k == 3 ? "▲" : "●", RiskOf(k)), gRisk == k, RiskColor(k), 9);
    int bdd = BtDD(gRisk);
+   bool pctMode = gLotMode == LOT_RISK_EQUITY || gLotMode == LOT_RISK_BALANCE;
    string halt50 = InpDDHalt < 54 && gRisk >= 3 ? "  !! เพดาน " + DoubleToString(InpDDHalt, 0) + "% แบ็กเทสชนเพดานหยุด" : "";
-   Text("bt", 14, 144, StringFormat("ทดสอบ 2 ปี: $300 → %s · DD %d%% · โอกาสชน DD 70%% ≈ %d%%", BtEnd(gRisk), bdd, BtRuin(gRisk)) + halt50,
-        DDColor(bdd), 8, true);
+   if(pctMode)
+      Text("bt", 14, 144, StringFormat("ทดสอบ 2 ปี: $300 → %s · DD %d%% · โอกาสชน DD 70%% ≈ %d%%", BtEnd(gRisk), bdd, BtRuin(gRisk)) + halt50 +
+           (InpCompound ? "" : " · (ผลแบ็กเทสเป็นแบบทบต้น)"), DDColor(bdd), 8, true);
+   else
+      Text("bt", 14, 144, "ระดับ % ไม่ใช้ในโหมดล็อตนี้ · ผลแบ็กเทสอ้างอิงโหมด % Equity", C_MUTED, 8, true);
 
+   // โหมดล็อต
+   Text("l_lot", 14, 164, "โหมดล็อต", C_MUTED, 8, true);
+   for(int m = 0; m < NLOTMODE; m++)
+   {
+      string lb[NLOTMODE] = {"%Equity", "%Balance", "เงินคงที่", "ตามทุน", "คงที่"};
+      Button("lm" + IntegerToString(m), 80 + m * 102, 160, 98, 22, lb[m], gLotMode == m, C_GLOW3, 8);
+   }
+   Text("lotd", 14, 186, "► " + LotModeName(gLotMode) + ": " + LotModeDetail(gLotMode) +
+        (InpDDReduceAt > 0 ? StringFormat(" · DD>=%.0f%% ลดล็อต x%.2g", InpDDReduceAt, InpDDReduceMult) : "") +
+        (InpMaxTotalRisk > 0 ? StringFormat(" · เสี่ยงรวม<=%.1f%%", InpMaxTotalRisk) : ""), C_GLOW3, 8);
+   gOY = 42;
    // ห้องควบคุมบัญชี
    NeonFrame("acc", 10, 166, W - 20, 118, C_GLOW2);
    Text("acc_h", 22, 172, "■ ห้องควบคุม", C_GLOW3, 8, true);
@@ -555,7 +673,7 @@ void DrawPanel()
       Text(id + "p", x + 16, y + 64, pd != 0 ? StringFormat("%.2f lot  %+.2f  (%+.2fR)", pl, pp, rr) : " ", pp >= 0 ? C_GREEN : C_RED, 9, true);
       if(pd != 0) EnergyBar(id + "_en", x + 16, y + 82, 256, rr, C_ENG[k]);
       else { EnergyBar(id + "_en", x + 16, y + 82, 256, -1, C_OFF); }
-      Text(id + "t", x + 16, y + 96, "สัญญาณ " + (E[k].state > 0 ? "ขาขึ้น ▲" : E[k].state < 0 ? "ขาลง ▼" : "-") + StringFormat("  ·  SL %.1f$", InpSLATR * E[k].atr), C_TXT, 8);
+      Text(id + "t", x + 16, y + 96, "สัญญาณ " + (E[k].state > 0 ? "ขาขึ้น ▲" : E[k].state < 0 ? "ขาลง ▼" : "-") + StringFormat("  ·  SL %.1f$", InpSLATR * E[k].atr) + NextLotText(k), C_TXT, 8);
       Text(id + "d", x + 16, y + 110, E[k].note != "" ? E[k].note : E[k].desc, C_MUTED, 7);
    }
 
@@ -576,6 +694,7 @@ void DrawPanel()
    }
    Button("pause", 12, 718, 284, 32, gPaused ? "▶ ออกบินต่อ" : "|| ลอยนิ่ง (หยุดเปิดไม้ใหม่)", gPaused, C_ORANGE, 9);
    Button("close", 304, 718, 284, 32, "X ดีดตัวออก: ปิดทุกไม้", false, C_RED, 9);
+   gOY = 0;
    ChartRedraw();
 }
 
@@ -598,6 +717,11 @@ int OnInit()
    InitEngine(3, "SSL",   "ยานแม่ H4", StringFormat("SSL HMA%d · H4 · ~7 ไม้/เดือน", InpSSLLen), PERIOD_H4, InpUseSSL);
    int r0  = GlobalVariableCheck(gPfx + "risk5") ? (int)GlobalVariableGet(gPfx + "risk5") : InpRiskLevel;
    gRisk   = MathMax(0, MathMin(NRISK - 1, r0));
+   gLotMode = GlobalVariableCheck(gPfx + "lotmode") ? (int)GlobalVariableGet(gPfx + "lotmode") : (int)InpLotMode;
+   gLotMode = MathMax(0, MathMin(NLOTMODE - 1, gLotMode));
+   if(InpBaseCapital > 0) gBase = InpBaseCapital;
+   else if(GlobalVariableCheck(gPfx + "base")) gBase = GlobalVariableGet(gPfx + "base");
+   else { gBase = AccountInfoDouble(ACCOUNT_BALANCE); GlobalVariableSet(gPfx + "base", gBase); }
    gPaused = GlobalVariableCheck(gPfx + "pause") && GlobalVariableGet(gPfx + "pause") > 0;
    gHalted = GlobalVariableCheck(gPfx + "halt")  && GlobalVariableGet(gPfx + "halt") > 0;
    gPeak   = GlobalVariableCheck(gPfx + "peak")  ? GlobalVariableGet(gPfx + "peak") : AccountInfoDouble(ACCOUNT_EQUITY);
@@ -668,7 +792,8 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
 {
    if(id != CHARTEVENT_OBJECT_CLICK || StringFind(sparam, P + "B_") != 0) return;
    string b = StringSubstr(sparam, StringLen(P + "B_"));
-   if(StringSubstr(b, 0, 1) == "r") gRisk = (int)MathMax(0, MathMin(NRISK - 1, StringToInteger(StringSubstr(b, 1))));
+   if(StringSubstr(b, 0, 2) == "lm") { gLotMode = (int)MathMax(0, MathMin(NLOTMODE - 1, StringToInteger(StringSubstr(b, 2)))); GlobalVariableSet(gPfx + "lotmode", gLotMode); }
+   else if(StringSubstr(b, 0, 1) == "r") gRisk = (int)MathMax(0, MathMin(NRISK - 1, StringToInteger(StringSubstr(b, 1))));
    else if(StringSubstr(b, 0, 1) == "t")
    {
       int k = (int)StringToInteger(StringSubstr(b, 1));

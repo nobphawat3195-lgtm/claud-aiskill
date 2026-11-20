@@ -13,7 +13,7 @@
 ## ชั้น 1 — EA พร้อมใช้ (ผ่านแล้ว รอ Strategy Tester + demo)
 | EA | ไฟล์ | สถานะ |
 |---|---|---|
-| **XAU QUARTET v1.10** ⭐ | `MQL5/Experts/XAU_QUARTET_v1.10.mq5` | ผ่าน 2 ปี · 0.75% $300→$3,351 DD 35% · 1.5% (เพดาน 70%) $14,385 DD 60% |
+| **XAU QUARTET v1.10** ⭐ (ออโต้ล็อต 5 โหมด) | `MQL5/Experts/XAU_QUARTET_v1.10.mq5` | ผ่าน 2 ปี · 0.75% $300→$3,351 DD 35% · 1.5% (เพดาน 70%) $14,385 DD 60% |
 | XAU QUARTET v1.00 | `XAU_QUARTET_v1.00.mq5` | แดชบอร์ดธรรมดา 3 ระดับเสี่ยง, เพดาน DD 50% |
 | XAU SENTINEL v1.10 | `XAU_SENTINEL_v1.10.mq5` | ใช้เฉพาะโหมดมาตรฐาน (2 ปี 0.75% $1,698 DD 40%) · ⚠ เทอร์โบแตกในปีก่อน |
 | XAU ORB v6.10 | `XAU_ORB_EA_v6.10.mq5` | ผ่านปีล่าสุด (breakout เอเชีย) |
