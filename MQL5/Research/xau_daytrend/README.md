@@ -351,3 +351,14 @@ MACD engine portfolios, Cent USD 300, DD halt 50%, end USD / DD at 0.5 / 0.75 / 
 H1: 444/9, 534/14, 637/18, 884/26 · M15: 515/15, 651/23, 805/29, 1,155/41 · **H1+M15 (73/mo)**: 730/23, 1,052/33, 1,446/42, halt ·
 **H1+M15+M5(D1) (91/mo)**: 1,047/28, 1,660/40, halt, halt · H1d+M15d+M5d (53/mo): 905/26, 1,377/36, 1,946/46, halt · H1+M15d: 674/16, 960/24, 1,325/31, 2,311/43 · H1+M15+M5 unfiltered: 783/35, 1,036/49, halt.
 EA `MQL5/Experts/XAU_THUNDER_v1.00.mq5` (modes H1+M15 / H1+M15+M5 D1, magic 890000+). Docs/visuals in `MQL5/Docs/thunder/`. MACD alone is weaker than SENTINEL (SSL) at the same DD.
+
+## StraddleReverse v4.60 check (`sr_sim.py`, `sr_test.py`, `sr_test2.py`, `sr_cost.py`, 2026-11-20)
+v4.60 source not found in Drive; simulated v4.40 source logic (Drive `XAU_EA_ALL_v2_20260817.zip`) with the report's v4.60 settings: straddle ±1.00, SL 12, reverse trap after +2.50 at 2.40 trailing, cooldown 300 s, max 2 SL/day, window 19:00–20:30 UTC (= Thai 02:00–03:30), close at window end, 0.01 lot. Dukascopy ticks Nov 2025–Nov 2026; trade count 112/month matches the report (~113).
+| Variant | avg USD/trade | Nov–Aug / Sep–Nov | PF |
+|---|---|---|---|
+| Dukascopy spread (median 0.63 in window) | −0.60 | −0.60 / −0.66 | 0.72 |
+| Window shift −60/−30/+30/+60 min | −0.94 / −0.89 / −0.75 / −0.82 | all negative | 0.60–0.66 |
+| Slippage 0.05 / 0.10 / 0.20 per fill | −0.69 / −0.76 / −1.00 | | |
+| Fixed spread 0.10 / 0.15 / 0.20 / 0.25 / 0.30 | +0.06 / +0.05 / +0.02 / −0.03 / −0.07 | Sep–Nov −0.21 to −0.33 at every spread | 0.96–1.03 |
+| ATR(f)/ATR(s) < 0.95 filters (5/20, 14/50, 14/100) | −0.70 to −0.77 (−0.13 to −0.26 at spread 0.30) | | |
+Win rate 64% at spread 0.30 matches the report, but the report's +0.51 USD/trade does not replicate: even at 0.10 spread the edge is +0.06 and the months after the report's sample (Sep–Nov 2026) are negative at every spread. Consistent with the Drive handoff (2026-09-08): breakout-straddle cost ≈ 3.3× edge on gold.
