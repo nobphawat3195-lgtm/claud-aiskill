@@ -420,3 +420,19 @@ Our first port had the label sign reversed (source: src[4] < src[0] → short) a
 | M15 | 62 | −0.06 / −0.07 | −0.05 / −0.07 | 42–44% |
 | M5 | 187 | −0.12 / −0.12 | −0.11 / −0.12 | 20–22% |
 With the corrected label the indicator trades normally but loses on every TF and is worse than random direction. The flipped (old) label gives almost no trades. Dead end.
+
+## Fifth batch: 10 TradingView indicators, KST passes (`ind10e*.py`, `kst_scale.py`, `kst_port.py`, 2026-11-20)
+Defaults, SL 1.5 ATR, exit/reverse on opposite signal. M5 all negative; M15 only TRIX +0.10 (random 88%).
+H1 avg R (Nov–Jun / Jul–Nov), random baseline: Gann HiLo +0.11 (+0.08/+0.15) 85% · LSMA −0.02 · Trendilo +0.12 (98 tr) 81% · Schaff TC +0.09 89% · TRIX −0.03 · Ehlers ITrend +0.06 89% · McGinley −0.00 · **KST +0.34 (+0.30/+0.42), 304 tr, random 100%, longs +49R / shorts +55R, DSR (151 trials) 0.61, Cent 0.75% → 633 / DD 9%** · Laguerre RSI −0.04 · JMA −0.03. PBO 0.008.
+KST periods scaled (roc 10/15/20/30, sma 10/10/10/15, signal 9) × k: H1 ×1 +0.34 (25/mo) · H1 +D1 +0.44 (98.9%) · M15 ×4 +0.39 (99.8%, longs +11 / shorts +110: lopsided) · M15 +D1 +0.77 (99.0%) · M5 ×12 +0.22 (99.0%, DSR 0.02) · M5 +D1 +0.34 (97.7%). PBO 0.23.
+Correlation of daily R: KST H1 vs SSL H1 0.54, vs SSL M15 0.29, vs MACD H1 0.56; KST M15 vs SSL M15 0.25.
+Portfolios, Cent USD 300 (end / DD at 0.5 / 0.75 / 1%):
+| Portfolio | /month | 0.5% | 0.75% | 1% |
+|---|---|---|---|---|
+| KST H1 | 25 | 497 / 6% | 633 / 9% | 799 / 11% |
+| KST H1+M15 | 49 | 843 / 12% | 1,322 / 18% | 1,995 / 25% |
+| SENTINEL std (SSL M15+H1) | 47 | 895 / 17% | 1,443 / 24% | 2,232 / 31% |
+| SENTINEL turbo (+MACD H1,M15) | 120 | 1,854 / 32% | 3,616 / 46% | halt |
+| **SENTINEL std + KST H1** | 72 | 1,407 / 17% | **2,715 / 24%** | 4,899 / 32% |
+| **SENTINEL std + KST H1+M15** | 96 | **2,240 / 22%** | 4,996 / 32% | 9,945 / 42% |
+KST is the first addition that raises return at the same DD (lower correlation with SSL M15 than MACD). Caveat: found after ~151 trials; formula not yet checked against the TradingView source.

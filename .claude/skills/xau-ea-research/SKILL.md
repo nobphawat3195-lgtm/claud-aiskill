@@ -30,6 +30,7 @@ New candidate (2026-11-20): `MQL5/Experts/XAU_SSL_EA_v7.00.mq5` SSL Hybrid core 
 Second TradingView batch (2026-11-20): only MACD histogram H1 passes (+0.18R, beats random 99.3%, corr 0.6 with SSL); mean-reversion (WaveTrend, BB, RSI2, StochRSI, VixFix) and all M5 fail.
 Third TradingView batch (2026-11-20): Aroon and Coral Trend H1 pass the random test (98%/97%) but only H1; scaled TFs fail; they add no return per DD to SENTINEL (corr ~0.5). Hull, Keltner, Vortex, ZeroLag, PivotST, Fisher, KAMA, CCI fail.
 Fourth TradingView batch (2026-11-20): none pass (OTT H1 91.7%, MavilimW M15 87.8%); optimising Aroon/Coral/OTT does not raise profit (Coral and OTT get worse out of sample).
+Fifth TradingView batch (2026-11-20): KST (Know Sure Thing) H1 passes strongly (+0.34R, random 100%, DSR 0.61) and scales to M15/M5; SENTINEL std + KST H1 at 0.75% → 2,715 / DD 24% (vs 1,443 / 24%).
 Lower-risk alternative: `MQL5/Experts/XAU_DMA_EA_v5.10.mq5` (DM_A only).
 New candidate (2026-11-19, untested outside the latest year): `MQL5/Experts/XAU_ORB_EA_v6.10.mq5` Asia ORB (hourly ranges 00-03 UTC) + D1 trend, hold to 12:00 UTC: single range 71 trades USD 300 → 968, DD 13%; four ranges 286 trades (~23/month), USD 300 → 1,948, DD 31% (overlap risk understated). London/NY ORB have no edge.
 
