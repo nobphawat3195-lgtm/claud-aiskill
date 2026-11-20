@@ -302,3 +302,7 @@ M15: HMA {160,240,320} × D1 EMA {10,20,50} × SL {1.0,1.5,2.0} (27); H1: HMA {4
 M15 best: HMA 320 (80 h) EMA 10/20 SL 1.5: Nov–Jun +0.56R / Jul–Nov +0.48 to +0.54R (247–253 trades); HMA 160 fails out of sample. PBO 0.39.
 H1 best is the default HMA 60 SL 1.5 (Jul–Nov +0.29R); HMA 40 fails. PBO 0.34.
 Portfolio Cent USD 300: M15 320/EMA20 + H1 60, risk 1% → 2,232 (DD 31%, ~47 trades/month, 3 losing months) vs 240 version 1,437 (DD 30%, ~51/month). Risk 1.5% → 4,776 (DD 43%).
+
+### SSL M5 optimisation (`ssl_opt3.py`, `ssl_port3.py`)
+M5: HMA {480,720,960} × D1 EMA {10,20,50} × SL {1.0,1.5,2.0}. Train-best 960/EMA10/SL1.5: Nov–Jun +0.55R → Jul–Nov +0.08R (decays); 960/EMA20/SL1.5: +0.54 → +0.17R (452 trades, win 15%, beats random 98.8%, longs +68R / shorts +114R); HMA 480 fails. PBO 0.30.
+Portfolio Cent USD 300: M15 320 + H1 60: risk 0.5% → 895 (DD 17%), 0.75% → 1,443 (DD 24%), 1% → 2,232 (DD 31%), ~47 trades/month, 2–3 losing months. Adding M5 960: ~84 trades/month, 0.5% → 1,650 (DD 33%), 0.75% → 3,026 (DD 45%), 1% → 4,872 (DD 55%), 5 losing months. M5 adds trades and return but most of the DD.
