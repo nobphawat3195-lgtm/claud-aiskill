@@ -436,3 +436,22 @@ Portfolios, Cent USD 300 (end / DD at 0.5 / 0.75 / 1%):
 | **SENTINEL std + KST H1** | 72 | 1,407 / 17% | **2,715 / 24%** | 4,899 / 32% |
 | **SENTINEL std + KST H1+M15** | 96 | **2,240 / 22%** | 4,996 / 32% | 9,945 / 42% |
 KST is the first addition that raises return at the same DD (lower correlation with SSL M15 than MACD). Caveat: found after ~151 trials; formula not yet checked against the TradingView source.
+
+## Previous-year check of passed and watch-list indicators (`prev_year.py`, `two_year.py`, 2026-11-20)
+Same rules, no re-tuning; previous year Nov 2024–Oct 2025 on Dukascopy M1 bid/ask (4 pseudo-ticks/min); latest year on real ticks. avg R per trade:
+| Indicator (TF) | latest-year status | latest | previous | 2-year random | 2-year longs / shorts |
+|---|---|---|---|---|---|
+| KST (H1) | passed 100% | +0.34 | +0.08 (prev-year random 89.6%) | **100.0%** | +103 / +27 |
+| SSL HMA60 (H1) | passed 99.9% | +0.27 | +0.06 | **99.8%** | +100 / +14 |
+| MACD (H1) | passed 99.5% | +0.18 | **−0.02** | 98.8% | +80 / −6 |
+| Aroon (H1) | passed 98.1% | +0.12 | +0.05 | 99.3% | +80 / −14 |
+| Coral (H1) | passed 97.3% | +0.18 | +0.19 | **99.7%** | +93 / +9 |
+| CCI (H1) | watch 94.6% | +0.19 | +0.14 | 96.5% | +81 / −11 |
+| OTT (H1) | watch 91.7% | +0.32 | +0.24 | 96.5% | +87 / +14 |
+| OTT source M15 SL 5 ATR | passed 96.2% | +0.07 | +0.06 | 96.0% | +62 / −2 |
+| Hull Suite (H1) | watch 89.4% | +0.12 | +0.26 | 99.6% | +108 / −11 |
+| Schaff TC (H1) | watch 88.6% | +0.09 | −0.07 | 84.8% | +39 / −35 |
+| Ehlers ITrend (H1) | watch 88.8% | +0.06 | +0.12 | **99.6%** | +75 / +10 |
+| MavilimW (M15) | watch 87.8% | +0.18 | −0.01 | 97.1% | +112 / −22 |
+| Gann HiLo (H1) | watch 85.0% | +0.11 | +0.22 | **99.5%** | +104 / +15 |
+Findings: the one-year random test is noisy (KST 100% latest vs 89.6% previous; Gann HiLo 85% vs 99.3%). Both years were gold up-trends, so long trades dominate; shorts are the stricter check. Robust on both years with longs and shorts positive: KST, SSL, Coral, Gann HiLo, Ehlers ITrend (and OTT H1 at 96.5%). MACD H1 lost in the previous year (THUNDER and SENTINEL turbo caution). Schaff TC and MavilimW fail.
