@@ -455,3 +455,12 @@ Same rules, no re-tuning; previous year Nov 2024–Oct 2025 on Dukascopy M1 bid/
 | MavilimW (M15) | watch 87.8% | +0.18 | −0.01 | 97.1% | +112 / −22 |
 | Gann HiLo (H1) | watch 85.0% | +0.11 | +0.22 | **99.5%** | +104 / +15 |
 Findings: the one-year random test is noisy (KST 100% latest vs 89.6% previous; Gann HiLo 85% vs 99.3%). Both years were gold up-trends, so long trades dominate; shorts are the stricter check. Robust on both years with longs and shorts positive: KST, SSL, Coral, Gann HiLo, Ehlers ITrend (and OTT H1 at 96.5%). MACD H1 lost in the previous year (THUNDER and SENTINEL turbo caution). Schaff TC and MavilimW fail.
+
+## Multi-timeframe map of the finalists (`multi_tf.py`, `multi_tf.csv`, 2026-11-20)
+2 years (Nov 2024 – Nov 2026) on M1 bid/ask, SL 1.5×ATR14, reverse on opposite signal. avg R per trade (default params / periods scaled to H1 lookback):
+- H1 is the best TF for all six: KST +0.20 (99.9%), Gann HiLo +0.15 (99.5%), SSL +0.15 (99.9%), Coral +0.18 (99.7%), ITrend +0.08 (99.8%), OTT +0.28 (97.0%).
+- M5 loses for every indicator and variant (−0.10 to −0.21R). M15 default loses for all; M15/M30 scaled ≈ the H1 trades (KST: same trade count).
+- H4: SSL +0.37R (98.7%, DD 14R, 7 trades/month), Coral +0.26R (96.8%); the others fail at H4.
+- Weekly-R correlation: KST–SSL 0.71, SSL H4 vs H1 group 0.05–0.27, OTT vs group 0.27–0.48.
+- Equal-weight combos (post-hoc, biased): KST+Coral+Gann H1 + SSL H4 = +397R, DD 42R (ratio 9.4); all five H1 = +518R, DD 80R (6.5); KST+SSL = +230R, DD 48R (4.8).
+Catalogue of passed building blocks: `MQL5/Docs/passed/06_คลังกลยุทธ์ที่ผ่าน.md`.
