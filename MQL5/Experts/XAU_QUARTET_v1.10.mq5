@@ -56,7 +56,7 @@ enum ENUM_MINLOT_RULE
 };
 
 input group "=== ความเสี่ยง (เปลี่ยนได้จากแดชบอร์ด) ==="
-input int    InpRiskLevel = 4;     // ระดับเริ่มต้น 0-4 (0=0.5% 1=0.75% 2=1% 3=1.25% 4=1.5%)
+input int    InpRiskLevel = 2;     // ระดับเริ่มต้น 0-4 (0=0.5% 1=0.75% 2=1% 3=1.25% 4=1.5%) — 2 = 1% (สมดุล)
 input double InpRisk0 = 0.5;       // ระดับ 1: % ต่อไม้
 input double InpRisk1 = 0.75;      // ระดับ 2: % ต่อไม้
 input double InpRisk2 = 1.0;       // ระดับ 3: % ต่อไม้
