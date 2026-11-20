@@ -330,3 +330,18 @@ Defaults, SL 1.5 ATR, own exit rule (SAR types exit on opposite signal). avg R p
 | DMI/ADX cross | −0.19 | −0.07 | −0.09 |
 | CM Williams Vix Fix (long, 10 bars) | −0.10 | −0.05 | −0.12 |
 PBO 0.056. MACD H1: longs +41R / shorts +41R, always-buy −0.3R, DSR (59 trials) 0.47, daily-R correlation with SSL H1 0.60 (same trend family), Cent USD 300 risk 0.75% → 534 (DD 14%). Mean-reversion indicators lose on every TF; M5 loses for all.
+
+### MACD scaled to lower TFs and combined with SENTINEL (`macd_tf.py`, `port_macd.py`)
+MACD histogram sign, periods ×(60 min / TF), SL 1.5 ATR, exit on flip. avg R (Nov–Jun / Jul–Nov), beats random:
+| Config | n | avg | split | random |
+|---|---|---|---|---|
+| H1 12/26/9 | 446 | +0.18 | +0.19 / +0.18 | 99.5% |
+| H1 +D1 | 215 | +0.31 | +0.31 / +0.32 | 99.3% |
+| M15 48/104/36 | 455 | +0.26 | +0.22 / +0.34 | 97.6% |
+| M15 +D1 | 220 | +0.43 | +0.22 / +0.81 | 96.0% |
+| M5 144/312/108 | 461 | +0.11 | +0.08 / +0.17 | 90.9% |
+| M5 +D1 | 222 | +0.45 | +0.34 / +0.63 | 97.2% |
+PBO 0.19. Portfolios (Cent USD 300, DD halt 50%), end USD / DD at risk 0.25 / 0.5 / 0.75%:
+A SSL M15+H1 (47/mo): 531/9%, 895/17%, 1,443/24% (1%: 2,232/31%) · B SSL M5+M15+H1 (84/mo): 772/18%, 1,650/33%, 3,026/45% ·
+C A + MACD H1,M15 +D1 (82/mo): 756/16%, 1,653/30%, 3,201/42% · F A + MACD H1,M15 unfiltered (120/mo): 815/17%, 1,854/32%, 3,616/46% ·
+D/E with M5 MACD (137–174/mo): 0.5% → 3,463–3,892 at DD 47–50%, 0.75% halts. MACD correlates with SSL (0.6), so it adds trades and return but DD scales with it; best return per DD at ≤ 31% DD is still A at 1%.
