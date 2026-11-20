@@ -362,3 +362,20 @@ v4.60 source not found in Drive; simulated v4.40 source logic (Drive `XAU_EA_ALL
 | Fixed spread 0.10 / 0.15 / 0.20 / 0.25 / 0.30 | +0.06 / +0.05 / +0.02 / −0.03 / −0.07 | Sep–Nov −0.21 to −0.33 at every spread | 0.96–1.03 |
 | ATR(f)/ATR(s) < 0.95 filters (5/20, 14/50, 14/100) | −0.70 to −0.77 (−0.13 to −0.26 at spread 0.30) | | |
 Win rate 64% at spread 0.30 matches the report, but the report's +0.51 USD/trade does not replicate: even at 0.10 spread the edge is +0.06 and the months after the report's sample (Sep–Nov 2026) are negative at every spread. Consistent with the Drive handoff (2026-09-08): breakout-straddle cost ≈ 3.3× edge on gold.
+
+## Third batch: 10 TradingView indicators (`ind10c*.py`, 2026-11-20)
+Defaults, SL 1.5 ATR, exit/reverse on opposite signal. avg R (H1 Nov–Jun / Jul–Nov):
+| Indicator | M5 | M15 | H1 |
+|---|---|---|---|
+| Hull Suite (HMA 55) | −0.09 | −0.05 | +0.12 (+0.15/+0.07), random 89% |
+| Keltner Channels Strategy | −0.05 | +0.01 | +0.28 (77 tr), random 39% |
+| **Aroon 14** | −0.10 | −0.04 | **+0.12 (+0.15/+0.08), 407 tr, random 98.1%** |
+| Vortex 14 | −0.09 | −0.03 | +0.01 |
+| **Coral Trend (LazyBear 21/0.4)** | −0.07 | +0.01 | **+0.18 (+0.13/+0.27), 282 tr, random 97.3%** |
+| Zero Lag Trend (AlgoAlpha 70/1.2) | −0.15 | −0.05 | +0.06 |
+| Pivot Point SuperTrend | −0.15 | −0.03 | +0.01 |
+| Fisher Transform 9 | −0.11 | −0.05 | −0.04 |
+| KAMA 10/2/30 | −0.11 | −0.04 | −0.01 |
+| CCI 20 ±100 | −0.08 | −0.02 | +0.19 (+0.09/+0.35), random 94.6% |
+PBO 0.048; DSR (89 cumulative trials) 0.06–0.16. Scaling Aroon/Coral to M15 (×4) / M5 (×12) ± D1 fails (random 34–90%, Coral M15/M5 negative Nov–Jun); H1 +D1: Aroon +0.29R (187 tr, 96.9%), Coral +0.48R (122 tr, 98.4%). PBO of the 10 scaled configs 0.17.
+Cent USD 300 risk 0.75%: Aroon H1 418 (DD 18%), Coral H1 428 (DD 12%), both 570 (DD 23%). Adding to SENTINEL standard does not improve return per DD: SENTINEL std 1% → 2,232 / DD 31% vs SENTINEL std + Coral 0.75% → 1,849 / DD 33%, + Aroon + Coral 0.75% → 2,217 / DD 39%. Daily-R correlation with SSL H1 0.46–0.51 (same trend family).
