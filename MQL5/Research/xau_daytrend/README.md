@@ -285,3 +285,14 @@ Author defaults; common execution: entry next tick after the signal bar, SL 1.5 
 PBO over the 29 configs 0.095. SSL Hybrid H1: DSR 0.67 (29 trials), longs +48R and shorts +45R (always-buy only +11R), Cent 30,000 USC risk 2% → ~143,800 USC (DD 24%, 2 losing months of 13). SL median ≈ 27 USD: not tradable on Standard USD 300 (0.01 lot = 9% risk). EA: `MQL5/Experts/XAU_SSL_EA_v7.00.mq5` (not compiled in cloud). Squeeze H1 second (DSR 0.23). M5/M15 all ≤ +0.03R: spread and noise eat the edge.
 SSL H1 detail (`ssl_detail.py`, `ssl_h1_equity.png`): 28 trades/month, PF 1.47, avg win +2.61R / loss −0.85R, median hold 12 h, losing months Apr −88 and Oct −142 USD (Cent USD 300). Grid HMA {40,60,80} × SL {1.0,1.5,2.0} ATR: HMA 40 fails out of sample (−0.06R), 60/80 positive in both halves; PBO 0.56 → keep the default 60 / 1.5.
 "SSL Hybrid Strategy" (TradingView Pine v5, user-supplied; `ssl_strat.py`): same SSL1 entries; exits SL 1.8 ATR + 5 partial TPs (1.8/2.2/2.6/4/8 ATR) + BE after TP1. H1 latest year: +0.052R/trade (Nov–Jun +0.10 / Jul–Nov −0.02), PF 1.12, Cent USD 300 → 400, 5 losing months; with SL 1.5: +0.073R → 452. Our simple exit-on-flip: +0.266R, → 1,382. The edge is in the few large winners (avg win +2.6R); fixed TPs cut them. Keep `XAU_SSL_EA_v7.00`.
+
+### SSL build-out: TF × HMA length × D1 trend (`ssl_grid.py`, `ssl_cand.py`, `ssl_cent.py`, 2026-11-20)
+18 pre-registered configs (TF M1/M5/M15/M30/H1; HMA 60 bars or ≈60 hours capped at 960; D1 EMA20 filter on/off), exit on flip or SL 1.5 ATR. avg R (Nov–Jun / Jul–Nov):
+| TF | HMA 60 | HMA 60 +D1 | HMA ≈60 h | HMA ≈60 h +D1 |
+|---|---|---|---|---|
+| M1 | −0.27 | −0.26 | −0.20 (960) | −0.15 |
+| M5 | −0.08 | −0.03 | −0.02 (720) | **+0.24 (+0.19/+0.31), 552 tr, 45/month, SL 7.3** |
+| M15 | −0.04 | +0.04 | +0.08 (240) | **+0.29 (+0.22/+0.41), 306 tr, SL 13** |
+| M30 | −0.04 | +0.06 | +0.12 (120) | +0.27 (+0.18/+0.41), 226 tr |
+| H1 | **+0.30 (+0.31/+0.29), 331 tr** | +0.47 (+0.57/+0.33), 156 tr | = | = |
+PBO 0.0 (the in-sample best ranks well out of sample). Random baseline: M5 720+D1 97.7% (longs +9.5R, shorts +121R: fragile), M15 240+D1 96.9%, H1 99.9%. DSR (18 trials): 0.29 / 0.40 / 0.82. Win rates 16–33%, max losing streak 25 (M5). Standard USD 300 fails (0.01 lot forces 2.4–9% risk → 48% halt in Feb–Apr). Cent USD 300: H1 risk 1% → 753 (DD 11%); M15+H1 risk 1% → 1,437 (DD 30%, ~51/month); M5+M15+H1 risk 0.5% → 1,076 (DD 33%, ~96/month). EA `XAU_SSL_EA_v7.10.mq5` (chart TF, `InpHMALen`, `InpUseD1`).
