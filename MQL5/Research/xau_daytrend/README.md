@@ -486,3 +486,7 @@ Findings: the new 4-engine portfolio is the only one with similar profit in both
 ## QUARTET with a 70% DD halt (`quartet_dd70.py`, 2026-11-20)
 Cent USD 300, 2 years: 1.25% → $9,718 DD 53% · **1.5% → $14,385 DD 60%** (prev year $2,031 DD 60%, latest $2,124 DD 52%, worst month −$3,902) · 2% halts at 70% in Aug 2025.
 Halt 50%: 1.25% and 1.5% halt in Aug 2025. Block bootstrap of weekly R (4-week blocks, 5,000 paths): 1.5% → P(DD ≥ 50%) 79%, P(DD ≥ 70%) 22%, median DD 60%; 1% → 30% / 3%; 0.75% → 8% / 0%.
+
+## QUARTET v1.10 lot modes (`quartet_lotmodes.py`, 2026-11-20)
+Cent USD 300, 2 years, halt 70%, 0.01 cent-lot granularity: %Equity/%Balance 1.5% compounding $14,053 DD 60% (best) · same non-compounding $2,036 DD 33% · fixed $4.50 risk $2,036 · 0.01 per 3,000 USC $2,861 DD 49% (real risk up to 7.1%/trade) · 0.01 per 1,500 USC halts Apr 2026 · fixed 0.01 $394 · fixed 0.20 $2,175.
+Best mode detail: 2,080 trades (85/month), win 34%, avg win +2.27R, avg loss −0.88R, PF 1.29, SL hit 44.6%, median hold 14 h (SSL H4 70 h), max losing streak 28, max DD 60% (Jun–Sep 2025, $1,802 → $723, recovered Oct 2025), 7 losing months of 25. Trade list: `MQL5/Docs/quartet/quartet_1.5pct_trades_2y.csv`.
