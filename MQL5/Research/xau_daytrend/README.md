@@ -379,3 +379,24 @@ Defaults, SL 1.5 ATR, exit/reverse on opposite signal. avg R (H1 Nov–Jun / Jul
 | CCI 20 ±100 | −0.08 | −0.02 | +0.19 (+0.09/+0.35), random 94.6% |
 PBO 0.048; DSR (89 cumulative trials) 0.06–0.16. Scaling Aroon/Coral to M15 (×4) / M5 (×12) ± D1 fails (random 34–90%, Coral M15/M5 negative Nov–Jun); H1 +D1: Aroon +0.29R (187 tr, 96.9%), Coral +0.48R (122 tr, 98.4%). PBO of the 10 scaled configs 0.17.
 Cent USD 300 risk 0.75%: Aroon H1 418 (DD 18%), Coral H1 428 (DD 12%), both 570 (DD 23%). Adding to SENTINEL standard does not improve return per DD: SENTINEL std 1% → 2,232 / DD 31% vs SENTINEL std + Coral 0.75% → 1,849 / DD 33%, + Aroon + Coral 0.75% → 2,217 / DD 39%. Daily-R correlation with SSL H1 0.46–0.51 (same trend family).
+
+## Fourth batch: 10 TradingView indicators + optimisation of low-profit passers (`ind10d*.py`, `opt_ind.py`, `opt_ott.py`, 2026-11-20)
+avg R (Nov–Jun / Jul–Nov where noted): M5 all negative (−0.06 to −0.11).
+| Indicator | M15 | H1 | Random baseline (best TF) |
+|---|---|---|---|
+| Trend Magic (Kivanc) | −0.04 | +0.05 (+0.05/+0.06) | 81% |
+| OTT (Kivanc 2/1.4) | −0.16 | **+0.32 (+0.30/+0.35), 202 tr** | **91.7%** (longs +32R / shorts +32R, corr SSL 0.38) |
+| AlphaTrend (Kivanc, RSI) | +0.02 | +0.08 (+0.00/+0.21) | 81.5% |
+| MavilimW (Kivanc) | **+0.18 (+0.12/+0.27), 528 tr** | −0.08 | 87.8% |
+| Elder Impulse | −0.06 | +0.05 (+0.08/−0.00) | – |
+| Alligator | +0.06 (+0.03/+0.12) | +0.09 (+0.27/−0.23) | 89.2% (M15) |
+| T3 Tilson | −0.07 | +0.01 | – |
+| Volatility Stop | −0.06 | +0.04 | 77.9% |
+| Bollinger breakout | −0.12 | +0.01 | – |
+| RSI 50 cross | −0.03 | +0.01 | – |
+None passes ≥ 95%. PBO 0.05, DSR (119 trials) ≤ 0.15.
+Optimisation (length ×0.5/1/2, SL 1.0/1.5/2.0, D1 on/off = 18 configs, select on Nov–Jun):
+- Aroon H1: selected len 14 SL 1.5 +D1 → test +0.11 (default +0.08), random 97%, Cent 0.75% 441 / DD 9% (default 418 / DD 18%); PBO 0.44.
+- Coral H1: selected len 10 SL 1.0 +D1 → test +0.09 (default +0.27), random 85%: optimisation hurts; PBO 0.07.
+- OTT H1 (percent 0.7/1.4/2.8): selected 2.8 SL 1.0 → test −0.35 (default +0.35), random 77%: optimisation hurts; PBO 0.42.
+Optimising small-edge H1 trend indicators does not raise profit above ~450 USD/year on Cent 300 (SENTINEL standard 0.75% = 1,443).
