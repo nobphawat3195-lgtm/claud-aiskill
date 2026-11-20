@@ -267,3 +267,19 @@ Pine core logic ported (HTF sweep of previous / any untaken HTF high-low → LTF
 | M15 (H4) | brC-Limit 1/3R (default) | 127 | +0.03 (others −0.07 to 0.00) |
 Outcome mix M5 default: 48% full loss, 36% break-even, 11% TP3. Spread costs ~0.13R per trade on M1 (SL ≈ 4.6 USD).
 Filters (D1 EMA20 trend, 00–07 UTC, both) on M5/M15, 32 configs selected on Nov–Jun: best train M15 obOpen 00–07 1/3R +37.5R → Jul–Nov **−6.4R**; M5 all negative. M15 brC 00–07 positive in both halves but 44 trades and SL ≈ 19 USD (above the USD 300 min-lot cap); it is the known 00–07 UTC time edge, not the CISD model. Verdict: no edge; EA not written.
+
+## 10 TradingView buy/sell indicators (`ind10.py`, `ind10_base.py`, `ind10_dsr.py`, 2026-11-20)
+Author defaults; common execution: entry next tick after the signal bar, SL 1.5 ATR(14), exit/reverse on the opposite signal. Latest year, real ticks. avg R per trade (Nov–Jun / Jul–Nov):
+| Indicator | M5 | M15 | H1 |
+|---|---|---|---|
+| UT Bot (a1, ATR10) | −0.11 | −0.07 | +0.01 (+0.05 / −0.05) |
+| SuperTrend (10, 3) | −0.13 | −0.05 | −0.20 |
+| Range Filter (100, 3) | −0.10 | 0.00 (−0.08 / +0.15) | −0.08 |
+| Twin Range (27/1.6, 55/2) | −0.06 | −0.02 | +0.08 (+0.09 / +0.07), beats random 92% |
+| Chandelier Exit (22, 3) | −0.11 | −0.02 | +0.01 |
+| HalfTrend (2, 2) | −0.07 | −0.01 | +0.15 (+0.04 / +0.34), beats random 93% |
+| **SSL Hybrid core (HMA 60 high/low)** | −0.08 | −0.04 | **+0.27 (+0.29 / +0.24), 341 trades, beats random 99.9%** |
+| QQE MOD | −0.05 | −0.01 | +0.12, beats random 75% |
+| Squeeze Momentum (exit on momentum turn) | −0.13 | +0.03 | +0.19 (+0.15 / +0.24), beats random 97% |
+| Lorentzian Classification | – | 16 trades | 6 trades (port gives too few signals; not reliable) |
+PBO over the 29 configs 0.095. SSL Hybrid H1: DSR 0.67 (29 trials), longs +48R and shorts +45R (always-buy only +11R), Cent 30,000 USC risk 2% → ~143,800 USC (DD 24%, 2 losing months of 13). SL median ≈ 27 USD: not tradable on Standard USD 300 (0.01 lot = 9% risk). EA: `MQL5/Experts/XAU_SSL_EA_v7.00.mq5` (not compiled in cloud). Squeeze H1 second (DSR 0.23). M5/M15 all ≤ +0.03R: spread and noise eat the edge.
