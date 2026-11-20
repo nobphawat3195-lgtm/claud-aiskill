@@ -464,3 +464,17 @@ Findings: the one-year random test is noisy (KST 100% latest vs 89.6% previous; 
 - Weekly-R correlation: KST–SSL 0.71, SSL H4 vs H1 group 0.05–0.27, OTT vs group 0.27–0.48.
 - Equal-weight combos (post-hoc, biased): KST+Coral+Gann H1 + SSL H4 = +397R, DD 42R (ratio 9.4); all five H1 = +518R, DD 80R (6.5); KST+SSL = +230R, DD 48R (4.8).
 Catalogue of passed building blocks: `MQL5/Docs/passed/06_คลังกลยุทธ์ที่ผ่าน.md`.
+
+## Cent USD 300 money simulation over 2 years (`port2y.py`, 2026-11-20)
+M1 bid/ask, Nov 2024 – Nov 2026, realized-equity sizing, overlapping engines, halt at 50% DD. "Each year" restarts at USD 300.
+| Portfolio | risk/trade | 2 years | previous year | latest year |
+|---|---|---|---|---|
+| SENTINEL standard (SSL H1 + SSL M15 HMA320 D1) | 0.75% | $1,698 DD 40% | $453 DD 40% | $1,124 DD 28% |
+| SENTINEL turbo (+MACD H1, MACD M15) | 0.5% | **halted** $219 | **halted** | $1,252 DD 36% |
+| **New 4 engines (KST H1 + Coral H1 + Gann HiLo H1 + SSL H4)** | 0.5% | $1,686 DD 24% | $694 DD 24% | $729 DD 20% |
+| New 4 engines | **0.75%** | **$3,351 DD 35%** | $973 DD 35% | $1,033 DD 29% |
+| New 4 engines | 1% | $5,992 DD 44% | $1,300 DD 44% | $1,383 DD 38% |
+| New 4 + SSL M15 D1 | 0.5% | $3,162 DD 38% | $827 | $1,147 |
+| SENTINEL v1.20 draft (SSL H1 + M15 + KST H1) | 0.75% | $3,384 DD 48% | $507 DD 48% | $2,003 DD 29% |
+Engines alone (2-yr R): KST +123, Coral +98, Gann +112, SSL H4 +63, SSL H1 +106, SSL M15 D1 +171, MACD H1 +59 (prev yr −8), MACD M15 +51 (prev yr −38).
+Findings: the new 4-engine portfolio is the only one with similar profit in both years; SENTINEL turbo (MACD) hits the 50% halt in the previous year at every risk; SENTINEL standard earns mostly in the latest year. M1 data is pessimistic vs ticks (SENTINEL standard 0.75% latest year: $1,124 on M1 vs $1,443 on ticks). Portfolio selection is post-hoc.
