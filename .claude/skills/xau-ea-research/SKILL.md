@@ -31,6 +31,7 @@ Second TradingView batch (2026-11-20): only MACD histogram H1 passes (+0.18R, be
 Third TradingView batch (2026-11-20): Aroon and Coral Trend H1 pass the random test (98%/97%) but only H1; scaled TFs fail; they add no return per DD to SENTINEL (corr ~0.5). Hull, Keltner, Vortex, ZeroLag, PivotST, Fisher, KAMA, CCI fail.
 Fourth TradingView batch (2026-11-20): none pass (OTT H1 91.7%, MavilimW M15 87.8%); optimising Aroon/Coral/OTT does not raise profit (Coral and OTT get worse out of sample).
 Fifth TradingView batch (2026-11-20): KST (Know Sure Thing) H1 passes strongly (+0.34R, random 100%, DSR 0.61) and scales to M15/M5; SENTINEL std + KST H1 at 0.75% → 2,715 / DD 24% (vs 1,443 / 24%).
+XAU HEXA (QUARTET v1.20, +PMO H4 +AO H4) and HEXA TURBO v1.00 (+AO M30 filtered by SSL H4) built 2026-11-21; M5 loses for every engine even with the H4 filter.
 XAU QUARTET v1.00 EA built (MQL5/Experts, magic 891000+) from KST/Coral/Gann H1 + SSL H4; signal parity 100% (quartet_parity.py).
 2-year Cent money sim (port2y.py): KST+Coral+Gann H1+SSL H4 at 0.75% = $300→$3,351 DD 35%, steady in both years; SENTINEL turbo (MACD) halts at 50% DD in Nov 2024–Oct 2025.
 Multi-TF map (2026-11-20, `multi_tf.py`): H1 best for KST/SSL/Coral/Gann/ITrend/OTT; M5 loses for all; H4 works only for SSL (+0.37R, low correlation with H1) and Coral. Catalogue: MQL5/Docs/passed/06_คลังกลยุทธ์ที่ผ่าน.md.
