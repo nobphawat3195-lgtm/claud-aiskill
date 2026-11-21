@@ -499,3 +499,11 @@ Best mode detail: 2,080 trades (85/month), win 34%, avg win +2.27R, avg loss −
 - Correlation of weekly R with the QUARTET total: PMO H1 0.72, TSI H1 0.70, MA Cross H1 0.83 (redundant); AO H4 0.20, MAMA H4 0.25, PMO H4 0.36 (diversifiers).
 - Cent USD 300, halt 70%, risk scaled so max DD ≤ 44%: QUARTET alone 0.95% → $5,378 · +PMO H4 1.0% → $7,420 (each year from $300: $1,356 / $1,641) · +AO H4 0.9% → $6,685 ($1,454 / $1,379) · +MAMA H4 0.9% → $6,014 · +AO H4+MAMA H4 0.8% → $6,230 · +PMO H1 0.7% → $4,923 (worse) · +TSI H1 0.6% → $2,908 (worse).
 Takeaway: new H1 engines duplicate KST/Coral/Gann; H4 engines add return at the same DD. Selection is post-hoc across 30 configs (~1.5 false passes expected at 95%).
+
+## Faster trading search: M5 / M15 / M30 with the H4 "mothership" filter (`fast_tf.py`, `fast_tf.csv`, 2026-11-21)
+10 passed engines; DF = defaults + enter only in the direction of SSL HMA60 H4; HF = periods × half of (60/TF) + filter; D = defaults M30 no filter. 2 years M1 bid/ask.
+- M5: every engine and variant loses (DF −0.13 to −0.16R, 126–251 trades/month, hold ~0.7 h, SL ~$5.4; HF best Coral +0.12R but random 94%).
+- M15 HF passers: **Awesome Osc 10/68 +0.29R, 17/month, hold 2.8 h, 99.7%, L/S +56/+65 (year 1 only +0.04)**, Coral 42 +0.11R 96.2% L/S +23/+31. All M15 DF fail.
+- M30 DF passers: **Awesome Osc 5/34 +0.24R, 17/month, hold 5.4 h, 99.6%, L/S +44/+60 (year 1 +0.06)**, Gann 99.1% (year 1 0.00), SSL 98.5% (shorts −1). M30 D: Gann and AO 99.5% but shorts negative.
+- Fast engines correlate 0.66–0.85 with each other. Fast-only portfolios fail: AO M30F + Coral M15F 1% → $821 DD 52%; four fast engines halt at 70% from 0.75%.
+- Cent USD 300, halt 70%: SIX (QUARTET + PMO H4 + AO H4, 98 trades/month) 0.75% $5,376 DD 37% · 1% $10,370 DD 46% (each year from $300: $1,713 / $1,815). SIX + AO M30F (115/month) 0.75% $8,242 DD 38% · 1% $16,277 DD 48% (years $1,623 / $3,009). Adding Coral M15F lowers return per DD.
