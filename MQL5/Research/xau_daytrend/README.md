@@ -518,3 +518,10 @@ Standard: 0.01 lot = $1 per $1 move. Median SL: H1 engines ~$21, H4 engines ~$42
 - Latest year from other balances, risk 1% (lots floored, min 0.01 → real risk above 1% below ~$3,000): QUARTET $1,000 halts, $2,000 +459% DD 42%, $3,000 +375% DD 33%; HEXA $1,000 +1,327% DD 60%, $2,000 +614% DD 40%, $3,000 +598% DD 34%; TURBO $1,000 +2,086% DD 58%, $2,000 +1,158% DD 42%, $3,000 +879% DD 41%. Below $3,000 the 0.01-lot floor raises real risk to 2–4% per trade (higher return and ruin risk; QUARTET at $1,000 halted).
 - Cent $300 latest year (reference): QUARTET $1,383, HEXA $1,815, TURBO $3,009.
 Conclusion: with USD 300 use a Cent account; Standard needs about USD 3,000 for the EA's risk setting to mean what it says.
+
+## Batch 8: scalping round M1 / M5 / M15 (`scalp8.py`, `scalp8.csv`, 2026-11-21)
+10 TradingView scalping strategies (EMA 9/21 + EMA50, CM Sling Shot 38/62, Stochastic 5/3/3 pullback, daily VWAP cross, Bollinger 20/2 fade, RSI 7 fade, SuperTrend 10/3, Keltner 20/1.5 breakout, NY ORB 13:30–14:00, London ORB 07:00–08:00) × M1/M5/M15 × (no filter / SSL H1 filter) = 60 configs. Pre-registered: entries 07–20 UTC, SL 1×ATR14, TP 1.5R, time exit 48 bars, one trade at a time.
+- **All 60 lose.** M1 −0.37 to −0.66R (SL ~$1.6 vs spread ~$0.56; M1 pseudo-ticks also crude), M5 −0.18 to −0.27R (SL ~$3.8), M15 best −0.09R (SL ~$7).
+- Edge before spread (spread added back): only 4/60 above zero and all ≤ +0.012R; at a $0.10 all-in cost (raw-spread account) every config is still negative. These entries have no edge on gold, so a lower-cost broker would not rescue them.
+- Dukascopy in-session spread: median $0.56.
+Conclusion: no M1/M5/M15 scalping EA; fastest validated engine remains AO M30 + SSL H4 filter (HEXA TURBO).

@@ -14,3 +14,6 @@ R/ไม้ = ปีก่อน / ปีล่าสุด (ข้อมูล 
 
 ## ไม่ผ่าน (ไม่ต้องลองซ้ำ)
 UT Bot, SuperTrend, Range Filter, Twin Range, Chandelier, HalfTrend, QQE MOD, Squeeze Momentum, Lorentzian Classification, WaveTrend, Bollinger, RSI2, StochRSI, Donchian, PSAR, Smoothed Heikin Ashi, DMI, Williams Vix Fix, Schaff Trend Cycle, MavilimW (Short ติดลบ), Andean Oscillator, Nadaraya-Watson (jdehorty), RVI, LSMA, Trendilo, McGinley, Laguerre RSI, JMA, TRIX, Alligator, Elder, Fisher, KAMA, T3, Trend Magic, Vortex, Volatility Stop, Keltner, ZLT, PP SuperTrend, AlphaTrend · และทุกอินดิเคเตอร์บน M5 (แม้ใส่ตัวกรอง H4)
+
+### รอบ 8 สาย Scalping (M1/M5/M15, SL 1×ATR, TP 1.5R, 07–20 UTC) — ขาดทุนทั้ง 60 แบบ ไม่มี edge แม้ก่อนหักสเปรด
+EMA 9/21 + EMA50, CM Sling Shot 38/62, Stochastic 5/3/3 Pullback, VWAP Cross รายวัน, Bollinger 20/2 Fade, RSI 7 Fade 30/70, SuperTrend 10/3, Keltner 20/1.5 Breakout, NY Opening Range Breakout (13:30–14:00 UTC), London Opening Range Breakout (07:00–08:00 UTC)

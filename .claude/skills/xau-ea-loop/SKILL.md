@@ -54,4 +54,4 @@ description: >
 | 1–5 | 2026-11 | SSL, MACD, Coral, Aroon, KST ฯลฯ → SENTINEL, THUNDER, QUARTET |
 | 6 | 2026-11-21 | 10 ตัว: PMO, AO, MAMA ผ่าน (H4 ช่วยพอร์ต) → HEXA |
 | 7 | 2026-11-21 | M5/M15/M30 + กรอง H4: M5 ตายหมด, AO M30 ผ่าน → HEXA TURBO |
-| 8 | 2026-11-21 | สาย scalping M1/M5/M15 (10 กลยุทธ์) — ดู README "Batch 8" |
+| 8 | 2026-11-21 | สาย scalping M1/M5/M15 10 กลยุทธ์ × 60 แบบ: **ขาดทุนทั้งหมด** · ก่อนหักสเปรดก็ไม่มี edge (≤ +0.01R) → ไม่สร้างอีเอ · ตัวเร็วสุดที่ผ่าน = AO M30 + กรอง SSL H4 (TURBO) |
