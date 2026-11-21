@@ -510,3 +510,11 @@ Takeaway: new H1 engines duplicate KST/Coral/Gann; H4 engines add return at the 
 
 ## XAU HEXA (QUARTET v1.20) and HEXA TURBO v1.00 EAs (2026-11-21)
 `MQL5/Experts/XAU_QUARTET_v1.20_HEXA.mq5` (6 engines, magic 891000+, default 1%) and `XAU_HEXA_TURBO_v1.00.mq5` (+ AO M30 filtered by SSL H4, magic 892000+, default 0.75%). Built from QUARTET v1.10 (`make_hexa` script in the session scratchpad); PMO/AO state functions match research signals 100% (`hexa_parity.py`). Dashboard numbers from `hexa_levels.py`: HEXA 0.5–1.5% $2,425 / $5,376 / $10,370 / $17,658 / $26,859 (DD 26–62%, P(DD≥70%) 0/0/4/13/30%); TURBO $3,447 / $8,242 / $16,277 / $27,132 / $38,838 (DD 26–65%, 0/2/12/32/60%). Guide: `MQL5/Docs/passed/08_HEXA_และ_TURBO.md`.
+
+## QUARTET / HEXA / TURBO on a Standard account (`std300.py`, `std_cap.py`, 2026-11-21)
+Standard: 0.01 lot = $1 per $1 move. Median SL: H1 engines ~$21, H4 engines ~$42, AO M30 ~$14 → 0.01 lot risks 7% (H1) to 14% (H4) of $300.
+- $300, EA default (skip if 0.01 lot risks > 5.5%): only 43 of 2,080–2,391 trades taken (QUARTET/HEXA), TURBO halts at 70% in Dec 2024. Unusable.
+- $300, always 0.01 lot: 2-year numbers look huge (QUARTET $14,735, HEXA $28,536, TURBO $45,622) only because year 1 compounded before SLs grew; starting at $300 in the latest year: QUARTET $206 (halt), HEXA $90 (halt), TURBO $68 (halt).
+- Latest year from other balances, risk 1% (lots floored, min 0.01 → real risk above 1% below ~$3,000): QUARTET $1,000 halts, $2,000 +459% DD 42%, $3,000 +375% DD 33%; HEXA $1,000 +1,327% DD 60%, $2,000 +614% DD 40%, $3,000 +598% DD 34%; TURBO $1,000 +2,086% DD 58%, $2,000 +1,158% DD 42%, $3,000 +879% DD 41%. Below $3,000 the 0.01-lot floor raises real risk to 2–4% per trade (higher return and ruin risk; QUARTET at $1,000 halted).
+- Cent $300 latest year (reference): QUARTET $1,383, HEXA $1,815, TURBO $3,009.
+Conclusion: with USD 300 use a Cent account; Standard needs about USD 3,000 for the EA's risk setting to mean what it says.
