@@ -525,3 +525,10 @@ Conclusion: with USD 300 use a Cent account; Standard needs about USD 3,000 for 
 - Edge before spread (spread added back): only 4/60 above zero and all ≤ +0.012R; at a $0.10 all-in cost (raw-spread account) every config is still negative. These entries have no edge on gold, so a lower-cost broker would not rescue them.
 - Dukascopy in-session spread: median $0.56.
 Conclusion: no M1/M5/M15 scalping EA; fastest validated engine remains AO M30 + SSL H4 filter (HEXA TURBO).
+
+## Batch 9: second scalping round, price-action / level / session ideas (`scalp9.py`, `scalp9.csv`, 2026-11-21)
+Previous-day high/low breakout, Turtle Soup (PDH/PDL sweep fade), Asian range (00–07 UTC) breakout, inside-bar breakout, three-bar momentum, volatility-expansion bar, daily pivot S1/R1 rejection, $10 round-number bounce, Heikin Ashi + EMA200, Williams fractal breakout × M1/M5/M15 × N/F, same pre-registered scalping exits as batch 8.
+- 59/60 lose after spread. Only Asian range breakout M15 + SSL H1 filter is positive (+0.036R, 10.7 trades/month, random 98.9%) but year 1 is negative (−0.07R) → fails.
+- Edge before spread: 11/60 positive, best Asian break M15 F +0.14R / N +0.09R, three-bar M15 F +0.09R; M1 all negative even before spread (−0.15 to −0.42R).
+- The Asian-range edge matches XAU ORB v6.10 (Asian range + D1 filter, held longer); scalping exits (TP 1.5R / 48 bars) waste it.
+Conclusion: no scalping EA from 20 strategies over two rounds. Next useful test: ORB v6.10 over 2 years and its correlation with HEXA.

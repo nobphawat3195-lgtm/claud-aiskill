@@ -17,3 +17,6 @@ UT Bot, SuperTrend, Range Filter, Twin Range, Chandelier, HalfTrend, QQE MOD, Sq
 
 ### รอบ 8 สาย Scalping (M1/M5/M15, SL 1×ATR, TP 1.5R, 07–20 UTC) — ขาดทุนทั้ง 60 แบบ ไม่มี edge แม้ก่อนหักสเปรด
 EMA 9/21 + EMA50, CM Sling Shot 38/62, Stochastic 5/3/3 Pullback, VWAP Cross รายวัน, Bollinger 20/2 Fade, RSI 7 Fade 30/70, SuperTrend 10/3, Keltner 20/1.5 Breakout, NY Opening Range Breakout (13:30–14:00 UTC), London Opening Range Breakout (07:00–08:00 UTC)
+
+### รอบ 9 สาย Scalping รอบ 2 (กติกาเดียวกับรอบ 8) — ไม่ผ่านทั้ง 60 แบบ
+Previous Day High/Low Breakout, Turtle Soup, Asian Range Breakout (M15 + กรอง H1 บวก +0.04R แต่ปีแรกติดลบ · edge ก่อนหักสเปรด +0.14R → ใช้แนว ORB ถือนานกว่าแทน), Inside Bar Breakout, Three-Bar Momentum, Volatility Expansion, Pivot S1/R1 Rejection, \$10 Round Number Bounce, Heikin Ashi + EMA200, Williams Fractal Breakout · M1 ติดลบทุกแบบแม้ก่อนหักสเปรด
