@@ -490,3 +490,12 @@ Halt 50%: 1.25% and 1.5% halt in Aug 2025. Block bootstrap of weekly R (4-week b
 ## QUARTET v1.10 lot modes (`quartet_lotmodes.py`, 2026-11-20)
 Cent USD 300, 2 years, halt 70%, 0.01 cent-lot granularity: %Equity/%Balance 1.5% compounding $14,053 DD 60% (best) · same non-compounding $2,036 DD 33% · fixed $4.50 risk $2,036 · 0.01 per 3,000 USC $2,861 DD 49% (real risk up to 7.1%/trade) · 0.01 per 1,500 USC halts Apr 2026 · fixed 0.01 $394 · fixed 0.20 $2,175.
 Best mode detail: 2,080 trades (85/month), win 34%, avg win +2.27R, avg loss −0.88R, PF 1.29, SL hit 44.6%, median hold 14 h (SSL H4 70 h), max losing streak 28, max DD 60% (Jun–Sep 2025, $1,802 → $723, recovered Oct 2025), 7 losing months of 25. Trade list: `MQL5/Docs/quartet/quartet_1.5pct_trades_2y.csv`.
+
+## Batch 6: 10 more TradingView indicators as QUARTET engine candidates (`ind11.py`, `ind11.csv`, 2026-11-21)
+2 years M1 bid/ask, M15/H1/H4, author/built-in defaults, SL 1.5×ATR14, reverse on opposite signal. 30 configs tested.
+- M15: all fail (only Ichimoku M15 98.2% but shorts −15R and year 2 ≈ 0).
+- H1 passers: **PMO 35/20/10 +0.17R 99.9% L/S +106/+9 (A)**, **TSI 25/13/13 +0.10R 99.8% L/S +71/+6 (A, year 1 only +0.02)**, MA Cross 9/18 +0.12R 99.8% (shorts −7), Awesome Osc +0.15R 98.7% (shorts −11), Chande Kroll +0.11R 98.5% (shorts −1), Ichimoku +0.31R 95.4% (9 trades/month, shorts −4). Fail: RVI, Andean (93.7%), Nadaraya-Watson, MAMA H1.
+- H4 passers: **Awesome Osc +0.47R 98.4% L/S +53/+5**, **MAMA/FAMA +0.37R 98.7% L/S +41/+2 (5 trades/month)**, PMO +0.21R 96.3% L/S +37/+3, TSI 97.8% (shorts −5). Fail: Ichimoku, Andean, Chande Kroll, NW, MA Cross, RVI.
+- Correlation of weekly R with the QUARTET total: PMO H1 0.72, TSI H1 0.70, MA Cross H1 0.83 (redundant); AO H4 0.20, MAMA H4 0.25, PMO H4 0.36 (diversifiers).
+- Cent USD 300, halt 70%, risk scaled so max DD ≤ 44%: QUARTET alone 0.95% → $5,378 · +PMO H4 1.0% → $7,420 (each year from $300: $1,356 / $1,641) · +AO H4 0.9% → $6,685 ($1,454 / $1,379) · +MAMA H4 0.9% → $6,014 · +AO H4+MAMA H4 0.8% → $6,230 · +PMO H1 0.7% → $4,923 (worse) · +TSI H1 0.6% → $2,908 (worse).
+Takeaway: new H1 engines duplicate KST/Coral/Gann; H4 engines add return at the same DD. Selection is post-hoc across 30 configs (~1.5 false passes expected at 95%).
