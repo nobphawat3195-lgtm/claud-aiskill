@@ -275,14 +275,15 @@ function sEquity(ctx, u) {
     line(ctx, a, x, y - 56, P ? 46 : 36, C.muted, 600);
     line(ctx, b, x, y + 14, P ? 60 : 52, C.ink, 800, 'left', DISPLAY);
   }, 30));
+  rise(ctx, u, 40.5, () => line(ctx, 'ระหว่างทางเคยลดลงสูงสุด 46% (DD)', P ? W / 2 : box.x, P ? S.y + 300 : 278, P ? 36 : 30, C.muted, 500, P ? 'center' : 'left'), 15);
   rise(ctx, u, 42.6, () => line(ctx, 'เริ่ม $300 ใหม่ทุกปี · กำไรใกล้กันทั้ง 2 ปี', W / 2, P ? box.y + box.h + 230 : box.y + box.h + 200, P ? 44 : 36, C.gold, 600, 'center'), 20);
 }
 
 // ------------------------------------------------------------------ S7 the truth (u 44..52)
 function sTruth(ctx, u) {
   backdrop(ctx, u, 0.1);
-  line(ctx, 'บอกครบ ไม่โชว์แค่ไม้บวก', P ? W / 2 : S.x, P ? S.y + 80 : 130, P ? 72 : 56, C.ink, 800, P ? 'center' : 'left', DISPLAY);
-  const F = [['2.3×', 'ไม้ชนะใหญ่กว่าไม้แพ้', 'ไม่ตั้ง TP ปล่อยกำไรวิ่ง', C.gold], ['46%', 'ขาดทุนสะสมสูงสุด', 'ต้องทนเห็นพอร์ตลดลงได้', C.red], ['8 / 25', 'เดือนที่ติดลบ', 'บางเดือนลบ 30–40%', C.red]];
+  line(ctx, 'ทำไม HEXA น่าสนใจ', P ? W / 2 : S.x, P ? S.y + 80 : 130, P ? 72 : 56, C.ink, 800, P ? 'center' : 'left', DISPLAY);
+  const F = [['2.3×', 'ไม้ชนะใหญ่กว่าไม้แพ้', 'ไม่ตั้ง TP ปล่อยกำไรวิ่ง', C.gold], ['~98', 'ไม้ต่อเดือน', '6 เครื่องยนต์ทำงานพร้อมกัน', C.up], ['100%', 'มี SL ทุกไม้', 'ไม่ Martingale · ไม่ถัวขาดทุน', C.gold]];
   F.forEach(([v, a, b, col], i) => {
     const y = P ? S.y + 340 + i * 380 : 290 + i * 250, x = P ? S.x + 10 : S.x;
     const k = springU(u, (i ? 44 : 43.7) + i * 2, SPRING.bouncy); if (k <= 0.001) return;
