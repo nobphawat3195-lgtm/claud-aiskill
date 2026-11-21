@@ -532,3 +532,14 @@ Previous-day high/low breakout, Turtle Soup (PDH/PDL sweep fade), Asian range (0
 - Edge before spread: 11/60 positive, best Asian break M15 F +0.14R / N +0.09R, three-bar M15 F +0.09R; M1 all negative even before spread (−0.15 to −0.42R).
 - The Asian-range edge matches XAU ORB v6.10 (Asian range + D1 filter, held longer); scalping exits (TP 1.5R / 48 bars) waste it.
 Conclusion: no scalping EA from 20 strategies over two rounds. Next useful test: ORB v6.10 over 2 years and its correlation with HEXA.
+
+## XAU ORB v6.10 over 2 years (`orb2y.py`, 2026-11-21)
+Asia 1-hour ranges 00/01/02/03 UTC, width $3–16, first M5 close outside within 5 h, D1 EMA20 trend filter, SL = opposite edge, exit 12:00 UTC (M1 bid/ask).
+| Range | trades/month | avg R | previous year | latest year | random 2 yr |
+|---|---|---|---|---|---|
+| 00–01 (C1) | 5.8 | +0.19 | −10.6R | +37.7R | 84.7% |
+| 01–02 | 4.2 | +0.21 | +12.3R | +9.0R | 99.7% (only pass) |
+| 02–03 | 6.4 | +0.10 | 0.0R | +15.4R | 97.5% |
+| 03–04 | 8.7 | −0.01 | −23.1R | +22.1R | 67.8% |
+| all four | 25 | +0.10 | −21.5R | +84.2R | 99.6% |
+The earlier one-year ORB numbers came from the latest year; over 2 years ORB fails (previous year negative). Cent $300 ORB alone: 4 ranges 1% $470 DD 48%. Weekly correlation with HEXA 0.22, yet adding ORB lowers HEXA at equal DD: HEXA 0.95% $9,188 DD 45% → +ORB 00–01 0.85% $8,130 · +4 ranges 0.60% $4,201. Do not add ORB to HEXA.
