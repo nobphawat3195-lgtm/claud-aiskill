@@ -1,0 +1,127 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#000;font-family:Loma,Tahoma,sans-serif}
+.c{width:1000px;height:1000px;position:relative;overflow:hidden;margin:0 0 20px 0;color:#fff}
+.bg{position:absolute;inset:0}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:50px 50px;mask-image:radial-gradient(circle at 50% 40%,#000 30%,transparent 75%)}
+.glow{position:absolute;width:760px;height:760px;left:120px;top:20px;border-radius:50%;filter:blur(90px);opacity:.55}
+.icon{position:absolute;left:50%;top:150px;transform:translateX(-50%)}
+.badge{position:absolute;top:40px;left:40px;padding:10px 22px;border-radius:30px;font-size:24px;font-weight:bold;letter-spacing:2px;border:2px solid}
+.ver{position:absolute;top:40px;right:40px;padding:10px 22px;border-radius:30px;font-size:24px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.25)}
+.name{position:absolute;top:520px;width:100%;text-align:center;font-size:96px;font-weight:bold;letter-spacing:6px;line-height:1}
+.tag{position:absolute;top:640px;width:100%;text-align:center;font-size:32px;color:#d8dcef;letter-spacing:1px}
+.stats{position:absolute;top:715px;left:60px;right:60px;display:flex;gap:18px}
+.st{flex:1;background:rgba(10,12,28,.72);border:2px solid;border-radius:18px;padding:16px 10px;text-align:center}
+.st b{display:block;font-size:44px;line-height:1.15}.st span{font-size:21px;color:#b8bed8}
+.foot{position:absolute;bottom:34px;width:100%;text-align:center;font-size:23px;color:#9aa1c0;letter-spacing:1px}
+.foot i{font-style:normal;padding:6px 16px;margin:0 6px;border-radius:20px;background:rgba(255,255,255,.08)}
+.note{position:absolute;bottom:8px;width:100%;text-align:center;font-size:15px;color:#6f7593}
+</style></head><body>
+
+<!-- 1 SENTINEL: cyan/gold robot -->
+<div class="c" id="c1"><div class="bg" style="background:radial-gradient(circle at 50% 35%,#13306b,#05070f 70%)"></div><div class="grid"></div>
+<div class="glow" style="background:#00c8ff"></div>
+<div class="badge" style="border-color:#ffc400;color:#ffc400">GOLD · XAUUSD</div><div class="ver">v1.10</div>
+<svg class="icon" width="360" height="340" viewBox="0 0 360 340">
+ <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#ff9f00"/></linearGradient></defs>
+ <rect x="170" y="0" width="20" height="50" fill="#00c8ff"/><circle cx="180" cy="10" r="20" fill="#00e676" style="filter:drop-shadow(0 0 14px #00e676)"/>
+ <rect x="40" y="50" width="280" height="230" rx="44" fill="#0f1a3a" stroke="url(#g1)" stroke-width="12"/>
+ <rect x="85" y="120" width="70" height="46" rx="10" fill="#00e676" style="filter:drop-shadow(0 0 18px #00e676)"/>
+ <rect x="205" y="120" width="70" height="46" rx="10" fill="#00e676" style="filter:drop-shadow(0 0 18px #00e676)"/>
+ <rect x="120" y="210" width="120" height="16" rx="8" fill="#00c8ff"/>
+ <rect x="0" y="130" width="40" height="80" rx="12" fill="url(#g1)"/><rect x="320" y="130" width="40" height="80" rx="12" fill="url(#g1)"/>
+ <path d="M60 330 L180 290 L300 330" stroke="#00c8ff" stroke-width="10" fill="none"/>
+</svg>
+<div class="name" style="background:linear-gradient(90deg,#ffe27a,#ffb300);-webkit-background-clip:text;color:transparent">XAU SENTINEL</div>
+<div class="tag">หุ่นยนต์ยามเฝ้าทองคำ · SSL + MACD · 5 เครื่องยนต์</div>
+<div class="stats">
+ <div class="st" style="border-color:#00c8ff"><b style="color:#00e676">+381%</b><span>แบ็กเทส 1 ปี (0.75%)</span></div>
+ <div class="st" style="border-color:#00c8ff"><b style="color:#ffc400">24%</b><span>DD สูงสุด</span></div>
+ <div class="st" style="border-color:#00c8ff"><b style="color:#00c8ff">3 โหมด</b><span>47–120 ไม้/เดือน</span></div>
+</div>
+<div class="foot"><i>H1 · M15 · M5</i><i>Auto Lot</i><i>No Grid / No Martingale</i></div>
+<div class="note">ผลแบ็กเทส real tick พ.ย.25–พ.ย.26 บัญชี Cent ไม่ใช่การรับประกันผลในอนาคต</div></div>
+
+<!-- 2 THUNDER: purple/electric -->
+<div class="c" id="c2"><div class="bg" style="background:radial-gradient(circle at 50% 35%,#3a1670,#07040f 70%)"></div><div class="grid"></div>
+<div class="glow" style="background:#a64dff"></div>
+<div class="badge" style="border-color:#ffd84a;color:#ffd84a">GOLD · XAUUSD</div><div class="ver">v1.00</div>
+<svg class="icon" width="360" height="340" viewBox="0 0 360 340">
+ <defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffd000"/><stop offset="1" stop-color="#ff8a00"/></linearGradient></defs>
+ <circle cx="180" cy="170" r="150" fill="none" stroke="#a64dff" stroke-width="8" opacity=".7"/>
+ <circle cx="180" cy="170" r="122" fill="#1a0b33" stroke="#d29bff" stroke-width="4"/>
+ <path d="M205 40 L110 190 L175 190 L150 300 L255 140 L188 140 Z" fill="url(#g2)" style="filter:drop-shadow(0 0 26px #ffd000)"/>
+</svg>
+<div class="name" style="background:linear-gradient(90deg,#fff3a0,#ffb300);-webkit-background-clip:text;color:transparent">XAU THUNDER</div>
+<div class="tag">หุ่นยนต์สายฟ้าทองคำ · MACD Trend · 3 เครื่องยนต์</div>
+<div class="stats">
+ <div class="st" style="border-color:#a64dff"><b style="color:#00e676">+251%</b><span>แบ็กเทส 1 ปี (0.75%)</span></div>
+ <div class="st" style="border-color:#a64dff"><b style="color:#ffd000">33%</b><span>DD สูงสุด</span></div>
+ <div class="st" style="border-color:#a64dff"><b style="color:#d29bff">~73–91</b><span>ไม้/เดือน</span></div>
+</div>
+<div class="foot"><i>H1 · M15 · M5</i><i>Auto Lot</i><i>Trend Following</i></div>
+<div class="note">ผลแบ็กเทส real tick พ.ย.25–พ.ย.26 บัญชี Cent ไม่ใช่การรับประกันผลในอนาคต</div></div>
+
+<!-- 3 XMS: gold/orange world sessions -->
+<div class="c" id="c3"><div class="bg" style="background:radial-gradient(circle at 50% 35%,#4a2a05,#0c0702 70%)"></div><div class="grid"></div>
+<div class="glow" style="background:#ff9a00"></div>
+<div class="badge" style="border-color:#ffc400;color:#ffc400">GOLD · XAUUSD</div><div class="ver">v2.90</div>
+<svg class="icon" width="360" height="340" viewBox="0 0 360 340">
+ <circle cx="180" cy="170" r="140" fill="#1d1205" stroke="#ffc400" stroke-width="8"/>
+ <ellipse cx="180" cy="170" rx="60" ry="140" fill="none" stroke="#ffc400" stroke-width="4" opacity=".7"/>
+ <line x1="40" y1="170" x2="320" y2="170" stroke="#ffc400" stroke-width="4" opacity=".7"/>
+ <path d="M60 110 Q180 90 300 110 M60 230 Q180 250 300 230" stroke="#ffc400" stroke-width="4" fill="none" opacity=".7"/>
+ <circle cx="95" cy="130" r="16" fill="#00e676" style="filter:drop-shadow(0 0 12px #00e676)"/><circle cx="180" cy="95" r="16" fill="#00c8ff" style="filter:drop-shadow(0 0 12px #00c8ff)"/><circle cx="265" cy="140" r="16" fill="#ff465a" style="filter:drop-shadow(0 0 12px #ff465a)"/>
+ <circle cx="140" cy="230" r="14" fill="#ffc400"/><circle cx="225" cy="225" r="14" fill="#ffc400"/>
+</svg>
+<div class="name" style="font-size:80px;letter-spacing:3px;background:linear-gradient(90deg,#ffe27a,#ff8a00);-webkit-background-clip:text;color:transparent">XMS MULTISESSION</div>
+<div class="tag">5 โมดูลตามช่วงเวลา เอเชีย · ลอนดอน · Day Momentum</div>
+<div class="stats">
+ <div class="st" style="border-color:#ff9a00"><b style="color:#00e676">+1,122%</b><span>แบ็กเทส 1 ปี ($300)</span></div>
+ <div class="st" style="border-color:#ff9a00"><b style="color:#ffc400">32–44%</b><span>DD สูงสุด</span></div>
+ <div class="st" style="border-color:#ff9a00"><b style="color:#ff9a00">~34</b><span>ไม้/เดือน</span></div>
+</div>
+<div class="foot"><i>M5</i><i>Standard $300</i><i>DD Guard 48%</i></div>
+<div class="note">ผลแบ็กเทส real tick ปีล่าสุด บัญชี Standard ผลขึ้นกับวันเริ่ม ไม่ใช่การรับประกันผลในอนาคต</div></div>
+
+<!-- 4 ORB: sunrise asia -->
+<div class="c" id="c4"><div class="bg" style="background:linear-gradient(180deg,#0b1338 0%,#3b1236 55%,#7a2a10 100%)"></div><div class="grid"></div>
+<div class="glow" style="background:#ff5a3c;opacity:.4"></div>
+<div class="badge" style="border-color:#ffc400;color:#ffc400">GOLD · XAUUSD</div><div class="ver">v6.10</div>
+<svg class="icon" width="360" height="340" viewBox="0 0 360 340">
+ <defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#ff5a3c"/></linearGradient></defs>
+ <circle cx="180" cy="210" r="110" fill="url(#g4)" style="filter:drop-shadow(0 0 30px #ff7a3c)"/>
+ <rect x="0" y="210" width="360" height="130" fill="#0b1338" opacity=".85"/>
+ <rect x="40" y="120" width="280" height="90" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="14 10"/>
+ <path d="M300 120 L300 40 M280 60 L300 40 L320 60" stroke="#00e676" stroke-width="10" fill="none" style="filter:drop-shadow(0 0 10px #00e676)"/>
+ <path d="M60 240 L110 230 L150 250 L200 235 L250 245 L300 230" stroke="#ffc400" stroke-width="6" fill="none"/>
+</svg>
+<div class="name" style="background:linear-gradient(90deg,#ffe27a,#ff7a3c);-webkit-background-clip:text;color:transparent">XAU ORB ASIA</div>
+<div class="tag">Breakout กรอบเปิดตลาดเอเชีย 00–03 UTC + เทรนด์ D1</div>
+<div class="stats">
+ <div class="st" style="border-color:#ff7a3c"><b style="color:#00e676">+0.41R</b><span>เฉลี่ยต่อไม้ (286 ไม้)</span></div>
+ <div class="st" style="border-color:#ff7a3c"><b style="color:#ffc400">13–36%</b><span>DD (1–4 กรอบ)</span></div>
+ <div class="st" style="border-color:#ff7a3c"><b style="color:#ff9a7a">99%</b><span>ชนะการสุ่มทิศ</span></div>
+</div>
+<div class="foot"><i>M5</i><i>Asia Session</i><i>Close 12:00 UTC</i></div>
+<div class="note">ผลแบ็กเทส real tick พ.ย.25–พ.ย.26 ไม่ใช่การรับประกันผลในอนาคต</div></div>
+
+<!-- 5 DMA: green steady -->
+<div class="c" id="c5"><div class="bg" style="background:radial-gradient(circle at 50% 35%,#073b2a,#020a07 70%)"></div><div class="grid"></div>
+<div class="glow" style="background:#00e676;opacity:.35"></div>
+<div class="badge" style="border-color:#ffc400;color:#ffc400">GOLD · XAUUSD</div><div class="ver">v5.10</div>
+<svg class="icon" width="360" height="340" viewBox="0 0 360 340">
+ <path d="M180 20 L310 70 L310 170 Q310 260 180 320 Q50 260 50 170 L50 70 Z" fill="#06261b" stroke="#00e676" stroke-width="9" style="filter:drop-shadow(0 0 20px #00e676)"/>
+ <path d="M95 220 L145 170 L185 195 L265 110" stroke="#ffc400" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M235 105 L270 105 L270 140" stroke="#ffc400" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+ <text x="180" y="262" text-anchor="middle" font-size="28" fill="#00e676" font-family="Tahoma" font-weight="bold">01:00 UTC</text>
+</svg>
+<div class="name" style="font-size:76px;letter-spacing:3px;background:linear-gradient(90deg,#b9ffda,#00e676);-webkit-background-clip:text;color:transparent">XAU DAY MOMENTUM</div>
+<div class="tag">เข้าวันละ 1 ไม้ 01:00 UTC · ความเสี่ยงต่ำ · ตรวจง่าย</div>
+<div class="stats">
+ <div class="st" style="border-color:#00e676"><b style="color:#00e676">3/3 ปี</b><span>บวกทุกปีที่ทดสอบ</span></div>
+ <div class="st" style="border-color:#00e676"><b style="color:#ffc400">29–37%</b><span>DD สูงสุด</span></div>
+ <div class="st" style="border-color:#00e676"><b style="color:#b9ffda">+$474</b><span>ปีล่าสุด ($300)</span></div>
+</div>
+<div class="foot"><i>H1 Logic</i><i>Standard $300</i><i>1 Trade / Day</i></div>
+<div class="note">ผลแบ็กเทส 2023–2026 บัญชี Standard ไม่ใช่การรับประกันผลในอนาคต</div></div>
+</body></html>

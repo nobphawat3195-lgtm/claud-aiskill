@@ -1,0 +1,113 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#05060d;font-family:Loma,Tahoma,sans-serif;color:#e1e6f0}
+.card{width:1100px;padding:28px;box-sizing:border-box}
+#dash{background:radial-gradient(circle at 20% 0%,#16204a 0,#0c0e1c 55%);border:3px solid #00c8ff;border-radius:14px;box-shadow:0 0 40px #00c8ff55, inset 0 0 60px #00c8ff22;width:1040px;margin:30px}
+.hd{display:flex;align-items:center;gap:22px}
+.robot{position:relative;width:96px;height:96px}
+.robot .ant{position:absolute;left:44px;top:0;width:8px;height:16px;background:#00c8ff}
+.robot .bulb{position:absolute;left:38px;top:-8px;width:20px;height:12px;background:#00e676;border-radius:6px;box-shadow:0 0 14px #00e676}
+.robot .head{position:absolute;left:4px;top:16px;width:88px;height:72px;border:4px solid #00c8ff;border-radius:14px;background:#161a30;box-shadow:0 0 18px #00c8ff88}
+.robot .eye{position:absolute;top:36px;width:20px;height:14px;background:#00e676;border-radius:3px;box-shadow:0 0 16px #00e676}
+.robot .mouth{position:absolute;left:30px;top:66px;width:36px;height:6px;background:#00c8ff}
+.title{font-size:46px;font-weight:bold;letter-spacing:4px;background:linear-gradient(90deg,#ffd54a,#ff9f00);-webkit-background-clip:text;color:transparent;text-shadow:0 0 30px #ffb30044}
+.sub{color:#8c96b4;font-size:17px}
+.pill{margin-left:auto;text-align:right}
+.pill .p{border:2px solid #00e676;color:#00e676;border-radius:22px;padding:8px 20px;font-weight:bold;font-size:18px;box-shadow:0 0 14px #00e67655}
+.pill .a{color:#00e676;font-size:14px;margin-top:8px}
+.row{display:flex;gap:12px;align-items:center;margin-top:18px}
+.lbl{width:110px;color:#8c96b4;font-size:16px}
+.btn{flex:1;text-align:center;padding:11px 6px;border-radius:8px;border:2px solid #3c4055;background:#161a30;font-size:16px}
+.on{color:#0c0e1c;font-weight:bold}
+.bt{margin-top:10px;font-size:15px}
+.box{background:#161a30;border:1px solid #3c4055;border-radius:10px;padding:14px 18px;margin-top:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.k{color:#8c96b4;font-size:14px}.v{font-size:24px;font-weight:bold}
+.gauge{height:18px;background:#0c0e1c;border:1px solid #3c4055;border-radius:9px;overflow:hidden;flex:1}
+.gauge div{height:100%;background:linear-gradient(90deg,#00e676,#ffc400);width:24%}
+.eng{border-radius:10px;padding:14px 16px;background:#161a30;border:3px solid}
+.eng h3{margin:0;color:#ffc400;font-size:20px}.eng .s{font-size:24px;font-weight:bold;margin:8px 0}
+.small{font-size:13px;color:#8c96b4}
+.g{color:#00e676}.r{color:#ff465a}.c{color:#00c8ff}.o{color:#ff9600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ctl{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.ctl div{text-align:center;padding:14px;border-radius:8px;font-size:17px;font-weight:bold}
+/* logic */
+#logic{background:#0c0e1c;border:2px solid #00c8ff55;border-radius:14px;margin:30px;width:1040px}
+h1{color:#ffc400;margin:0 0 6px}
+.flow{display:flex;gap:14px;align-items:stretch;margin-top:18px}
+.st{flex:1;background:#161a30;border:2px solid #00c8ff;border-radius:12px;padding:14px;font-size:15px;line-height:1.5}
+.st b{color:#ffc400;font-size:18px}
+.arr{align-self:center;color:#00c8ff;font-size:34px}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:15px}
+td,th{border:1px solid #3c4055;padding:8px 10px;text-align:center}th{background:#161a30;color:#ffc400}
+</style></head><body>
+<div id="dash" class="card">
+ <div class="hd">
+  <div class="robot"><div class="bulb"></div><div class="ant"></div><div class="head"></div><div class="eye" style="left:22px"></div><div class="eye" style="left:54px"></div><div class="mouth"></div></div>
+  <div><div class="title">XAU SENTINEL</div><div class="sub">หุ่นยนต์ยามเฝ้าทองคำ · SSL + MACD · v1.10</div></div>
+  <div class="pill"><span class="p">● กำลังทำงาน</span><div class="a">บัญชี Cent (USC)</div></div>
+ </div>
+ <div class="row"><div class="lbl">โหมด</div>
+  <div class="btn">มาตรฐาน · ~47/เดือน</div>
+  <div class="btn">ไม้เยอะ · ~84/เดือน</div>
+  <div class="btn on" style="background:#ff465a;border-color:#ff465a">เทอร์โบ · ~120/เดือน</div></div>
+ <div class="row"><div class="lbl">ความเสี่ยง</div>
+  <div class="btn on" style="background:#00e676;border-color:#00e676">ต่ำ 0.5%</div>
+  <div class="btn" style="border-color:#ffc400;color:#ffc400">กลาง 0.75%</div>
+  <div class="btn o" style="border-color:#ff9600">สูง 1%</div>
+  <div class="btn r" style="border-color:#ff465a">สูงสุด 1.5%</div></div>
+ <div class="bt" style="color:#ffc400">แบ็กเทสปีล่าสุด ($300 → $1,854) · DD สูงสุด 32% · อยู่ในเกณฑ์</div>
+ <div class="box">
+  <div class="grid3">
+   <div><div class="k">ทุน (Balance)</div><div class="v">41,250.00 USC</div></div>
+   <div><div class="k">มูลค่าสุทธิ (Equity)</div><div class="v g">42,018.40 USC</div></div>
+   <div><div class="k">เท่ากับ (USD)</div><div class="v" style="color:#ffc400">$420.18</div></div>
+  </div>
+  <div class="grid3" style="margin-top:10px;font-size:16px"><div class="g">วันนี้ +768.40</div><div class="g">เดือนนี้ +3,904.10</div><div class="k">จุดสูงสุด 43,120.00</div></div>
+  <div class="row" style="margin-top:12px"><div style="width:150px" class="g"><b>DD ตอนนี้ 2.6%</b></div><div class="gauge"><div style="width:5%"></div></div><div class="small">เพดาน 50%</div></div>
+ </div>
+ <div class="k" style="margin-top:16px">เครื่องยนต์</div>
+ <div class="grid3" style="margin-top:8px">
+  <div class="eng" style="border-color:#00e676"><h3>H1 · พี่ใหญ่</h3><div class="s g">▲ ถือ BUY</div><div class="g">0.62 lot · +521.30</div><div class="small" style="color:#e1e6f0;margin-top:6px">SSL: ขาขึ้น · ไม่กรอง D1</div><div class="small">HMA 60 · SL 26.8$</div><div class="small">เปิด BUY 0.62 lot</div></div>
+  <div class="eng" style="border-color:#ff465a"><h3>M15 · พี่กลาง</h3><div class="s r">▼ ถือ SELL</div><div class="g">1.10 lot · +247.10</div><div class="small" style="color:#e1e6f0;margin-top:6px">SSL: ขาลง · D1: ลง</div><div class="small">HMA 320 · SL 13.1$</div><div class="small">เปิด SELL 1.10 lot</div></div>
+  <div class="eng" style="border-color:#3c4055;opacity:.55"><h3 style="color:#8c96b4">M5 · น้องเล็ก</h3><div class="s" style="color:#8c96b4">ปิด (ไม่ใช้ในโหมดนี้)</div><div>&nbsp;</div><div class="small" style="margin-top:6px">SSL: ขาลง · D1: ลง</div><div class="small">HMA 960 · SL 7.2$</div><div class="small">&nbsp;</div></div>
+ </div>
+ <div class="grid3" style="margin-top:12px">
+  <div class="eng" style="border-color:#00e676"><h3>MACD H1 · สายฟ้า</h3><div class="s g">▲ ถือ BUY</div><div class="g">0.35 lot · +210.40</div><div class="small" style="color:#e1e6f0;margin-top:6px">MACD: ขาขึ้น · ไม่กรอง D1</div><div class="small">MACD 12/26/9 · SL 27.1$</div><div class="small">เปิด BUY 0.35 lot</div></div>
+  <div class="eng" style="border-color:#00c8ff"><h3>MACD M15 · สายลม</h3><div class="s c">● รอสัญญาณ</div><div>&nbsp;</div><div class="small" style="color:#e1e6f0;margin-top:6px">MACD: ขาลง · ไม่กรอง D1</div><div class="small">MACD 48/104/36 · SL 13.3$</div><div class="small">MACD กลับเป็นขาลง</div></div>
+ </div>
+ <div class="two" style="margin-top:16px">
+  <div class="box" style="margin:0"><div class="k">ผลงานทั้งหมด</div><div style="font-size:16px;line-height:1.7;margin-top:4px">ไม้ที่ปิดแล้ว 63<br>อัตราชนะ 29% (ปกติ 15-35%)<br><span class="g">Profit Factor 1.52 (เป้า &gt; 1.3)</span><br><b class="g">กำไรสุทธิ +11,250.00</b></div><div class="small">ชนะน้อยแต่ไม้ชนะใหญ่ — แพ้ติดกันเป็นเรื่องปกติ</div></div>
+  <div class="box" style="margin:0"><div class="k">5 ไม้ล่าสุด</div><div style="font-family:monospace;font-size:15px;line-height:1.75;margin-top:4px"><span class="g">11-19 09:00 H1  SELL +1,842.20</span><br><span class="r">11-19 05:15 M15 BUY  -410.50</span><br><span class="r">11-18 22:30 M15 BUY  -398.00</span><br><span class="g">11-18 14:00 H1  BUY  +955.70</span><br><span class="r">11-18 08:45 M15 SELL -402.10</span></div></div>
+ </div>
+ <div class="ctl"><div style="border:2px solid #ff9600;color:#ff9600">|| หยุดเปิดไม้ใหม่ชั่วคราว</div><div style="border:2px solid #ff465a;color:#ff465a">X ปิดทุกไม้ของ SENTINEL</div></div>
+ <div class="small" style="margin-top:10px;text-align:center">* ภาพตัวอย่างหน้าจอ ตัวเลขเป็นค่าสมมติเพื่อแสดงรูปแบบ</div>
+</div>
+
+<div id="logic" class="card">
+ <h1>XAU SENTINEL v1.10 · LOGIC การเข้าไม้</h1>
+ <div class="sub">ระบบตามเทรนด์ SSL Channel (Mihkel00) + MACD · 5 เครื่องยนต์อิสระบนกราฟเดียว</div>
+ <div class="flow">
+  <div class="st"><b>① สร้างเส้น SSL</b><br>เส้นบน = HMA ของ High<br>เส้นล่าง = HMA ของ Low<br>ความยาว ≈ 60–80 ชั่วโมง<br>(H1: 60 · M15: 320 · M5: 960 แท่ง)</div><div class="arr">➜</div>
+  <div class="st"><b>② อ่านสถานะ</b><br>แท่งปิด <span class="g">เหนือเส้นบน</span> → ขาขึ้น<br>แท่งปิด <span class="r">ใต้เส้นล่าง</span> → ขาลง<br>อยู่ระหว่างเส้น → คงสถานะเดิม</div><div class="arr">➜</div>
+  <div class="st"><b>③ กรองเทรนด์ D1</b><br>(M15 และ M5 เท่านั้น)<br>ราคาปิดเมื่อวาน vs EMA20 D1<br>เข้าเฉพาะทิศเดียวกัน<br>H1 ไม่ต้องกรอง</div><div class="arr">➜</div>
+  <div class="st"><b>④ เข้า / ออก</b><br><span class="c">MACD: ฮิสโตแกรม &gt; 0 ขึ้น / &lt; 0 ลง (คาบ ×4 บน M15)</span><br>สถานะกลับทิศ → ปิดไม้เดิม เปิดไม้ใหม่ทันที<br>SL = 1.5 × ATR(14)<br><span class="o">ไม่มี TP</span> ถือจนกลับทิศ<br>lot = ทุน × ความเสี่ยง% ÷ ระยะ SL</div>
+ </div>
+ <table>
+  <tr><th>เครื่องยนต์</th><th>TF / HMA</th><th>ตัวกรอง D1</th><th>ไม้/ปี</th><th>เฉลี่ย/ไม้</th><th>ชนะ random</th><th>SL เฉลี่ย</th></tr>
+  <tr><td>พี่ใหญ่</td><td>H1 / 60</td><td>ไม่ใช้</td><td>331</td><td class="g">+0.30R</td><td>99.9%</td><td>~$27</td></tr>
+  <tr><td>พี่กลาง</td><td>M15 / 320</td><td>ใช้</td><td>253</td><td class="g">+0.55R</td><td>~97%</td><td>~$13</td></tr>
+  <tr><td>น้องเล็ก</td><td>M5 / 960</td><td>ใช้</td><td>452</td><td class="g">+0.40R</td><td>98.8%</td><td>~$7</td></tr>
+  <tr><td>สายฟ้า</td><td>H1 / MACD 12/26/9</td><td>ไม่ใช้</td><td>446</td><td class="g">+0.18R</td><td>99.5%</td><td>~$27</td></tr>
+  <tr><td>สายลม</td><td>M15 / MACD 48/104/36</td><td>ไม่ใช้</td><td>455</td><td class="g">+0.26R</td><td>97.6%</td><td>~$13</td></tr>
+ </table>
+ <table>
+  <tr><th>โหมด \ ความเสี่ยง</th><th class="g">ต่ำ 0.5%</th><th style="color:#ffc400">กลาง 0.75%</th><th class="o">สูง 1%</th><th class="r">สูงสุด 1.5%</th></tr>
+  <tr><td>มาตรฐาน M15+H1 (~47/เดือน)</td><td>$895 · DD 17%</td><td>$1,443 · DD 24%</td><td>$2,232 · DD 31%</td><td>$4,776 · DD 43%</td></tr>
+  <tr><td>ไม้เยอะ M5+M15+H1 (~84/เดือน)</td><td>$1,650 · DD 33%</td><td>$3,026 · DD 46%</td><td class="r">ชน DD 50% หยุด EA</td><td class="r">ชน DD 50% หยุด EA</td></tr>
+  <tr><td>เทอร์โบ SSL M15+H1 + MACD H1+M15 (~120/เดือน)</td><td>$1,854 · DD 32%</td><td>$3,616 · DD 46%</td><td class="r">ชน DD 50% หยุด EA</td><td class="r">ชน DD 50% หยุด EA</td></tr>
+ </table>
+ <div class="small" style="margin-top:12px;line-height:1.6">แบ็กเทส real tick Dukascopy พ.ย. 2025 – พ.ย. 2026 · บัญชี Cent เริ่ม $300 · ทบต้น · หยุดที่ DD 50% · หัก spread จริงแล้ว ยังไม่หัก swap (หัก slippage 0.10$ แล้ว กำไรลดลง 5–13%) ·
+ ค่าพารามิเตอร์เลือกจากปีเดียวกัน ผลจริงคาดว่าต่ำกว่านี้ (ประมาณครึ่งหนึ่ง) · อัตราชนะ 15–33% แพ้ติดกัน 10–25 ไม้ได้ · ต้องทดสอบ demo 4–8 สัปดาห์ก่อนใช้เงินจริง</div>
+</div>
+</body></html>

@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1350px;background:#04050e;font-family:Kanit,Loma,sans-serif;color:#e6ebff;overflow:hidden;position:relative}
+canvas{position:absolute;left:0;top:0}
+.wrap{position:absolute;left:24px;top:24px;right:24px;bottom:24px;border:2px solid #00ffc8;box-shadow:0 0 0 4px #04050e,0 0 0 6px #7840ff,0 0 60px #7840ff55 inset;border-radius:6px;padding:34px 40px}
+h1{font-family:Orbitron;font-size:46px;color:#ffcd3c;text-shadow:3px 3px 0 #6e3c00,0 0 24px #ffcd3c77}
+.sub{font-size:22px;color:#00ffc8;font-weight:600;margin-top:4px}
+.m{color:#9aa3d0}
+.year{margin-top:30px}
+.yh{display:flex;justify-content:space-between;align-items:baseline;font-size:22px;font-weight:800;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.cell{border-radius:10px;padding:18px 8px;text-align:center;border:2px solid}
+.cell .mo{font-size:17px;color:#c8cff0}
+.cell .p{font-family:Orbitron;font-weight:900;font-size:30px;margin-top:2px}
+.cell .b{font-size:15px;color:#9aa3d0}
+.pos{background:#00ff9614;border-color:#00ff9666}.pos .p{color:#00ff96}
+.neg{background:#ff326e14;border-color:#ff326e66}.neg .p{color:#ff326e}
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:34px}
+.s{background:#0e1128;border:2px solid #7840ff;border-radius:12px;padding:12px 14px}
+.s .v{font-family:Orbitron;font-weight:900;font-size:32px}
+.s .l{font-size:15px;color:#9aa3d0;line-height:1.3}
+.warn{margin-top:20px;background:#2a0a1a;border:2px solid #ff326e;border-radius:12px;padding:12px 16px;font-size:16px;line-height:1.45}
+</style></head><body><canvas id="cv" width="1080" height="1350"></canvas>
+<div class="wrap">
+ <h1>ผลรายเดือน · 2 ปี</h1>
+ <div class="sub">XAU QUARTET v1.10 · ทุน $300 (Cent) · เสี่ยง 1% ต่อไม้ · ทบต้น</div>
+ <div class="m" style="font-size:16px;margin-top:4px">แบ็กเทส พ.ย. 2024 – พ.ย. 2026 · ราคาจริง Dukascopy · หักสเปรดจริง · ทุกเดือน ไม่ตัดเดือนลบออก</div>
+ <div id="years"></div>
+ <div class="sum">
+  <div class="s"><div class="v" style="color:#00ff96">$5,847</div><div class="l">ทุนจบจาก $300</div></div>
+  <div class="s"><div class="v" style="color:#ffcd3c">17 / 25</div><div class="l">เดือนที่เป็นบวก</div></div>
+  <div class="s"><div class="v" style="color:#ff326e">−29%</div><div class="l">เดือนที่แย่ที่สุด<br>(มิ.ย. 2025)</div></div>
+  <div class="s"><div class="v" style="color:#ff326e">44%</div><div class="l">DD สูงสุด<br>จากจุดสูงสุด</div></div>
+ </div>
+ <div class="warn">⚠️ เดือนลบเกิดขึ้นจริงและอาจติดกันหลายเดือน · ผลแบ็กเทสไม่ใช่การรับประกันกำไร · ยังไม่ผ่านพอร์ตจริง · ยังไม่หัก swap · ทดลอง Demo ก่อนเสมอ</div>
+</div>
+<script>
+const x=document.getElementById('cv').getContext('2d');for(let i=0;i<300;i++){x.fillStyle='rgba(255,255,255,'+(Math.random()*.55)+')';x.fillRect(Math.random()*1080,Math.random()*1350,1,1)}
+const M=[["2024-11", 32.1, 396], ["2024-12", -14.7, 338], ["2025-01", 76.5, 597], ["2025-02", 18.2, 705], ["2025-03", -11.4, 625], ["2025-04", 45.1, 907], ["2025-05", 15.7, 1049], ["2025-06", -29.4, 741], ["2025-07", 12.4, 833], ["2025-08", -25.2, 623], ["2025-09", 37.8, 858], ["2025-10", 51.5, 1300], ["2025-11", -7.8, 1198], ["2025-12", -1.6, 1179], ["2026-01", 15.4, 1361], ["2026-02", 24.5, 1694], ["2026-03", 25.8, 2132], ["2026-04", -26.0, 1577], ["2026-05", 9.5, 1727], ["2026-06", 45.2, 2508], ["2026-07", 1.1, 2535], ["2026-08", 46.9, 3724], ["2026-09", 20.8, 4501], ["2026-10", -26.8, 3295], ["2026-11", 77.5, 5847]],TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const groups=[['ปีที่ 1 · พ.ย. 2024 – ต.ค. 2025',M.slice(0,12)],['ปีที่ 2 · พ.ย. 2025 – ต.ค. 2026',M.slice(12,24)],['ล่าสุด',M.slice(24)]];
+let h='',prevEnd=300;groups.forEach(([t,a])=>{if(!a.length)return;const st=prevEnd;prevEnd=a[a.length-1][2];0,en=a[a.length-1][2],tot=(en/st-1)*100;
+h+='<div class="year"><div class="yh"><span>'+t+'</span><span style="color:'+(tot>=0?'#00ff96':'#ff326e')+'">'+(a.length>1?'ทั้งปี '+(tot>=0?'+':'')+tot.toFixed(0)+'% · $'+Math.round(st).toLocaleString()+' → $'+en.toLocaleString():'')+'</span></div><div class="grid">';
+a.forEach(([p,v,e])=>{const [y,mm]=p.split('-');h+='<div class="cell '+(v>=0?'pos':'neg')+'"><div class="mo">'+TH[+mm-1]+' '+y.slice(2)+'</div><div class="p">'+(v>=0?'+':'')+v.toFixed(0)+'%</div><div class="b">$'+e.toLocaleString()+'</div></div>'});h+='</div></div>'});
+document.getElementById('years').innerHTML=h;
+</script></body></html>

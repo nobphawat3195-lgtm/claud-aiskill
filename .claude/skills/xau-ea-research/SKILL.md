@@ -14,8 +14,8 @@ Reply in Thai. The user is an MQL5 developer (gold scalping/intraday, MetaTrader
 
 ## User's standing rules (do not re-ask)
 
-- **Test only the latest year** (currently 2025-11-01 → today). Do not run multi-year tests unless asked; it wastes tokens.
-- Account: **USD 300 Standard** (0.01 lot = USD 1 per USD 1 move), Exness server **GMT+0**, M5 chart.
+- **Test 2 years** (2024-11-01 → today, M1 bid/ask) as the standard gate since 2026-11-20 (user approved); one-year random tests proved noisy. Workflow for new rounds: skill `xau-ea-loop`.
+- Account: USD 300 → **Cent** (Standard $300 cannot size wide-SL trend systems; needs ≈ $3,000). Exness server **GMT+0**.
 - Goals: trade often, fastest growth, **max drawdown ≤ 50%**.
 - Keep answers short; tables over prose; money in USD per month.
 - Cracked EAs (`_fix`, Telegram/FXProSystems, .ex5 without source): do not run or decompile. Offer the official MQL5 Market demo or a re-implementation of the logic instead.
@@ -26,7 +26,18 @@ Reply in Thai. The user is an MQL5 developer (gold scalping/intraday, MetaTrader
 MT5 real tick latest year: +USD 3,461, equity DD 32.5%, 471 trades. Our replica: +USD 3,367. Beats 100% of 10,000 random-direction shuffles; always-buy loses −84R.
 Keep min-lot caps 5.5% (ORB_A/DM_A/DM_L) and 2% (ASIA_B/LON_A); never use the v4.10 USD300 HIGH_RISK preset (DD halt off).
 Risks: the first months skip most trades (SL > cap); results depend on start date; tuned on the same year.
+New candidate (2026-11-20): `MQL5/Experts/XAU_SSL_EA_v7.00.mq5` SSL Hybrid core H1, +0.27R/trade, 341 trades, beats random 99.9%, PBO 0.095, DSR 0.67; SL ~27 USD so Cent account only.
+Second TradingView batch (2026-11-20): only MACD histogram H1 passes (+0.18R, beats random 99.3%, corr 0.6 with SSL); mean-reversion (WaveTrend, BB, RSI2, StochRSI, VixFix) and all M5 fail.
+Third TradingView batch (2026-11-20): Aroon and Coral Trend H1 pass the random test (98%/97%) but only H1; scaled TFs fail; they add no return per DD to SENTINEL (corr ~0.5). Hull, Keltner, Vortex, ZeroLag, PivotST, Fisher, KAMA, CCI fail.
+Fourth TradingView batch (2026-11-20): none pass (OTT H1 91.7%, MavilimW M15 87.8%); optimising Aroon/Coral/OTT does not raise profit (Coral and OTT get worse out of sample).
+Fifth TradingView batch (2026-11-20): KST (Know Sure Thing) H1 passes strongly (+0.34R, random 100%, DSR 0.61) and scales to M15/M5; SENTINEL std + KST H1 at 0.75% → 2,715 / DD 24% (vs 1,443 / 24%).
+XAU HEXA (QUARTET v1.20, +PMO H4 +AO H4) and HEXA TURBO v1.00 (+AO M30 filtered by SSL H4) built 2026-11-21; M5 loses for every engine even with the H4 filter.
+XAU QUARTET v1.00 EA built (MQL5/Experts, magic 891000+) from KST/Coral/Gann H1 + SSL H4; signal parity 100% (quartet_parity.py).
+2-year Cent money sim (port2y.py): KST+Coral+Gann H1+SSL H4 at 0.75% = $300→$3,351 DD 35%, steady in both years; SENTINEL turbo (MACD) halts at 50% DD in Nov 2024–Oct 2025.
+Multi-TF map (2026-11-20, `multi_tf.py`): H1 best for KST/SSL/Coral/Gann/ITrend/OTT; M5 loses for all; H4 works only for SSL (+0.37R, low correlation with H1) and Coral. Catalogue: MQL5/Docs/passed/06_คลังกลยุทธ์ที่ผ่าน.md.
+Two-year check (2026-11-20, `prev_year.py`/`two_year.py`): robust trend indicators on H1 = KST, SSL, Coral, Gann HiLo, Ehlers ITrend (both years positive, longs and shorts positive, 2-year random >= 99.5%); MACD H1 lost in Nov 2024–Oct 2025. Prefer 2-year random tests over 1-year for indicator screening.
 Lower-risk alternative: `MQL5/Experts/XAU_DMA_EA_v5.10.mq5` (DM_A only).
+New candidate (2026-11-19, untested outside the latest year): `MQL5/Experts/XAU_ORB_EA_v6.10.mq5` Asia ORB (hourly ranges 00-03 UTC) + D1 trend, hold to 12:00 UTC: single range 71 trades USD 300 → 968, DD 13%; four ranges 286 trades (~23/month), USD 300 → 1,948, DD 31% (overlap risk understated). London/NY ORB have no edge.
 
 ## Resolved (2026-11-19): the XMS .set does trade on USD 300
 
@@ -70,4 +81,4 @@ Python deps install automatically via the environment setup script (`MQL5/Resear
 
 ## Already tested, do not repeat (latest year unless noted)
 
-SMC/ICT: OB, OB+FVG, discount/premium, BOS+FVG, CHoCH+OB (all ≤ 0 R) · M5/M15 scalps (spread eats ~0.1R) · re-entries on DM_A · XMS on M1 signals (worse) · gitee wg722/xauusd-backtest strategies (market_facilitation_relock −11R; three others barely trade) · Grok v7 USD 100 USD (17/30 start dates lose > 80%) · SL optimisation of XMS (PBO 0.57: keep original) · GitHub EAs: maker-tung/xauusd-trend-follow (+0.07R, triggers add nothing over EMA200+ADX filter, SL USD 23 too wide for 300 USD) and NadirAliOfficial/engulfing-zone-ea (0 trades; points-based inputs assume 2-digit gold); most other gold EAs on GitHub are SMC/scalper/grid types already covered. The user's Drive doc `00_อ่านก่อนเริ่มงานทุกครั้ง_XAUUSD_EA` lists older dead ends (grid/martingale, EMA cross, Ichimoku, etc.).
+SMC/ICT: OB, OB+FVG, discount/premium, BOS+FVG, CHoCH+OB (all ≤ 0 R); HTF Sweep CISD [WillyAlgoTrader] M1/M5/M15 all variants ≤ +0.03R, filters fail out of sample · M5/M15 scalps (spread eats ~0.1R) · re-entries on DM_A · XMS on M1 signals (worse) · gitee wg722/xauusd-backtest strategies (market_facilitation_relock −11R; three others barely trade) · Grok v7 USD 100 USD (17/30 start dates lose > 80%) · SL optimisation of XMS (PBO 0.57: keep original) · GitHub EAs: maker-tung/xauusd-trend-follow (+0.07R, triggers add nothing over EMA200+ADX filter, SL USD 23 too wide for 300 USD) and NadirAliOfficial/engulfing-zone-ea (0 trades; points-based inputs assume 2-digit gold); most other gold EAs on GitHub are SMC/scalper/grid types already covered. The user's Drive doc `00_อ่านก่อนเริ่มงานทุกครั้ง_XAUUSD_EA` lists older dead ends (grid/martingale, EMA cross, Ichimoku, etc.).
