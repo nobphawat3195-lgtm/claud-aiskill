@@ -22,3 +22,7 @@ Formats:
 
 Longest gap without a new event: beats 52-56 (1.9 s).
 Honesty: ทุกตัวเลขมาจากแบ็กเทส · end card มีคำเตือน · ภาพหน้าจอมีป้าย "ภาพตัวอย่าง"
+
+
+## Revision (user request)
+Shot 7 removed (win rate / losing months / highlights). Dashboard now beats 44-52, end card 52-62. Small DD note kept on the equity shot; end card keeps the backtest disclaimer.

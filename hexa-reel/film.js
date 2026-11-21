@@ -37,10 +37,9 @@ const HITS = [
   [30, 'step 2', 'click'], [32, 'step 3', 'click'], [34, 'step 4', 'click'],
   [36, 'equity', 'whoosh', { len: 0.5, from: 500, to: 2600 }],
   [40, 'year 1', 'pop', { pitch: 'C6' }], [42, 'year 2', 'pop', { pitch: 'E6' }],
-  [44, 'truth 1', 'thud'], [46, 'truth 2', 'thud'], [48, 'truth 3', 'thud'],
-  [52, 'dashboard', 'whoosh', { len: 0.5, from: 2400, to: 600 }],
-  [56, 'end card', 'impact'],
-  [57, 'logo', 'bell', { pitch: 'A5' }],
+  [44, 'dashboard', 'whoosh', { len: 0.5, from: 2400, to: 600 }],
+  [52, 'end card', 'impact'],
+  [53, 'logo', 'bell', { pitch: 'A5' }],
 ];
 
 // ------------------------------------------------------------------ shared pieces
@@ -298,12 +297,12 @@ function sTruth(ctx, u) {
 function sDash(ctx, u, IMG) {
   backdrop(ctx, u, 0.2);
   const img = IMG.dash; if (!img) return;
-  const k = springU(u, 51.8, SPRING.gentle);
+  const k = springU(u, 43.8, SPRING.gentle);
   // the dashboard panel is the left ~41% of the screenshot (x 0..1240 of 3000 px); 1x1 keeps some chart
   const srcW = P ? 1240 : 1900, srcH = img.height;
   const boxW = P ? S.w : W - 2 * S.x, boxH = Math.min(P ? S.h - 120 : H - 2 * S.y - 90, boxW * (srcH / srcW));
   const x = (W - boxW) / 2, y = (P ? S.y + 110 : S.y + 70) + (1 - k) * H;
-  const z = 1.0 * (1.12 / 1.0) ** E.inOutSine(prog(u, 52, 56));
+  const z = 1.0 * (1.12 / 1.0) ** E.inOutSine(prog(u, 44, 52));
   ctx.save(); rrect(ctx, x, y, boxW, boxH, 24); ctx.clip();
   const sw = srcW / z, sh = Math.min(srcH, sw * (boxH / boxW)); const sx = (srcW - sw) * 0.3, sy = Math.max(0, (srcH - sh) * 0.15 * (z - 1) / 0.12);
   ctx.drawImage(img, sx, sy, sw, sh, x, y, boxW, boxH); ctx.restore();
@@ -319,14 +318,14 @@ function sEnd(ctx, u) {
   const f = font(FORMAT.pick({ '9x16': 180, '1x1': 160 }), 800, DISPLAY);
   const L = layout(ctx, 'XAU HEXA', f, -4), base = P ? H * 0.47 : H * 0.48, x0 = W / 2 - L.width / 2;
   L.glyphs.forEach((g, j) => {
-    const p = E.outBack(prog(u, 55.7 + j * 0.05, 56.15 + j * 0.05), 1.5); if (p <= 0 || g.ch === ' ') return;
+    const p = E.outBack(prog(u, 51.7 + j * 0.05, 52.15 + j * 0.05), 1.5); if (p <= 0 || g.ch === ' ') return;
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, base + L.desc + 6); ctx.clip();
     glyph(ctx, g.ch, x0 + g.cx + 4, base + 6 + (1 - p) * (L.asc + 50), f, C.goldDeep);
     glyph(ctx, g.ch, x0 + g.cx, base + (1 - p) * (L.asc + 50), f, C.gold); ctx.restore();
   });
-  rise(ctx, u, 56.8, () => line(ctx, 'บัญชี Cent · เสี่ยง 1% ต่อไม้', W / 2, base + (P ? 130 : 100), P ? 62 : 48, C.ink, 700, 'center'), 30);
-  rise(ctx, u, 57.3, () => line(ctx, 'ทดลอง Demo ก่อนเสมอ', W / 2, base + (P ? 220 : 168), P ? 62 : 48, C.gold, 800, 'center', DISPLAY), 30);
-  rise(ctx, u, 57.8, () => line(ctx, 'ผลแบ็กเทสไม่ใช่การรับประกันกำไร', W / 2, base + (P ? 310 : 228), P ? 44 : 34, C.muted, 500, 'center'), 20);
+  rise(ctx, u, 52.8, () => line(ctx, 'บัญชี Cent · เสี่ยง 1% ต่อไม้', W / 2, base + (P ? 130 : 100), P ? 62 : 48, C.ink, 700, 'center'), 30);
+  rise(ctx, u, 53.3, () => line(ctx, 'ทดลอง Demo ก่อนเสมอ', W / 2, base + (P ? 220 : 168), P ? 62 : 48, C.gold, 800, 'center', DISPLAY), 30);
+  rise(ctx, u, 53.8, () => line(ctx, 'ผลแบ็กเทสไม่ใช่การรับประกันกำไร', W / 2, base + (P ? 310 : 228), P ? 44 : 34, C.muted, 500, 'center'), 20);
 }
 
 M.film({
@@ -344,8 +343,7 @@ M.film({
     else if (u < 28) sEngines(ctx, u);
     else if (u < 36) sHow(ctx, u);
     else if (u < 44) sEquity(ctx, u);
-    else if (u < 52) sTruth(ctx, u);
-    else if (u < 56) sDash(ctx, u, IMG);
+    else if (u < 52) sDash(ctx, u, IMG);
     else sEnd(ctx, u);
   },
 });
